@@ -141,6 +141,10 @@ class air_conditioning(device):
             # Construct response from data
             response = base_response.construct(data)
 
+            # Ignore if no response
+            if response is None:
+                return
+
             self._support = True
 
             if response.id == ResponseId.State:
