@@ -182,51 +182,60 @@ class toggle_display_command(command):
 
 
 class response():
-    def __init__(self, frame: bytes):
-        # Build a memoryview of the frame for zero-copy slicing
-        frame_mv = memoryview(frame)
+    def __init__(self, payload: memoryview):
+        # Set ID and unpack
+        self._id = payload[0]
+        self.unpack(payload)
 
+    @staticmethod
+    def validate(frame: memoryview):
         # Validate frame checksum
-        calc_checksum = command.checksum(frame_mv[0:-1])
-        recv_checkum = frame_mv[-1]
-        if recv_checkum != calc_checksum:
+        calc_checksum = command.checksum(frame[1:-1])
+        recv_checksum = frame[-1]
+        if recv_checksum != calc_checksum:
             _LOGGER.error("Frame '{}' failed checksum. Received: 0x{:X}, Expected: 0x{:X}.".format(
-                frame_mv.hex(), recv_checkum, calc_checksum))
-            frame_mv.release()
-            return
+                frame.hex(), recv_checksum, calc_checksum))
+            return None
 
         # Fetch frame payload and payload with CRC
-        payload_crc = frame_mv[10:-1]
+        payload_crc = frame[10:-1]
         payload = payload_crc[0:-1]
 
         # Validate payload CRC
         calc_crc = crc8.calculate(payload)
         recv_crc = payload_crc[-1]
-        if recv_crc != calc_crc:
-            _LOGGER.error("Payload '{}' failed CRC. Received: 0x{:X}, Expected: 0x{:X}.".format(
-                payload_crc.hex(), recv_crc, calc_crc))
-            frame_mv.release()
-            return
 
-        # Get ID
-        self._id = payload[0]
+        # Some device seem to use a 2nd checksum over the payload instead of a CRC
+        payload_checksum = command.checksum(payload)
 
-        # Unpack the payload
-        self.unpack(payload)
+        if recv_crc == calc_crc or recv_crc == payload_checksum:
+            return payload
 
-        # Free the memoryview
-        frame_mv.release()
+        _LOGGER.error("Payload '{}' failed CRC and checksum. Received: 0x{:X}, Expected: 0x{:X} or 0x{:X}.".format(
+            payload_crc.hex(), recv_crc, calc_crc, payload_checksum))
+
+        return None
 
     @staticmethod
-    def construct(frame):
-        id = frame[10]
+    def construct(frame: bytes):
+        # Build a memoryview of the frame for zero-copy slicing
+        frame_mv = memoryview(frame)
+
+        payload = response.validate(frame_mv)
+        if not payload:
+            return None
+
+        id = payload[0]
         if id == ResponseId.State:
-            return state_response(frame)
+            resp = state_response(payload)
         elif id == ResponseId.Capabilities:
-            return capabilities_response(frame)
+            resp = capabilities_response(payload)
         else:
             # Unrecognized frame
-            return response(frame)
+            resp = response(payload)
+
+        frame_mv.release()
+        return resp
 
     @property
     def id(self):
@@ -527,5 +536,9 @@ class state_response(response):
         self.display_on = (payload[14] != 0x70)
 
         # TODO dudanov/MideaUART humidity set point in byte 19, mask 0x7F
+
+        # Some payloads are shorter than expected. Unsure what, when or why
+        if len(payload) < 22:  # TODO
+            return
 
         self.freeze_protection_mode = bool(payload[21] & 0x80)
