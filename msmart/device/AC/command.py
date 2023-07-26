@@ -451,8 +451,7 @@ class capabilities_response(response):
 
 class state_response(response):
     def __init__(self, frame: bytes):
-        super().__init__(frame)
-
+        # Ensure attributes exist
         self.power_on = None
         self.target_temperature = None
         self.operational_mode = None
@@ -467,6 +466,10 @@ class state_response(response):
         self.filter_alert = None
         self.display_on = None
         self.freeze_protection_mode = None
+    
+        # Call super's init now to unpack the data
+        # TODO this feels like a hack
+        super().__init__(frame)
 
     def unpack(self, payload: memoryview):
         if self.id != ResponseId.State:
