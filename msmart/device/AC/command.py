@@ -453,6 +453,21 @@ class state_response(response):
     def __init__(self, frame: bytes):
         super().__init__(frame)
 
+        self.power_on = None
+        self.target_temperature = None
+        self.operational_mode = None
+        self.fan_speed = None
+        self.swing_mode = None
+        self.turbo_mode = None
+        self.eco_mode = None
+        self.sleep_mode = None
+        self.fahrenheit = None
+        self.indoor_temperature = None
+        self.outdoor_temperature = None
+        self.filter_alert = None
+        self.display_on = None
+        self.freeze_protection_mode = None
+
     def unpack(self, payload: memoryview):
         if self.id != ResponseId.State:
             # TODO throw instead?
