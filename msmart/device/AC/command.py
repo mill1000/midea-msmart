@@ -527,8 +527,9 @@ class state_response(response):
 
         # TODO dudanov/MideaUART humidity set point in byte 19, mask 0x7F
 
-        # Some payloads are shorter than expected. Unsure what, when or why
-        if len(payload) < 22:  # TODO
+        # TODO Some payloads are shorter than expected. Unsure what, when or why
+        # This length was picked arbitrarily from one user's shorter payload
+        if len(payload) < 22:
             return
 
         self.freeze_protection_mode = bool(payload[21] & 0x80)
