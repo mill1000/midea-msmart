@@ -36,15 +36,28 @@ class TestStateResponse(unittest.TestCase):
     def _test_response(self, msg):
         resp = self._test_build_response(msg)
         self._test_check_attributes(resp)
+        return resp
 
     def test_message_checksum(self):
-        self._test_response(TEST_MESSAGE_CHECKSUM_AS_CRC)
+        resp = self._test_response(TEST_MESSAGE_CHECKSUM_AS_CRC)
+
+        self.assertEqual(resp.target_temperature, 27.0)
+        self.assertEqual(resp.indoor_temperature, 27.5)
+        self.assertEqual(resp.outdoor_temperature, 24.5)
 
     def test_message_v2(self):
-        self._test_response(TEST_MESSAGE_V2)
+        resp = self._test_response(TEST_MESSAGE_V2)
+
+        self.assertEqual(resp.target_temperature, 21.0)
+        self.assertEqual(resp.indoor_temperature, 22.0)
+        self.assertEqual(resp.outdoor_temperature, None)
 
     def test_message_v3(self):
-        self._test_response(TEST_MESSAGE_V3)
+        resp = self._test_response(TEST_MESSAGE_V3)
+
+        self.assertEqual(resp.target_temperature, 21.0)
+        self.assertEqual(resp.indoor_temperature, 21.0)
+        self.assertEqual(resp.outdoor_temperature, 28.5)
 
 
 if __name__ == '__main__':
