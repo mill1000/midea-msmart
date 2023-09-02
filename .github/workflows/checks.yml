@@ -6,11 +6,10 @@ on:
 
   pull_request:
 
-  workflow_call:
 
 # Kill existing jobs
 concurrency:
-  group: checks-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
