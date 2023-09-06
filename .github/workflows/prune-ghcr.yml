@@ -1,0 +1,18 @@
+name: Prune GHCR
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  prune-images:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: bots-house/ghcr-delete-image-action@v1.1.0
+        with:
+          owner: ${{ github.repository_owner }}
+          name: ${{ github.event.repository.name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: pr-${{github.event.pull_request.number}}
