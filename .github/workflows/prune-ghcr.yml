@@ -21,4 +21,4 @@ jobs:
           container: ${{ env.IMAGE_NAME }}
           token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: true
-          prune-tag-regexes: ^pr-${{github.event.pull_request.number}}
+          prune-tags-regexes: ^pr-${{github.event.pull_request.number}}
