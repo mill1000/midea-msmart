@@ -4,15 +4,19 @@ on:
   pull_request:
     types: [closed]
 
+env:
+  IMAGE_NAME: mill1000/msmart-ng
+
 jobs:
   prune-images:
+    # if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       packages: write
     steps:
-      - uses: bots-house/ghcr-delete-image-action@v1.1.0
+      - uses: vlaurin/action-ghcr-prune@v0.5.0
         with:
-          owner: ${{ github.repository_owner }}
-          name: ${{ github.event.repository.name }}
+          container: ${{ IMAGE_NAME }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: pr-${{github.event.pull_request.number}}
+          dry-run: true
+          prune-tag-regexes: ^pr-${{github.event.pull_request.number}}
