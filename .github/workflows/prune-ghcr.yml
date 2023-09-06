@@ -27,7 +27,7 @@ jobs:
           prune-tags-regexes: ^pr-${{github.event.pull_request.number}}
 
   prune-old-images:
-    if: github.event_name != "pull_request"
+    # if: github.event_name != "pull_request"
     runs-on: ubuntu-latest
     permissions:
       packages: write
