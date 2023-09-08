@@ -20,14 +20,13 @@ class TestDeviceEnums(unittest.TestCase):
             e_from_value = enum_cls.get_from_value(enum.value)
             self.assertEqual(e_from_value, enum)
             self.assertIsInstance(e_from_value, enum_cls)
-        
-        
+
     def test_fan_speed(self) -> None:
         """Test FanSpeed enum conversion from value/name."""
 
         # Test enum members
         self._test_enum_members(AC.FanSpeed)
-            
+
         # Test fall back behavior to "AUTO"
         enum = AC.FanSpeed.get_from_name("THIS_IS_FAKE")
         self.assertEqual(enum, AC.FanSpeed.AUTO)
@@ -38,13 +37,12 @@ class TestDeviceEnums(unittest.TestCase):
         self.assertEqual(enum, AC.FanSpeed.AUTO)
         self.assertIsInstance(enum, AC.FanSpeed)
 
-
     def test_operational_mode(self) -> None:
         """Test OperationalMode enum conversion from value/name."""
 
         # Test enum members
         self._test_enum_members(AC.OperationalMode)
-            
+
         # Test fall back behavior to "FAN_ONLY"
         enum = AC.OperationalMode.get_from_name("SOME_BOGUS_NAME")
         self.assertEqual(enum, AC.OperationalMode.FAN_ONLY)
@@ -60,7 +58,7 @@ class TestDeviceEnums(unittest.TestCase):
 
         # Test enum members
         self._test_enum_members(AC.SwingMode)
-            
+
         # Test fall back behavior to "OFF"
         enum = AC.SwingMode.get_from_name("NOT_A_SWING_MODE")
         self.assertEqual(enum, AC.SwingMode.OFF)
@@ -70,7 +68,7 @@ class TestDeviceEnums(unittest.TestCase):
         enum = AC.SwingMode.get_from_value(1234567)
         self.assertEqual(enum, AC.SwingMode.OFF)
         self.assertIsInstance(enum, AC.SwingMode)
-        
+
 
 if __name__ == "__main__":
     unittest.main()
