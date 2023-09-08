@@ -28,7 +28,7 @@ class IntEnumHelper(IntEnum):
             return cls(cast(int, value))
         except ValueError:
             _LOGGER.debug("Unknown %s: %d", cls, value)
-            return default
+            return cls(default)
 
     @classmethod
     def get_from_name(cls, name: str, default: IntEnumHelper) -> IntEnumHelper:
@@ -36,7 +36,7 @@ class IntEnumHelper(IntEnum):
             return cls[name]
         except KeyError:
             _LOGGER.debug("Unknown %s: %d", cls, name)
-            return default
+            return cls(default)
 
 
 class AirConditioner(Device):
