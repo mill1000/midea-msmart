@@ -128,26 +128,92 @@ class AirConditioner(Device):
         self._indoor_temperature = None
         self._outdoor_temperature = None
 
-    async def get_capabilities(self) -> None:
-        cmd = GetCapabilitiesCommand()
-        await self.send_command(cmd)
+    def _update_state(self, res: StateResponse) -> None:
+        self._power_state = res.power_on
 
-    async def toggle_display(self) -> None:
-        if not self._supports_display_control:
-            _LOGGER.warning("Device is not capable of display control.")
+        self._target_temperature = res.target_temperature
+        self._operational_mode = AirConditioner.OperationalMode.get_from_value(
+            res.operational_mode)
 
-        cmd = ToggleDisplayCommand()
-        await self.send_command(cmd, True)
+        self._fan_speed = AirConditioner.FanSpeed.get_from_value(
+            res.fan_speed)
 
-        # Force a refresh to get the updated display state
-        await self.refresh()
+        self._swing_mode = AirConditioner.SwingMode.get_from_value(
+            res.swing_mode)
 
-    async def refresh(self):
-        cmd = GetStateCommand()
-        await self.send_command(cmd)
+        self._eco_mode = res.eco_mode
+        self._turbo_mode = res.turbo_mode
+        self._freeze_protection_mode = res.freeze_protection_mode
+        self._sleep_mode = res.sleep_mode
 
-    async def send_command(self, command, ignore_response=False) -> None:
-        responses = await super().send_command(command)
+        self._indoor_temperature = res.indoor_temperature
+        self._outdoor_temperature = res.outdoor_temperature
+
+        self._display_on = res.display_on
+        self._fahrenheit_unit = res.fahrenheit
+
+        self._filter_alert = res.filter_alert
+
+        # self._on_timer = res.on_timer
+        # self._off_timer = res.off_timer
+
+    def _update_capabilities(self, res: CapabilitiesResponse) -> None:
+        # Build list of supported operation modes
+        op_modes = [AirConditioner.OperationalMode.FAN_ONLY]
+        if res.dry_mode:
+            op_modes.append(AirConditioner.OperationalMode.DRY)
+        if res.cool_mode:
+            op_modes.append(AirConditioner.OperationalMode.COOL)
+        if res.heat_mode:
+            op_modes.append(AirConditioner.OperationalMode.HEAT)
+        if res.auto_mode:
+            op_modes.append(AirConditioner.OperationalMode.AUTO)
+
+        self._supported_op_modes = op_modes
+
+        # Build list of supported swing modes
+        swing_modes = [AirConditioner.SwingMode.OFF]
+        if res.swing_horizontal:
+            swing_modes.append(AirConditioner.SwingMode.HORIZONTAL)
+        if res.swing_vertical:
+            swing_modes.append(AirConditioner.SwingMode.VERTICAL)
+        if res.swing_both:
+            swing_modes.append(AirConditioner.SwingMode.BOTH)
+
+        self._supported_swing_modes = swing_modes
+
+        self._supports_eco_mode = res.eco_mode
+        self._supports_turbo_mode = res.turbo_mode
+        self._supports_freeze_protection_mode = res.freeze_protection_mode
+
+        self._supports_display_control = res.display_control
+
+        self._min_target_temperature = res.min_temperature
+        self._max_target_temperature = res.max_temperature
+
+    def _process_response(self, data) -> None:
+        # Construct response from data
+        try:
+            response = base_response.construct(data)
+        except InvalidResponseException as e:
+            _LOGGER.error(e)
+            return
+
+        # Device is supported if we can process a response
+        self._supported = True
+
+        if response.id == ResponseId.STATE:
+            response = cast(StateResponse, response)
+            self._update_state(response)
+        elif response.id == ResponseId.CAPABILITIES:
+            response = cast(CapabilitiesResponse, response)
+            self._update_capabilities(response)
+        else:
+            _LOGGER.debug("Ignored unknown response from %s:%d: %s",
+                          self.ip, self.port, response.payload.hex())
+
+    async def _send_command(self, command, ignore_response=False) -> None:
+        responses = await super()._send_command(command)
 
         # Ignore responses if requested
         if ignore_response:
@@ -165,28 +231,25 @@ class AirConditioner(Device):
         self._online = True
 
         for response in responses:
-            self.process_response(response)
+            self._process_response(response)
 
-    def process_response(self, data) -> None:
-        # Construct response from data
-        try:
-            response = base_response.construct(data)
-        except InvalidResponseException as e:
-            _LOGGER.error(e)
-            return
+    async def get_capabilities(self) -> None:
+        cmd = GetCapabilitiesCommand()
+        await self._send_command(cmd)
 
-        # Device is supported if we can process a response
-        self._supported = True
+    async def toggle_display(self) -> None:
+        if not self._supports_display_control:
+            _LOGGER.warning("Device is not capable of display control.")
 
-        if response.id == ResponseId.STATE:
-            response = cast(StateResponse, response)
-            self.update(response)
-        elif response.id == ResponseId.CAPABILITIES:
-            response = cast(CapabilitiesResponse, response)
-            self.update_capabilities(response)
-        else:
-            _LOGGER.debug("Ignored unknown response from %s:%d: %s",
-                          self.ip, self.port, response.payload.hex())
+        cmd = ToggleDisplayCommand()
+        await self._send_command(cmd, True)
+
+        # Force a refresh to get the updated display state
+        await self.refresh()
+
+    async def refresh(self):
+        cmd = GetStateCommand()
+        await self._send_command(cmd)
 
     async def apply(self) -> None:
         self._updating = True
@@ -227,73 +290,10 @@ class AirConditioner(Device):
             cmd.sleep_mode = or_default(self._sleep_mode, False)
             cmd.fahrenheit = or_default(self._fahrenheit_unit, False)
 
-            await self.send_command(cmd, self._defer_update)
+            await self._send_command(cmd, self._defer_update)
         finally:
             self._updating = False
             self._defer_update = False
-
-    def update(self, res: StateResponse) -> None:
-        self._power_state = res.power_on
-
-        self._target_temperature = res.target_temperature
-        self._operational_mode = AirConditioner.OperationalMode.get_from_value(
-            res.operational_mode)
-
-        self._fan_speed = AirConditioner.FanSpeed.get_from_value(
-            res.fan_speed)
-
-        self._swing_mode = AirConditioner.SwingMode.get_from_value(
-            res.swing_mode)
-
-        self._eco_mode = res.eco_mode
-        self._turbo_mode = res.turbo_mode
-        self._freeze_protection_mode = res.freeze_protection_mode
-        self._sleep_mode = res.sleep_mode
-
-        self._indoor_temperature = res.indoor_temperature
-        self._outdoor_temperature = res.outdoor_temperature
-
-        self._display_on = res.display_on
-        self._fahrenheit_unit = res.fahrenheit
-
-        self._filter_alert = res.filter_alert
-
-        # self._on_timer = res.on_timer
-        # self._off_timer = res.off_timer
-
-    def update_capabilities(self, res: CapabilitiesResponse) -> None:
-        # Build list of supported operation modes
-        op_modes = [AirConditioner.OperationalMode.FAN_ONLY]
-        if res.dry_mode:
-            op_modes.append(AirConditioner.OperationalMode.DRY)
-        if res.cool_mode:
-            op_modes.append(AirConditioner.OperationalMode.COOL)
-        if res.heat_mode:
-            op_modes.append(AirConditioner.OperationalMode.HEAT)
-        if res.auto_mode:
-            op_modes.append(AirConditioner.OperationalMode.AUTO)
-
-        self._supported_op_modes = op_modes
-
-        # Build list of supported swing modes
-        swing_modes = [AirConditioner.SwingMode.OFF]
-        if res.swing_horizontal:
-            swing_modes.append(AirConditioner.SwingMode.HORIZONTAL)
-        if res.swing_vertical:
-            swing_modes.append(AirConditioner.SwingMode.VERTICAL)
-        if res.swing_both:
-            swing_modes.append(AirConditioner.SwingMode.BOTH)
-
-        self._supported_swing_modes = swing_modes
-
-        self._supports_eco_mode = res.eco_mode
-        self._supports_turbo_mode = res.turbo_mode
-        self._supports_freeze_protection_mode = res.freeze_protection_mode
-
-        self._supports_display_control = res.display_control
-
-        self._min_target_temperature = res.min_temperature
-        self._max_target_temperature = res.max_temperature
 
     @property
     def beep(self) -> bool:

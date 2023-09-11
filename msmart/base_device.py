@@ -25,24 +25,7 @@ class Device():
         self._supported = False
         self._online = False
 
-    async def refresh(self):
-        raise NotImplementedError()
-
-    async def apply(self):
-        raise NotImplementedError()
-
-    async def authenticate(self, token: Token, key: Key, *, silent=False) -> bool:
-        """Authenticate with a V3 device."""
-        try:
-            await self._lan.authenticate(token, key)
-            return True
-        except (AuthenticationError, TimeoutError) as e:
-            # TODO feels like a hack, should we make caller try/except instead?
-            if not silent:
-                _LOGGER.error("Authentication failed. Error: %s", e)
-            return False
-
-    async def send_command(self, command: Command) -> Optional[List[bytes]]:
+    async def _send_command(self, command: Command) -> Optional[List[bytes]]:
         """Send a command to the device and return any responses."""
 
         data = command.tobytes()
@@ -70,6 +53,23 @@ class Device():
                       self.ip, self.port, response_time)
 
         return responses
+
+    async def refresh(self) -> None:
+        raise NotImplementedError()
+
+    async def apply(self) -> None:
+        raise NotImplementedError()
+
+    async def authenticate(self, token: Token, key: Key, *, silent=False) -> bool:
+        """Authenticate with a V3 device."""
+        try:
+            await self._lan.authenticate(token, key)
+            return True
+        except (AuthenticationError, TimeoutError) as e:
+            # TODO feels like a hack, should we make caller try/except instead?
+            if not silent:
+                _LOGGER.error("Authentication failed. Error: %s", e)
+            return False
 
     @property
     def ip(self) -> str:
