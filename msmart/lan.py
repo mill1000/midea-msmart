@@ -2,7 +2,7 @@
 import asyncio
 import logging
 import struct
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import IntEnum
 from hashlib import md5, sha256
 from typing import List, Optional, Tuple, Union, cast
@@ -166,8 +166,12 @@ class _LanProtocolV3(_LanProtocol):
         self._local_key = None
 
     @property
-    def authenticated(self) -> bool:
-        return self._local_key is not None
+    def local_key(self) -> Optional[bytes]:
+        return self._local_key
+
+    @local_key.setter
+    def local_key(self, key: bytes) -> None:
+        self._local_key = key
 
     def data_received(self, data: bytes) -> None:
         """Handle data received events."""
@@ -335,7 +339,7 @@ class _LanProtocolV3(_LanProtocol):
         """Send a packet of the specified type to the peer."""
 
         # Raise an error if attempting to send an encrypted request without authenticating
-        if packet_type == self.PacketType.ENCRYPTED_REQUEST and not self.authenticated:
+        if packet_type == self.PacketType.ENCRYPTED_REQUEST and self._local_key is None:
             raise ProtocolError("Protocol has not been authenticated.")
 
         # Encode the data according to the supplied type
@@ -373,7 +377,7 @@ class _LanProtocolV3(_LanProtocol):
         # Construct the local key
         return strxor(decrypted_payload, key)
 
-    async def authenticate(self, token: Optional[bytes], key: Optional[bytes]) -> None:
+    async def authenticate(self, token: Optional[bytes], key: Optional[bytes]) -> bytes:
 
         # Raise an exception if trying to auth without any token or key
         if not token or not key:
@@ -388,10 +392,10 @@ class _LanProtocolV3(_LanProtocol):
 
         # Generate local key from cloud key
         with memoryview(response) as response_mv:
-            self._local_key = self._get_local_key(key, response_mv)
+            key = self._get_local_key(key, response_mv)
 
-        _LOGGER.info("Authentication successful. Local key: %s",
-                     self._local_key.hex())
+        _LOGGER.info("Authentication successful. Local key: %s", key.hex())
+        return key
 
 
 class LAN:
@@ -406,6 +410,8 @@ class LAN:
         self._key = None
         self._protocol_version = 2
         self._protocol = None
+        self._auth_local_key = None
+        self._auth_expiration = None
 
     @property
     def token(self) -> Optional[bytes]:
@@ -445,6 +451,10 @@ class LAN:
             self._protocol.disconnect()
             self._protocol = None
 
+        # Clear auth info to force reauth
+        self._auth_local_key = None
+        self._auth_expiration = None
+
     async def authenticate(self, token: Token = None, key: Key = None, retries: int = RETRIES) -> None:
         """Authenticate against a V3 device. Use cached token and key unless provided a new token and key."""
 
@@ -475,7 +485,8 @@ class LAN:
         # Attempt to authenticate
         while retries > 0:
             try:
-                await self._protocol.authenticate(token, key)
+                self._auth_local_key = await self._protocol.authenticate(token, key)
+                self._auth_expiration = datetime.utcnow() + timedelta(hours=12)
                 break
             except (TimeoutError, asyncio.TimeoutError) as e:
                 if retries > 1:
@@ -521,8 +532,17 @@ class LAN:
         assert self._protocol is not None
 
         # Authenticate as needed
-        if isinstance(self._protocol, _LanProtocolV3) and not self._protocol.authenticated:
-            await self.authenticate()
+        if isinstance(self._protocol, _LanProtocolV3):
+            # Authorize if key is invalid or expired
+            if (self._auth_local_key is None or self._auth_expiration is None
+                    or datetime.utcnow() > self._auth_expiration):
+                await self.authenticate()
+
+            # A local auth key should exist now
+            assert self._auth_local_key is not None
+
+           # Set key in protocol
+            self._protocol.local_key = self._auth_local_key
 
         # Encode frame to packet
         packet = _Packet.encode(self._device_id, data)
