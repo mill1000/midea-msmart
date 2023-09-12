@@ -302,8 +302,9 @@ class _LanProtocolV3(_LanProtocol):
     def _encode_encrypted_request(self, packet_id: int, data: bytes) -> bytes:
         """Encode an encrypted request packet."""
 
-        # We should always have a key before sending data
-        assert self._local_key is not None
+        # Raise an error if attempting to send an encrypted request without authenticating
+        if self._local_key is None:
+            raise ProtocolError("Protocol has not been authenticated.")
 
         # Compute required padding for 16 byte alignment
         # Include 2 bytes for packet ID in total length
@@ -337,10 +338,6 @@ class _LanProtocolV3(_LanProtocol):
 
     def write(self, data: bytes, *, packet_type=PacketType.ENCRYPTED_REQUEST) -> None:
         """Send a packet of the specified type to the peer."""
-
-        # Raise an error if attempting to send an encrypted request without authenticating
-        if packet_type == self.PacketType.ENCRYPTED_REQUEST and self._local_key is None:
-            raise ProtocolError("Protocol has not been authenticated.")
 
         # Encode the data according to the supplied type
         if packet_type == self.PacketType.ENCRYPTED_REQUEST:
