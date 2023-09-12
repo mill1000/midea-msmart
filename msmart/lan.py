@@ -5,7 +5,7 @@ import struct
 from datetime import datetime, timedelta
 from enum import IntEnum
 from hashlib import md5, sha256
-from typing import List, Optional, Tuple, Union, cast
+from typing import AsyncGenerator, List, Optional, Tuple, Union, cast
 
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
@@ -517,6 +517,15 @@ class LAN:
 
         return response
 
+    async def _read_available(self) -> AsyncGenerator[bytes, None]:
+        """Async generator to read responses from the queue without blocking."""
+        # Attempt to read any additional responses without blocking
+        try:
+            while True:
+                yield await self._read(timeout=0)
+        except asyncio.QueueEmpty:
+            pass
+
     async def send(self, data: bytes, retries: int = RETRIES) -> List[bytes]:
         """Send data via the LAN protocol. Connecting to the peer if necessary."""
 
@@ -545,6 +554,12 @@ class LAN:
         packet = _Packet.encode(self._device_id, data)
 
         responses = []
+
+        # Read any responses that may have been received sporadically
+        async for resp in self._read_available():
+            responses.append(resp)
+
+        # Send the request and wait for a response
         while retries > 0:
             # Send the request
             _LOGGER.debug("Sending packet to %s: %s",
@@ -568,12 +583,9 @@ class LAN:
                 self._disconnect()
                 raise e
 
-        # Attempt to read any additional responses without blocking
-        while True:
-            try:
-                responses.append(await self._read(timeout=0))
-            except asyncio.QueueEmpty:
-                break
+        # Read any additional responses without blocking
+        async for resp in self._read_available():
+            responses.append(resp)
 
         return responses
 
