@@ -127,6 +127,15 @@ class _LanProtocol(asyncio.Protocol):
         # Fetch a packet from the queue
         return await self._read_queue(timeout=timeout)
 
+    def _flush(self) -> None:
+        """Flush all data from the receive queue."""
+
+        try:
+            while True:
+                self._queue.get_nowait()
+        except asyncio.QueueEmpty:
+            pass
+
 
 class _LanProtocolV3(_LanProtocol):
     """Midea LAN protocol V3."""
@@ -379,6 +388,9 @@ class _LanProtocolV3(_LanProtocol):
         # Raise an exception if trying to auth without any token or key
         if not token or not key:
             raise AuthenticationError("Token and key must be supplied.")
+
+        # Flush any existing data from the queue
+        self._flush()
 
         try:
             self.write(token, packet_type=self.PacketType.HANDSHAKE_REQUEST)
