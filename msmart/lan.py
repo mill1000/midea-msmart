@@ -409,6 +409,7 @@ class _LanProtocolV3(_LanProtocol):
 
 class LAN:
     RETRIES = 3
+    AUTHENTICATION_EXPIRATION = timedelta(hours=12)
 
     def __init__(self, ip: str, port: int, device_id: int) -> None:
         self._ip = ip
@@ -495,7 +496,7 @@ class LAN:
         while retries > 0:
             try:
                 self._auth_local_key = await self._protocol.authenticate(token, key)
-                self._auth_expiration = datetime.utcnow() + timedelta(hours=12)
+                self._auth_expiration = datetime.utcnow() + self.AUTHENTICATION_EXPIRATION
                 break
             except (TimeoutError, asyncio.TimeoutError) as e:
                 if retries > 1:
