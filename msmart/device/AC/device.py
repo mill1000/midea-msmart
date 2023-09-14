@@ -242,6 +242,7 @@ class AirConditioner(Device):
             _LOGGER.warning("Device is not capable of display control.")
 
         cmd = ToggleDisplayCommand()
+        cmd.beep_on = self._beep_on
         await self._send_command(cmd, True)
 
         # Force a refresh to get the updated display state

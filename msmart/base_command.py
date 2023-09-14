@@ -8,6 +8,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Command(ABC):
+    CONTROL_SOURCE = 0x1  # App control
+
     _message_id = 0
 
     def __init__(self, device_type: DeviceType, frame_type: FrameType) -> None:

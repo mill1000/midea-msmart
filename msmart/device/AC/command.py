@@ -111,7 +111,7 @@ class SetStateCommand(Command):
     @property
     def payload(self) -> bytes:
         # Build beep and power status bytes
-        beep = 0x42 if self.beep_on else 0
+        beep = 0x40 if self.beep_on else 0
         power = 0x1 if self.power_on else 0
 
         # Build target temp and mode byte
@@ -140,7 +140,7 @@ class SetStateCommand(Command):
             # Set state
             0x40,
             # Beep and power state
-            beep | power,
+            self.CONTROL_SOURCE | beep | power,
             # Temperature and operational mode
             temperature | mode,
             # Fan speed
@@ -171,14 +171,20 @@ class ToggleDisplayCommand(Command):
         # For whatever reason, toggle display uses a request type...
         super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.REQUEST)
 
+        self.beep_on = True
+
     @property
     def payload(self) -> bytes:
-        # Payload taken directly from dudanov/MideaUART
+        # Set beep bit
+        beep = 0x40 if self.beep_on else 0
+
         return bytes([
             # Get state
             0x41,
+            # Beep and other flags
+            self.CONTROL_SOURCE | beep,
             # Unknown
-            0x61, 0x00, 0xFF, 0x02,
+            0x00, 0xFF, 0x02,
             0x00, 0x02, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00,
