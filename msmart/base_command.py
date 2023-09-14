@@ -8,7 +8,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Command(ABC):
-    CONTROL_SOURCE = 0x1  # App control
+    CONTROL_SOURCE = 0x2  # App control
 
     _message_id = 0
 
