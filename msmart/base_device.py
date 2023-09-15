@@ -71,6 +71,10 @@ class Device():
                 _LOGGER.error("Authentication failed. Error: %s", e)
             return False
 
+    def set_max_connection_lifetime(self, seconds: Optional[int]) -> None:
+        """Set the maximum connection lifetime of the LAN protocol."""
+        self._lan.max_connection_lifetime = seconds
+
     @property
     def ip(self) -> str:
         return self._ip
