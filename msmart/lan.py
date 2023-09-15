@@ -179,10 +179,14 @@ class _LanProtocolV3(_LanProtocol):
 
     @property
     def authenticated(self) -> bool:
-        if self._protocol.local_key is None or self._protocol.local_key_expiration is None:
+        if self._local_key is None or self._local_key_expiration is None:
             return False
 
-        return datetime.utcnow() < self._protocol.local_key_expiration
+        if datetime.utcnow() > self._local_key_expiration:
+            _LOGGER.debug("Authentication with %s has expired.", self.peer)
+            return False
+
+        return True
 
     def data_received(self, data: bytes) -> None:
         """Handle data received events."""
@@ -441,8 +445,9 @@ class LAN:
             return False
 
         # Use connection expiration if set
-        if self._connection_expiration:
-            return datetime.utcnow() < self._connection_expiration
+        if self._connection_expiration and datetime.utcnow() > self._connection_expiration:
+            _LOGGER.debug("Connection to %s has expired.", self._protocol.peer)
+            return False
 
         return True
 
