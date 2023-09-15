@@ -424,6 +424,7 @@ class LAN:
         self._key = None
         self._protocol_version = 2
         self._protocol = None
+        self._connection_expiration = None
 
     @property
     def token(self) -> Optional[bytes]:
@@ -435,17 +436,21 @@ class LAN:
 
     @property
     def _alive(self) -> bool:
-        if self._protocol is None:
+        # Check if protocol exists, and if it's alive
+        if self._protocol is None or not self._protocol.alive:
             return False
 
-        return self._protocol.alive
+        # Use connection expiration if set
+        if self._connection_expiration:
+            return datetime.utcnow() < self._connection_expiration
+
+        return True
 
     async def _connect(self) -> None:
         _LOGGER.info("Creating new connection to %s:%d.", self._ip, self._port)
 
         protocol_class = _LanProtocolV3 if self._protocol_version == 3 else _LanProtocol
 
-        # TODO throws OSError and ???
         loop = asyncio.get_event_loop()
         task = loop.create_connection(
             lambda: protocol_class(), self._ip, self._port)  # pylint: disable=unnecessary-lambda
@@ -457,6 +462,8 @@ class LAN:
             raise ProtocolError("Connect failed.") from e
 
         self._protocol = protocol
+
+        self._connection_expiration = datetime.utcnow() + timedelta(seconds=90)
 
     def _disconnect(self) -> None:
         if self._protocol:
