@@ -428,7 +428,9 @@ class LAN:
         self._key = None
         self._protocol_version = 2
         self._protocol = None
+
         self._connection_expiration = None
+        self._max_connection_lifetime = None
 
     @property
     def token(self) -> Optional[bytes]:
@@ -437,6 +439,20 @@ class LAN:
     @property
     def key(self) -> Optional[bytes]:
         return self._key
+
+    @property
+    def max_connection_lifetime(self) -> Optional[int]:
+        """Get the maximum connection lifetime in seconds."""
+        if self._max_connection_lifetime is None:
+            return None
+
+        return self._max_connection_lifetime.total_seconds()
+
+    @max_connection_lifetime.setter
+    def max_connection_lifetime(self, seconds: Optional[int]) -> None:
+        """Set the maximum connection lifetime in seconds."""
+        self._max_connection_lifetime = None if seconds is None else timedelta(
+            seconds=seconds)
 
     @property
     def _alive(self) -> bool:
@@ -468,7 +484,8 @@ class LAN:
 
         self._protocol = protocol
 
-        self._connection_expiration = datetime.utcnow() + timedelta(seconds=90)
+        if self._max_connection_lifetime:
+            self._connection_expiration = datetime.utcnow() + self._max_connection_lifetime
 
     def _disconnect(self) -> None:
         if self._protocol:
