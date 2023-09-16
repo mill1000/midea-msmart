@@ -446,7 +446,7 @@ class LAN:
         if self._max_connection_lifetime is None:
             return None
 
-        return self._max_connection_lifetime.total_seconds()
+        return int(self._max_connection_lifetime.total_seconds())
 
     @max_connection_lifetime.setter
     def max_connection_lifetime(self, seconds: Optional[int]) -> None:
