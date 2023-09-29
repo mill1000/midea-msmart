@@ -394,9 +394,14 @@ class AirConditioner(Device):
         return self._fan_speed
 
     @fan_speed.setter
-    def fan_speed(self, speed: FanSpeed | int) -> None:
+    def fan_speed(self, speed: FanSpeed | int | float) -> None:
         if self._updating:
             self._defer_update = True
+
+        # Convert float as needed
+        if isinstance(speed, float):
+            speed = int(speed)
+
         self._fan_speed = speed
 
     @property
