@@ -93,7 +93,6 @@ class AirConditioner(Device):
                          device_type=DeviceType.AIR_CONDITIONER, **kwargs)
 
         self._updating = False
-        self._keep_last_known_online_state = False
         self._defer_update = False
 
         self._beep_on = False
@@ -249,10 +248,7 @@ class AirConditioner(Device):
 
         # No response from device
         if responses is None:
-            # Set device offline unless keeping last known state
-            if not self._keep_last_known_online_state:
-                self._online = False
-
+            self._online = False
             return
 
         # Device is online if we received any response
