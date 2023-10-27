@@ -210,6 +210,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
     def test_capabilities(self) -> None:
         """Test that we decode capabilities responses as expected."""
         # https://github.com/mill1000/midea-ac-py/issues/13#issuecomment-1657485359
+        # Identical payload received in https://github.com/mill1000/midea-msmart/issues/88#issuecomment-1781972832
 
         TEST_CAPABILITIES_RESPONSE = bytes.fromhex(
             "aa29ac00000000000303b5071202010113020101140201011502010116020101170201001a020101dedb")
@@ -233,8 +234,8 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "swing_horizontal": True, "swing_vertical": True, "swing_both": True,
             "dry_mode": True, "heat_mode": True, "cool_mode": True, "auto_mode": True,
             "eco_mode": True, "turbo_mode": True, "freeze_protection_mode": True,
-            "fan_custom": False, "fan_silent": False, "fan_low": False,
-            "fan_medium": False,  "fan_high": False, "fan_auto": False,
+            "fan_custom": False, "fan_silent": False, "fan_low": True,
+            "fan_medium": True,  "fan_high": True, "fan_auto": True,
             "min_temperature": 16, "max_temperature": 30,
             "display_control": False, "filter_reminder": False
         }

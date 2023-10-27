@@ -428,32 +428,36 @@ class CapabilitiesResponse(Response):
             # Advanced to next capability
             caps = caps[3+size:]
 
+    def _get_fan_speed(self, speed) -> bool:
+        # If any fan_ capability was received, check against them
+        if any(k.startswith("fan_") for k in self._capabilities):
+            # Assume that a fan capable of custom speeds is capable of any speed
+            return self._capabilities.get(f"fan_{speed}", False) or self._capabilities.get("fan_custom", False)
+
+        # Otherwise return a default set for devices that don't send the capability
+        return speed in ["low", "medium", "high", "auto"]
+
     # TODO rethink these properties for fan speed, operation mode and swing mode
     # Surely there's a better way than define props for each possible cap
     @property
     def fan_silent(self) -> bool:
-        # Assume that a fan capable of custom speeds is capable of any speed
-        return self._capabilities.get("fan_silent", False) or self._capabilities.get("fan_custom", False)
+        return self._get_fan_speed("silent")
 
     @property
     def fan_low(self) -> bool:
-        # Assume that a fan capable of custom speeds is capable of any speed
-        return self._capabilities.get("fan_low", False) or self._capabilities.get("fan_custom", False)
+        return self._get_fan_speed("low")
 
     @property
     def fan_medium(self) -> bool:
-        # Assume that a fan capable of custom speeds is capable of any speed
-        return self._capabilities.get("fan_medium", False) or self._capabilities.get("fan_custom", False)
+        return self._get_fan_speed("medium")
 
     @property
     def fan_high(self) -> bool:
-        # Assume that a fan capable of custom speeds is capable of any speed
-        return self._capabilities.get("fan_high", False) or self._capabilities.get("fan_custom", False)
+        return self._get_fan_speed("high")
 
     @property
     def fan_auto(self) -> bool:
-        # Assume that a fan capable of custom speeds is capable of any speed
-        return self._capabilities.get("fan_auto", False) or self._capabilities.get("fan_custom", False)
+        return self._get_fan_speed("auto")
 
     @property
     def fan_custom(self) -> bool:
