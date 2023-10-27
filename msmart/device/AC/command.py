@@ -618,6 +618,13 @@ class StateResponse(Response):
 
         self.display_on = (payload[14] != 0x70)
 
+        # Decode additional temperature resolution
+        if self.indoor_temperature:
+            self.indoor_temperature += (payload[15] & 0xF) / 10
+
+        if self.outdoor_temperature:
+            self.outdoor_temperature += (payload[15] >> 4) / 10
+
         # TODO dudanov/MideaUART humidity set point in byte 19, mask 0x7F
 
         # TODO Some payloads are shorter than expected. Unsure what, when or why
