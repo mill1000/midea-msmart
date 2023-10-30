@@ -331,7 +331,7 @@ class Discover:
 
                 if ip_address != ip:
                     _LOGGER.warning(
-                        "Reported device IP %s does not match received IP %s.", ip_address, ip)
+                        "Reported device IP %s does not match received IP %s. Using received IP.", ip_address, ip)
 
                 # Extract serial number
                 sn = decrypted_mv[8:40].tobytes().decode()
@@ -343,7 +343,7 @@ class Discover:
                 device_type = int(name.split("_")[1], 16)
 
             # Return dictionary of device info
-            return {"ip": ip_address, "port": port, "device_id": device_id, "name": name, "sn": sn, "device_type": device_type, "version": version}
+            return {"ip": ip, "port": port, "device_id": device_id, "name": name, "sn": sn, "device_type": device_type, "version": version}
 
     @classmethod
     def _get_device_class(cls, device_type: int) -> Type[Device]:
