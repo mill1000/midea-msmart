@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import logging
 from enum import IntEnum
-from typing import Any, List, Optional, cast
+from typing import Any, Callable, List, Optional, Self, cast
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
 
 from .command import (CapabilitiesResponse, GetCapabilitiesCommand,
-                      GetStateCommand, InvalidResponseException)
-from .command import Response as base_response
-from .command import (ResponseId, SetStateCommand, StateResponse,
+                      GetStateCommand, InvalidResponseException, Response,
+                      ResponseId, SetStateCommand, StateResponse,
                       ToggleDisplayCommand)
 
 _LOGGER = logging.getLogger(__name__)
@@ -218,17 +217,7 @@ class AirConditioner(Device):
         self._min_target_temperature = res.min_temperature
         self._max_target_temperature = res.max_temperature
 
-    def _process_response(self, data) -> None:
-        # Construct response from data
-        try:
-            response = base_response.construct(data)
-        except InvalidResponseException as e:
-            _LOGGER.error(e)
-            return
-
-        # Device is supported if we can process a response
-        self._supported = True
-
+    def _process_response(self, response: Response) -> None:
         if response.id == ResponseId.STATE:
             response = cast(StateResponse, response)
             self._update_state(response)
@@ -239,11 +228,15 @@ class AirConditioner(Device):
             _LOGGER.debug("Ignored unknown response from %s:%d: %s",
                           self.ip, self.port, response.payload.hex())
 
-    async def _send_command(self, command, ignore_response=False) -> None:
+    async def _send_command(self,
+                            command,
+                            callback: None | Callable[[
+                                Self, Response], None] = _process_response
+                            ) -> None:
         responses = await super()._send_command(command)
 
-        # Ignore responses if requested
-        if ignore_response:
+        # Ignore responses if no callback defined
+        if callback is None:
             return
 
         # No response from device
@@ -254,8 +247,19 @@ class AirConditioner(Device):
         # Device is online if we received any response
         self._online = True
 
-        for response in responses:
-            self._process_response(response)
+        for data in responses:
+            # Construct response from data
+            try:
+                response = Response.construct(data)
+            except InvalidResponseException as e:
+                _LOGGER.error(e)
+                continue
+
+            # Device is supported if we can process a response
+            self._supported = True
+
+            # Call the callback with the response
+            callback(self, response)
 
     async def get_capabilities(self) -> None:
         cmd = GetCapabilitiesCommand()
@@ -267,7 +271,7 @@ class AirConditioner(Device):
 
         cmd = ToggleDisplayCommand()
         cmd.beep_on = self._beep_on
-        await self._send_command(cmd, True)
+        await self._send_command(cmd, None)
 
         # Force a refresh to get the updated display state
         await self.refresh()
