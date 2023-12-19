@@ -92,9 +92,6 @@ class AirConditioner(Device):
         super().__init__(ip=ip, port=port, device_id=device_id,
                          device_type=DeviceType.AIR_CONDITIONER, **kwargs)
 
-        self._updating = False
-        self._defer_update = False
-
         self._beep_on = False
         self._power_state = False
         self._target_temperature = 17.0
@@ -280,54 +277,49 @@ class AirConditioner(Device):
         await self._send_command(cmd)
 
     async def apply(self) -> None:
-        self._updating = True
-        try:
-            # Warn if trying to apply unsupported modes
-            if self._operational_mode not in self._supported_op_modes:
-                _LOGGER.warning(
-                    "Device is not capable of operational mode %s.", self._operational_mode)
+        # Warn if trying to apply unsupported modes
+        if self._operational_mode not in self._supported_op_modes:
+            _LOGGER.warning(
+                "Device is not capable of operational mode %s.", self._operational_mode)
 
-            if (self._fan_speed not in self._supported_fan_speeds
-                    and not self._supports_custom_fan_speed):
-                _LOGGER.warning(
-                    "Device is not capable of fan speed %s.", self._fan_speed)
+        if (self._fan_speed not in self._supported_fan_speeds
+                and not self._supports_custom_fan_speed):
+            _LOGGER.warning(
+                "Device is not capable of fan speed %s.", self._fan_speed)
 
-            if self._swing_mode not in self._supported_swing_modes:
-                _LOGGER.warning(
-                    "Device is not capable of swing mode %s.", self._swing_mode)
+        if self._swing_mode not in self._supported_swing_modes:
+            _LOGGER.warning(
+                "Device is not capable of swing mode %s.", self._swing_mode)
 
-            if self._turbo_mode and not self._supports_turbo_mode:
-                _LOGGER.warning("Device is not capable of turbo mode.")
+        if self._turbo_mode and not self._supports_turbo_mode:
+            _LOGGER.warning("Device is not capable of turbo mode.")
 
-            if self._eco_mode and not self._supports_eco_mode:
-                _LOGGER.warning("Device is not capable of eco mode.")
+        if self._eco_mode and not self._supports_eco_mode:
+            _LOGGER.warning("Device is not capable of eco mode.")
 
-            if self._freeze_protection_mode and not self._supports_freeze_protection_mode:
-                _LOGGER.warning("Device is not capable of freeze protection.")
+        if self._freeze_protection_mode and not self._supports_freeze_protection_mode:
+            _LOGGER.warning("Device is not capable of freeze protection.")
 
-            # Define function to return value or a default if value is None
-            def or_default(v, d) -> Any: return v if v is not None else d
+        # Define function to return value or a default if value is None
+        def or_default(v, d) -> Any: return v if v is not None else d
 
-            cmd = SetStateCommand()
-            cmd.beep_on = self._beep_on
-            cmd.power_on = or_default(self._power_state, False)
-            cmd.target_temperature = or_default(
-                self._target_temperature, 25)  # TODO?
-            cmd.operational_mode = self._operational_mode
-            cmd.fan_speed = self._fan_speed
-            cmd.swing_mode = self._swing_mode
-            cmd.eco_mode = or_default(self._eco_mode, False)
-            cmd.turbo_mode = or_default(self._turbo_mode, False)
-            cmd.freeze_protection_mode = or_default(
-                self._freeze_protection_mode, False)
-            cmd.sleep_mode = or_default(self._sleep_mode, False)
-            cmd.fahrenheit = or_default(self._fahrenheit_unit, False)
-            cmd.follow_me = or_default(self._follow_me, False)
+        cmd = SetStateCommand()
+        cmd.beep_on = self._beep_on
+        cmd.power_on = or_default(self._power_state, False)
+        cmd.target_temperature = or_default(
+            self._target_temperature, 25)  # TODO?
+        cmd.operational_mode = self._operational_mode
+        cmd.fan_speed = self._fan_speed
+        cmd.swing_mode = self._swing_mode
+        cmd.eco_mode = or_default(self._eco_mode, False)
+        cmd.turbo_mode = or_default(self._turbo_mode, False)
+        cmd.freeze_protection_mode = or_default(
+            self._freeze_protection_mode, False)
+        cmd.sleep_mode = or_default(self._sleep_mode, False)
+        cmd.fahrenheit = or_default(self._fahrenheit_unit, False)
+        cmd.follow_me = or_default(self._follow_me, False)
 
-            await self._send_command(cmd, self._defer_update)
-        finally:
-            self._updating = False
-            self._defer_update = False
+        await self._send_command(cmd)
 
     @property
     def beep(self) -> bool:
@@ -335,8 +327,6 @@ class AirConditioner(Device):
 
     @beep.setter
     def beep(self, tone: bool) -> None:
-        if self._updating:
-            self._defer_update = True
         self._beep_on = tone
 
     @property
@@ -345,8 +335,6 @@ class AirConditioner(Device):
 
     @power_state.setter
     def power_state(self, state: bool) -> None:
-        if self._updating:
-            self._defer_update = True
         self._power_state = state
 
     @property
@@ -363,8 +351,6 @@ class AirConditioner(Device):
 
     @target_temperature.setter
     def target_temperature(self, temperature_celsius: float) -> None:
-        if self._updating:
-            self._defer_update = True
         self._target_temperature = temperature_celsius
 
     @property
@@ -377,8 +363,6 @@ class AirConditioner(Device):
 
     @operational_mode.setter
     def operational_mode(self, mode: OperationalMode) -> None:
-        if self._updating:
-            self._defer_update = True
         self._operational_mode = mode
 
     @property
@@ -395,9 +379,6 @@ class AirConditioner(Device):
 
     @fan_speed.setter
     def fan_speed(self, speed: FanSpeed | int | float) -> None:
-        if self._updating:
-            self._defer_update = True
-
         # Convert float as needed
         if isinstance(speed, float):
             speed = int(speed)
@@ -414,8 +395,6 @@ class AirConditioner(Device):
 
     @swing_mode.setter
     def swing_mode(self, mode: SwingMode) -> None:
-        if self._updating:
-            self._defer_update = True
         self._swing_mode = mode
 
     @property
@@ -428,8 +407,6 @@ class AirConditioner(Device):
 
     @eco_mode.setter
     def eco_mode(self, enabled: bool) -> None:
-        if self._updating:
-            self._defer_update = True
         self._eco_mode = enabled
 
     @property
@@ -442,8 +419,6 @@ class AirConditioner(Device):
 
     @turbo_mode.setter
     def turbo_mode(self, enabled: bool) -> None:
-        if self._updating:
-            self._defer_update = True
         self._turbo_mode = enabled
 
     @property
@@ -456,8 +431,6 @@ class AirConditioner(Device):
 
     @freeze_protection_mode.setter
     def freeze_protection_mode(self, enabled: bool) -> None:
-        if self._updating:
-            self._defer_update = True
         self._freeze_protection_mode = enabled
 
     @property
@@ -466,8 +439,6 @@ class AirConditioner(Device):
 
     @sleep_mode.setter
     def sleep_mode(self, enabled: bool) -> None:
-        if self._updating:
-            self._defer_update = True
         self._sleep_mode = enabled
 
     @property
@@ -476,8 +447,6 @@ class AirConditioner(Device):
 
     @fahrenheit.setter
     def fahrenheit(self, enabled: bool) -> None:
-        if self._updating:
-            self._defer_update = True
         self._fahrenheit_unit = enabled
 
     @property
@@ -486,8 +455,6 @@ class AirConditioner(Device):
 
     @follow_me.setter
     def follow_me(self, enabled: bool) -> None:
-        if self._updating:
-            self._defer_update = True
         self._follow_me = enabled
 
     @property
