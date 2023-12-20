@@ -75,17 +75,19 @@ class TemperatureType(IntEnum):
 
 
 class GetCapabilitiesCommand(Command):
-    def __init__(self) -> None:
+    def __init__(self, extra=False) -> None:
         super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.REQUEST)
+
+        self._extra = False
 
     @property
     def payload(self) -> bytes:
-        return bytes([
+        if not self._extra:
             # Get capabilities
-            0xB5,
-            # Unknown
-            0x01, 0x11,
-        ])
+            return bytes([0xB5, 0x01, 0x00])
+        else:
+            # Get more capabilities
+            return bytes([0xB5, 0x01, 0x01, 0x1])
 
 
 class GetStateCommand(Command):
@@ -429,6 +431,9 @@ class CapabilitiesResponse(Response):
 
             # Advanced to next capability
             caps = caps[3+size:]
+
+        if len(caps):
+            _LOGGER.warning("Leftovers in caps: %s", caps.hex())
 
     def _get_fan_speed(self, speed) -> bool:
         # If any fan_ capability was received, check against them
