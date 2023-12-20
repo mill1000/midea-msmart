@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from enum import IntEnum
-from typing import Any, Callable, List, Optional, Self, cast
+from typing import Any, AsyncIterator, List, Optional, cast
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
@@ -217,27 +217,16 @@ class AirConditioner(Device):
         self._min_target_temperature = res.min_temperature
         self._max_target_temperature = res.max_temperature
 
-    def _process_response(self, response: Response) -> None:
+    def _process_state_response(self, response: Response) -> None:
         if response.id == ResponseId.STATE:
             response = cast(StateResponse, response)
             self._update_state(response)
-        elif response.id == ResponseId.CAPABILITIES:
-            response = cast(CapabilitiesResponse, response)
-            self._update_capabilities(response)
         else:
             _LOGGER.debug("Ignored unknown response from %s:%d: %s",
                           self.ip, self.port, response.payload.hex())
 
-    async def _send_command(self,
-                            command,
-                            callback: None | Callable[[
-                                Self, Response], None] = _process_response
-                            ) -> None:
+    async def _send_command_get_response(self, command) -> AsyncIterator[Response]:
         responses = await super()._send_command(command)
-
-        # Ignore responses if no callback defined
-        if callback is None:
-            return
 
         # No response from device
         if responses is None:
@@ -258,8 +247,13 @@ class AirConditioner(Device):
             # Device is supported if we can process a response
             self._supported = True
 
-            # Call the callback with the response
-            callback(self, response)
+            # Yield the response
+            yield response
+
+    async def _send_command(self, command) -> None:
+        # Send the command and ignore all responses
+        async for _ in self._send_command_get_response(command):
+            pass
 
     async def get_capabilities(self) -> None:
         cmd = GetCapabilitiesCommand()
@@ -271,14 +265,15 @@ class AirConditioner(Device):
 
         cmd = ToggleDisplayCommand()
         cmd.beep_on = self._beep_on
-        await self._send_command(cmd, None)
+        await self._send_command(cmd)
 
         # Force a refresh to get the updated display state
         await self.refresh()
 
-    async def refresh(self):
+    async def refresh(self) -> None:
         cmd = GetStateCommand()
-        await self._send_command(cmd)
+        async for response in self._send_command_get_response(cmd):
+            self._process_state_response(response)
 
     async def apply(self) -> None:
         # Warn if trying to apply unsupported modes
@@ -323,7 +318,8 @@ class AirConditioner(Device):
         cmd.fahrenheit = or_default(self._fahrenheit_unit, False)
         cmd.follow_me = or_default(self._follow_me, False)
 
-        await self._send_command(cmd)
+        async for response in self._send_command_get_response(cmd):
+            self._process_state_response(response)
 
     @property
     def beep(self) -> bool:
