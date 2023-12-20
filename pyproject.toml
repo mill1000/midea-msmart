@@ -36,6 +36,11 @@ midea-discover = "msmart.cli:_legacy_main"
 msmart-ng = "msmart.cli:main"
 
 [tool.setuptools]
-packages=["msmart"]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["msmart", "msmart.*"]
+exclude = ["msmart.tests"]
 
 [tool.setuptools_scm]
