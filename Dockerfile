@@ -8,8 +8,8 @@ RUN python -m build
 
 # Production step
 # Using base alpine package so we can utilize pycryptodome in package repo
-FROM alpine:latest
-RUN apk add --update python3 py3-pip py3-pycryptodome
+FROM alpine:3.19
+RUN apk add --update python3 pipx py3-pycryptodome
 COPY --from=build /msmart-build/dist/msmart_ng-*.whl /tmp
-RUN pip install /tmp/msmart_ng-*.whl
+RUN PIPX_BIN_DIR=/usr/bin pipx install /tmp/msmart_ng-*.whl
 ENTRYPOINT ["/usr/bin/msmart-ng"]
