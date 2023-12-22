@@ -355,6 +355,7 @@ class CapabilitiesResponse(Response):
                 reader("turbo_heat", lambda v: v == 1 or v == 3),
                 reader("turbo_cool", lambda v: v < 2),
             ],
+            CapabilityId.ANION: reader("anion", get_value(1)),
             CapabilityId.HUMIDITY:
             [
                 reader("humidity_auto_set", lambda v: v == 1 or v == 2),
