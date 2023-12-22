@@ -437,6 +437,12 @@ class CapabilitiesResponse(Response):
         if len(caps) > 1:
             self._additional_capabilities = bool(caps[-2])
 
+    def merge(self, other: CapabilitiesResponse) -> None:
+        # Add other's capabiltiies to ours
+        self._capabilities.update(other._capabilities)
+
+        _LOGGER.debug("Merged capabilities: %s", self._capabilities)
+
     @property
     def additional_capabilities(self) -> bool:
         return self._additional_capabilities
