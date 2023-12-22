@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from enum import IntEnum
-from typing import Any, AsyncIterator, List, Optional, cast
+from typing import Any, List, Optional, cast
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
@@ -227,7 +227,7 @@ class AirConditioner(Device):
             _LOGGER.debug("Ignored unknown response from %s:%d: %s",
                           self.ip, self.port, response.payload.hex())
 
-    async def _send_command_get_responses(self, command) -> AsyncIterator[Response]:
+    async def _send_command_get_responses(self, command) -> List[Response]:
         """Send a command and yield an iterator of valid response."""
 
         responses = await super()._send_command(command)
@@ -235,11 +235,12 @@ class AirConditioner(Device):
         # No response from device
         if responses is None:
             self._online = False
-            return
+            return []
 
         # Device is online if we received any response
         self._online = True
 
+        valid_responses = []
         for data in responses:
             try:
                 # Construct response from data
@@ -251,12 +252,13 @@ class AirConditioner(Device):
             # Device is supported if we can process a response
             self._supported = True
 
-            # Yield the response
-            yield response
+            valid_responses.append(response)
+
+        return valid_responses
 
     async def _send_command_get_reponse_with_id(self, command, response_id: ResponseId) -> Optional[Response]:
         """Send a command and return the first response with a matching ID."""
-        async for response in self._send_command_get_responses(command):
+        for response in await self._send_command_get_responses(command):
             if response.id == response_id:
                 return response
 
@@ -313,7 +315,7 @@ class AirConditioner(Device):
 
         cmd = GetStateCommand()
         # Process any state responses from the device
-        async for response in self._send_command_get_responses(cmd):
+        for response in await self._send_command_get_responses(cmd):
             self._process_state_response(response)
 
     async def apply(self) -> None:
