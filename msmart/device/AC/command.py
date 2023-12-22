@@ -75,14 +75,14 @@ class TemperatureType(IntEnum):
 
 
 class GetCapabilitiesCommand(Command):
-    def __init__(self, extra=False) -> None:
+    def __init__(self, additional: bool = False) -> None:
         super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.REQUEST)
 
-        self._extra = False
+        self._additional = additional
 
     @property
     def payload(self) -> bytes:
-        if not self._extra:
+        if not self._additional:
             # Get capabilities
             return bytes([0xB5, 0x01, 0x00])
         else:
