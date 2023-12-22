@@ -218,6 +218,8 @@ class AirConditioner(Device):
         self._max_target_temperature = res.max_temperature
 
     def _process_state_response(self, response: Response) -> None:
+        """Update the local state from a device state response."""
+
         if response.id == ResponseId.STATE:
             response = cast(StateResponse, response)
             self._update_state(response)
@@ -225,7 +227,9 @@ class AirConditioner(Device):
             _LOGGER.debug("Ignored unknown response from %s:%d: %s",
                           self.ip, self.port, response.payload.hex())
 
-    async def _send_command_get_response(self, command) -> AsyncIterator[Response]:
+    async def _send_command_get_responses(self, command) -> AsyncIterator[Response]:
+        """Send a command and yield an iterator of valid response."""
+
         responses = await super()._send_command(command)
 
         # No response from device
@@ -237,8 +241,8 @@ class AirConditioner(Device):
         self._online = True
 
         for data in responses:
-            # Construct response from data
             try:
+                # Construct response from data
                 response = Response.construct(data)
             except InvalidResponseException as e:
                 _LOGGER.error(e)
@@ -250,32 +254,62 @@ class AirConditioner(Device):
             # Yield the response
             yield response
 
-    async def _send_command(self, command) -> None:
-        # Send the command and ignore all responses
-        async for _ in self._send_command_get_response(command):
-            pass
+    async def _send_command_get_reponse_with_id(self, command, response_id: ResponseId) -> Optional[Response]:
+        """Send a command and return the first response with a matching ID."""
+        async for response in self._send_command_get_responses(command):
+            if response.id == response_id:
+                return response
+
+            _LOGGER.debug("Ignored response with ID %d from %s:%d: %s",
+                          response.id, self.ip, self.port, response.payload.hex())
+
+        return None
 
     async def get_capabilities(self) -> None:
+        """Fetch the device capabilities."""
+
+        # Send capabilitis request and get a response
         cmd = GetCapabilitiesCommand()
-        await self._send_command(cmd)
+        response = await self._send_command_get_reponse_with_id(cmd, ResponseId.CAPABILITIES)
+        response = cast(CapabilitiesResponse, response)
+
+        # Send 2nd capabilties request if needed
+        if response.additional_capabilities:
+            cmd = GetCapabilitiesCommand(True)
+            additional_response = await self._send_command_get_reponse_with_id(cmd, ResponseId.CAPABILITIES)
+            additional_response = cast(
+                CapabilitiesResponse, additional_response)
+
+            # Merge additional capabilities
+            response.merge(additional_response)
+
+        self._update_capabilities(response)
 
     async def toggle_display(self) -> None:
+        """Toggle the device display if the device supports it."""
+
         if not self._supports_display_control:
             _LOGGER.warning("Device is not capable of display control.")
 
         cmd = ToggleDisplayCommand()
         cmd.beep_on = self._beep_on
-        await self._send_command(cmd)
+        # Send the command and ignore all responses
+        await self._send_command_get_responses(cmd)
 
         # Force a refresh to get the updated display state
         await self.refresh()
 
     async def refresh(self) -> None:
+        """Refresh the local copy of the device state by sending a GetState command."""
+
         cmd = GetStateCommand()
-        async for response in self._send_command_get_response(cmd):
+        # Process any state responses from the device
+        async for response in self._send_command_get_responses(cmd):
             self._process_state_response(response)
 
     async def apply(self) -> None:
+        """Apply the local state to the device."""
+
         # Warn if trying to apply unsupported modes
         if self._operational_mode not in self._supported_op_modes:
             _LOGGER.warning(
@@ -318,7 +352,8 @@ class AirConditioner(Device):
         cmd.fahrenheit = or_default(self._fahrenheit_unit, False)
         cmd.follow_me = or_default(self._follow_me, False)
 
-        async for response in self._send_command_get_response(cmd):
+        # Process any state responses from the device
+        async for response in self._send_command_get_responses(cmd):
             self._process_state_response(response)
 
     @property
