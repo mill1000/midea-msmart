@@ -43,7 +43,7 @@ class AirConditioner(Device):
 
     class FanSpeed(IntEnumHelper):
         AUTO = 102
-        HIGH = 100
+        HIGH = 80
         MEDIUM = 60
         LOW = 40
         SILENT = 20
