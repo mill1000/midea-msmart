@@ -364,7 +364,7 @@ class AirConditioner(Device):
         cmd.follow_me = or_default(self._follow_me, False)
 
         # Process any state responses from the device
-        async for response in self._send_command_get_responses(cmd):
+        for response in await self._send_command_get_responses(cmd):
             self._process_state_response(response)
 
     @property
