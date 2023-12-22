@@ -295,7 +295,7 @@ class CapabilitiesResponse(Response):
 
         self._parse_capabilities(payload)
 
-        _LOGGER.debug("Supported capabilities: %s", self._capabilities)
+        _LOGGER.debug("Raw capabilities: %s", self._capabilities)
 
     def _parse_capabilities(self, payload: memoryview) -> None:
         # Clear existing capabilities
@@ -442,7 +442,7 @@ class CapabilitiesResponse(Response):
         # Add other's capabiltiies to ours
         self._capabilities.update(other._capabilities)
 
-        _LOGGER.debug("Merged capabilities: %s", self._capabilities)
+        _LOGGER.debug("Merged raw capabilities: %s", self._capabilities)
 
     @property
     def additional_capabilities(self) -> bool:
