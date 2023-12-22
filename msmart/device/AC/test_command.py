@@ -440,6 +440,95 @@ class TestCapabilitiesResponse(_TestResponseBase):
         # Check if there are additional capabilities
         self.assertEqual(resp.additional_capabilities, True)
 
+    def test_additional_capabilities(self) -> None:
+        self.maxDiff = None
+        """Test that we decode capabilities and additional capabilities responses as expected."""
+        # https://github.com/mill1000/midea-ac-py/issues/60#issuecomment-1867498321
+        TEST_CAPABILITIES_RESPONSE = bytes.fromhex(
+            "aa3dac00000000000303b50a12020101430001011402010115020101160201001a020101100201011f020103250207203c203c203c05400001000100c805")
+        resp = self._test_build_response(TEST_CAPABILITIES_RESPONSE)
+        resp = cast(CapabilitiesResponse, resp)
+
+        EXPECTED_RAW_CAPABILITIES = {
+            "eco_mode": True, "eco_mode_2": False,
+            "breeze_control": True,
+            "heat_mode": True, "cool_mode": True, "dry_mode": True, "auto_mode": True,
+            "swing_horizontal": True, "swing_vertical": True,
+            "power_stats": False, "power_setting": False, "power_bcd": False,
+            "turbo_heat": True, "turbo_cool": True,
+            "fan_silent": False, "fan_low": False, "fan_medium": False, "fan_high": False, "fan_auto": False, "fan_custom": True,
+            "humidity_auto_set": False, "humidity_manual_set": True,
+            "cool_min_temperature": 16.0, "cool_max_temperature": 30.0,
+            "auto_min_temperature": 16.0, "auto_max_temperature": 30.0,
+            "heat_min_temperature": 16.0, "heat_max_temperature": 30.0,
+            "decimals": True
+        }
+        # Ensure raw decoded capabilities match
+        self.assertEqual(resp._capabilities, EXPECTED_RAW_CAPABILITIES)
+
+        # Check if there are additional capabilities
+        self.assertEqual(resp.additional_capabilities, True)
+
+        # Additional capabilities response
+        TEST_ADDITIONAL_CAPABILITIES_RESPONSE = bytes.fromhex(
+            "aa23ac00000000000303b5051e020101130201012202010019020100390001010000febe")
+        additional_resp = self._test_build_response(
+            TEST_ADDITIONAL_CAPABILITIES_RESPONSE)
+        additional_resp = cast(CapabilitiesResponse, additional_resp)
+
+        EXPECTED_ADDITIONAL_RAW_CAPABILITIES = {
+            "freeze_protection": True,
+            "fahrenheit": True,
+            "aux_electric_heat": False,
+            "self_clean": True,
+            "anion": True
+        }
+        # Ensure raw decoded capabilities match
+        self.assertEqual(additional_resp._capabilities,
+                         EXPECTED_ADDITIONAL_RAW_CAPABILITIES)
+
+        # Ensure the additional capabilities response doesn't also want more capabilities
+        self.assertEqual(additional_resp.additional_capabilities, False)
+
+        # Check that merging the capabiltiies produced expected results
+        resp.merge(additional_resp)
+
+        EXPECTED_MERGED_RAW_CAPABILITIES = {
+            "eco_mode": True, "eco_mode_2": False,
+            "breeze_control": True,
+            "heat_mode": True, "cool_mode": True, "dry_mode": True, "auto_mode": True,
+            "swing_horizontal": True, "swing_vertical": True,
+            "power_stats": False, "power_setting": False, "power_bcd": False,
+            "turbo_heat": True, "turbo_cool": True,
+            "fan_silent": False, "fan_low": False, "fan_medium": False, "fan_high": False, "fan_auto": False, "fan_custom": True,
+            "humidity_auto_set": False, "humidity_manual_set": True,
+            "cool_min_temperature": 16.0, "cool_max_temperature": 30.0,
+            "auto_min_temperature": 16.0, "auto_max_temperature": 30.0,
+            "heat_min_temperature": 16.0, "heat_max_temperature": 30.0,
+            "decimals": True,
+            "freeze_protection": True,
+            "fahrenheit": True,
+            "aux_electric_heat": False,
+            "self_clean": True,
+            "anion": True
+        }
+        # Ensure raw decoded capabilities match
+        self.assertEqual(resp._capabilities, EXPECTED_MERGED_RAW_CAPABILITIES)
+
+        EXPECTED_CAPABILITIES = {
+            "swing_horizontal": True, "swing_vertical": True, "swing_both": True,
+            "dry_mode": True, "heat_mode": True, "cool_mode": True, "auto_mode": True,
+            "eco_mode": True, "turbo_mode": True, "freeze_protection_mode": True,
+            "fan_custom": True, "fan_silent": True, "fan_low": True,
+            "fan_medium": True,  "fan_high": True, "fan_auto": True,
+            "min_temperature": 16, "max_temperature": 30,
+            "display_control": False, "filter_reminder": False
+        }
+        # Check capabilities properties match
+        for prop in self.EXPECTED_PROPERTIES:
+            self.assertEqual(getattr(resp, prop),
+                             EXPECTED_CAPABILITIES[prop], prop)
+
 
 if __name__ == "__main__":
     unittest.main()
