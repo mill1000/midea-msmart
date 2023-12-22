@@ -268,21 +268,30 @@ class AirConditioner(Device):
     async def get_capabilities(self) -> None:
         """Fetch the device capabilities."""
 
-        # Send capabilitis request and get a response
+        # Send capabilities request and get a response
         cmd = GetCapabilitiesCommand()
         response = await self._send_command_get_reponse_with_id(cmd, ResponseId.CAPABILITIES)
         response = cast(CapabilitiesResponse, response)
 
-        # Send 2nd capabilties request if needed
+        if response is None:
+            _LOGGER.error("Failed to query device capabilities.")
+            return
+
+        # Send 2nd capabilities request if needed
         if response.additional_capabilities:
             cmd = GetCapabilitiesCommand(True)
             additional_response = await self._send_command_get_reponse_with_id(cmd, ResponseId.CAPABILITIES)
             additional_response = cast(
                 CapabilitiesResponse, additional_response)
 
-            # Merge additional capabilities
-            response.merge(additional_response)
+            if additional_response:
+                # Merge additional capabilities
+                response.merge(additional_response)
+            else:
+                _LOGGER.warning(
+                    "Failed to query additional device capabilities.")
 
+        # Update device capabilities
         self._update_capabilities(response)
 
     async def toggle_display(self) -> None:
