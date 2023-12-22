@@ -289,6 +289,7 @@ class CapabilitiesResponse(Response):
         super().__init__(payload)
 
         self._capabilities = {}
+        self._additional_capabilities = False
 
         _LOGGER.debug("Capabilities response payload: %s", payload.hex())
 
@@ -432,8 +433,13 @@ class CapabilitiesResponse(Response):
             # Advanced to next capability
             caps = caps[3+size:]
 
-        if len(caps):
-            _LOGGER.warning("Leftovers in caps: %s", caps.hex())
+        # Check if there are additional capabilities
+        if len(caps) > 1:
+            self._additional_capabilities = bool(caps[-2])
+
+    @property
+    def additional_capabilities(self) -> bool:
+        return self._additional_capabilities
 
     def _get_fan_speed(self, speed) -> bool:
         # If any fan_ capability was received, check against them

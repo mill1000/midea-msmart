@@ -309,6 +309,9 @@ class TestCapabilitiesResponse(_TestResponseBase):
             self.assertEqual(getattr(resp, prop),
                              EXPECTED_CAPABILITIES[prop], prop)
 
+        # Check if there are additional capabilities
+        self.assertEqual(resp.additional_capabilities, False)
+
     def test_capabilities_2(self) -> None:
         """Test that we decode capabilities responses as expected."""
         # https://github.com/mac-zhou/midea-ac-py/pull/177#issuecomment-1259772244
@@ -356,6 +359,9 @@ class TestCapabilitiesResponse(_TestResponseBase):
             self.assertEqual(getattr(resp, prop),
                              EXPECTED_CAPABILITIES[prop], prop)
 
+        # Check if there are additional capabilities
+        self.assertEqual(resp.additional_capabilities, True)
+
     def test_capabilities_3(self) -> None:
         """Test that we decode capabilities responses as expected."""
         # Toshiba Smart Window Unit (2019)
@@ -390,6 +396,9 @@ class TestCapabilitiesResponse(_TestResponseBase):
         for prop in self.EXPECTED_PROPERTIES:
             self.assertEqual(getattr(resp, prop),
                              EXPECTED_CAPABILITIES[prop], prop)
+
+        # Check if there are additional capabilities
+        self.assertEqual(resp.additional_capabilities, False)
 
     def test_capabilities_4(self) -> None:
         """Test that we decode capabilities responses as expected."""
@@ -427,6 +436,9 @@ class TestCapabilitiesResponse(_TestResponseBase):
         for prop in self.EXPECTED_PROPERTIES:
             self.assertEqual(getattr(resp, prop),
                              EXPECTED_CAPABILITIES[prop], prop)
+
+        # Check if there are additional capabilities
+        self.assertEqual(resp.additional_capabilities, True)
 
 
 if __name__ == "__main__":
