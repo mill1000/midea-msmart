@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import math
 import struct
+from abc import ABC
 from collections import namedtuple
 from enum import IntEnum
 from typing import Callable, Optional, Union
@@ -36,3 +37,32 @@ class QueryType(IntEnum):
     QUERY_ECO = 0x7
     QUERY_INSTALL = 0x8
     QUERY_DISINFECT = 0x9
+
+
+class QueryCommand(Command, ABC):
+    """Base class for query commands."""
+
+    def __init__(self, type: QueryType) -> None:
+        super().__init__(DeviceType.HEAT_PUMP, frame_type=FrameType.REQUEST)
+
+        self._type = type
+
+    @property
+    def payload(self) -> bytes:
+        return bytes([
+            self._type
+        ])
+
+
+class QueryBasicCommand(QueryCommand):
+    """Command to query basic device state."""
+
+    def __init__(self) -> None:
+        super().__init__(QueryType.QUERY_BASIC)
+
+
+class QueryEcoCommand(QueryCommand):
+    """Command to query ECO state."""
+
+    def __init__(self) -> None:
+        super().__init__(QueryType.QUERY_ECO)
