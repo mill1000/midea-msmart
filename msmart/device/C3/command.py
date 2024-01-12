@@ -108,7 +108,7 @@ class ControlBasicCommand(ControlCommand):
     @property
     def payload(self) -> bytes:
 
-        payload = [0] * 10
+        payload = bytearray(10)
 
         payload[0] = self._type
 
