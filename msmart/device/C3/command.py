@@ -9,7 +9,7 @@ from enum import IntEnum
 from typing import Callable, Optional, Union
 
 import msmart.crc8 as crc8
-from msmart.base_command import Command
+from msmart.base_command import Frame
 from msmart.const import DeviceType, FrameType
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class QueryType(IntEnum):
     QUERY_DISINFECT = 0x9
 
 
-class QueryCommand(Command, ABC):
+class QueryCommand(Frame, ABC):
     """Base class for query commands."""
 
     def __init__(self, type: QueryType) -> None:
@@ -47,11 +47,10 @@ class QueryCommand(Command, ABC):
 
         self._type = type
 
-    @property
-    def payload(self) -> bytes:
-        return bytes([
+    def tobytes(self) -> bytes:
+        return super().tobytes(bytes([
             self._type
-        ])
+        ]))
 
 
 class QueryBasicCommand(QueryCommand):
@@ -68,7 +67,7 @@ class QueryEcoCommand(QueryCommand):
         super().__init__(QueryType.QUERY_ECO)
 
 
-class ControlCommand(Command, ABC):
+class ControlCommand(Frame, ABC):
     """Base class for control commands."""
 
     def __init__(self, type: ControlType) -> None:
@@ -105,9 +104,7 @@ class ControlBasicCommand(ControlCommand):
         self.zone1_curve_type = 0  # TODO??
         self.zone2_curve_type = 0
 
-    @property
-    def payload(self) -> bytes:
-
+    def tobytes(self) -> bytes:
         payload = bytearray(10)
 
         payload[0] = self._type
@@ -131,7 +128,7 @@ class ControlBasicCommand(ControlCommand):
         payload[8] = self.zone1_curve_type
         payload[9] = self.zone2_curve_type
 
-        return bytes(payload)
+        return super().tobytes(payload)
 
 
 class Response():

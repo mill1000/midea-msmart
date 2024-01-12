@@ -8,7 +8,7 @@ from enum import IntEnum
 from typing import Callable, Collection, Mapping, Optional, Union
 
 import msmart.crc8 as crc8
-from msmart.base_command import Command
+from msmart.base_command import Frame
 from msmart.const import DeviceType, FrameType
 
 _LOGGER = logging.getLogger(__name__)
@@ -85,20 +85,37 @@ class TemperatureType(IntEnum):
     OUTDOOR = 0x3
 
 
+class Command(Frame):
+    """Base class for AC commands."""
+
+    _message_id = 0
+
+    def __init__(self, device_type: DeviceType, frame_type: FrameType) -> None:
+        super().__init__(device_type, frame_type)
+
+    def tobytes(self, data: bytes | bytearray = bytes()) -> bytes:
+        # Append message ID to payload
+        # TODO Message ID in reference is just a random value
+        payload = data + bytes([self._next_message_id()])
+
+        # Append CRC
+        return super().tobytes(payload + bytes([crc8.calculate(payload)]))
+
+    def _next_message_id(self) -> int:
+        Command._message_id += 1
+        return Command._message_id & 0xFF
+
+
 class GetCapabilitiesCommand(Command):
     def __init__(self, additional: bool = False) -> None:
         super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.REQUEST)
 
         self._additional = additional
 
-    @property
-    def payload(self) -> bytes:
-        if not self._additional:
-            # Get capabilities
-            return bytes([0xB5, 0x01, 0x00])
-        else:
-            # Get more capabilities
-            return bytes([0xB5, 0x01, 0x01, 0x1])
+    def tobytes(self) -> bytes:
+        paylaod = bytes([0xB5, 0x01, 0x00] if not self._additional
+                        else [0xB5, 0x01, 0x01, 0x1])
+        return super().tobytes(paylaod)
 
 
 class GetStateCommand(Command):
@@ -107,9 +124,8 @@ class GetStateCommand(Command):
 
         self.temperature_type = TemperatureType.INDOOR
 
-    @property
-    def payload(self) -> bytes:
-        return bytes([
+    def tobytes(self) -> bytes:
+        return super().tobytes(bytes([
             # Get state
             0x41,
             # Unknown
@@ -122,7 +138,7 @@ class GetStateCommand(Command):
             0x00, 0x00, 0x00, 0x00,
             # Unknown
             0x03,
-        ])
+        ]))
 
 
 class SetStateCommand(Command):
@@ -142,8 +158,7 @@ class SetStateCommand(Command):
         self.freeze_protection_mode = False
         self.follow_me = False
 
-    @property
-    def payload(self) -> bytes:
+    def tobytes(self) -> bytes:
         # Build beep and power status bytes
         beep = 0x40 if self.beep_on else 0
         power = 0x1 if self.power_on else 0
@@ -185,7 +200,7 @@ class SetStateCommand(Command):
         # Build alternate turbo byte
         freeze_protect = 0x80 if self.freeze_protection_mode else 0
 
-        return bytes([
+        return super().tobytes(bytes([
             # Set state
             0x40,
             # Beep and power state
@@ -215,7 +230,7 @@ class SetStateCommand(Command):
             freeze_protect,
             # Unknown
             0x00, 0x00,
-        ])
+        ]))
 
 
 class ToggleDisplayCommand(Command):
@@ -225,12 +240,11 @@ class ToggleDisplayCommand(Command):
 
         self.beep_on = True
 
-    @property
-    def payload(self) -> bytes:
+    def tobytes(self) -> bytes:
         # Set beep bit
         beep = 0x40 if self.beep_on else 0
 
-        return bytes([
+        return super().tobytes(bytes([
             # Get state
             0x41,
             # Beep and other flags
@@ -241,7 +255,7 @@ class ToggleDisplayCommand(Command):
             0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00,
-        ])
+        ]))
 
 
 class GetPropertiesCommand(Command):
@@ -309,7 +323,7 @@ class Response():
     @classmethod
     def validate(cls, frame: memoryview) -> None:
         # Validate frame checksum
-        frame_checksum = Command.checksum(frame[1:-1])
+        frame_checksum = Frame.checksum(frame[1:-1])
         if frame_checksum != frame[-1]:
             raise InvalidResponseException(
                 f"Frame '{frame.hex()}' failed checksum. Received: 0x{frame[-1]:X}, Expected: 0x{frame_checksum:X}.")
@@ -319,7 +333,7 @@ class Response():
 
         # Some devices use a CRC others seem to use a 2nd checksum
         payload_crc = crc8.calculate(payload[0:-1])
-        payload_checksum = Command.checksum(payload[0:-1])
+        payload_checksum = Frame.checksum(payload[0:-1])
 
         if payload_crc != payload[-1] and payload_checksum != payload[-1]:
             raise InvalidResponseException(
