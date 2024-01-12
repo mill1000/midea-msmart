@@ -8,7 +8,7 @@ from enum import IntEnum
 from typing import Callable, Collection, Mapping, Optional, Union
 
 import msmart.crc8 as crc8
-from msmart.base_command import Frame
+from msmart.base_command import Frame, InvalidFrameException
 from msmart.const import DeviceType, FrameType
 
 _LOGGER = logging.getLogger(__name__)
@@ -322,11 +322,10 @@ class Response():
 
     @classmethod
     def validate(cls, frame: memoryview) -> None:
-        # Validate frame checksum
-        frame_checksum = Frame.checksum(frame[1:-1])
-        if frame_checksum != frame[-1]:
-            raise InvalidResponseException(
-                f"Frame '{frame.hex()}' failed checksum. Received: 0x{frame[-1]:X}, Expected: 0x{frame_checksum:X}.")
+        try:
+            Frame.validate(frame)
+        except InvalidFrameException as e:
+            raise InvalidResponseException(e) from e
 
         # Extract frame payload to validate CRC/checksum
         payload = frame[10:-1]
