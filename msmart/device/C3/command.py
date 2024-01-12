@@ -132,3 +132,96 @@ class ControlBasicCommand(ControlCommand):
         payload[9] = self.zone2_curve_type
 
         return bytes(payload)
+
+
+class Response():
+    """Base class for responses."""
+
+    def __init__(self, frame: memoryview) -> None:
+
+        self._type = frame[10]
+        self._payload = bytes(frame[10:0])
+
+    @property
+    def type(self) -> int:
+        return self._type
+
+    @property
+    def payload(self) -> bytes:
+        return self._payload
+
+
+class QueryBasicResponse(Response):
+    """Response to basic query."""
+
+    def __init__(self, frame: memoryview) -> None:
+        super().__init__(frame)
+
+        _LOGGER.debug("%s payload: %s", __name__, self.payload.hex())
+
+        with memoryview(self.payload) as payload:
+            self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+
+        # TODO names are mostly direct from reference, better names might be in order
+
+        self.zone1_power_state = bool(payload[1] & 0x01)
+        self.zone2_power_state = bool(payload[1] & 0x02)
+        self.dhw_power_state = bool(payload[1] & 0x04)
+        self.zone1_curve_state = bool(payload[1] & 0x08)
+        self.zone2_curve_state = bool(payload[1] & 0x10)
+        # TODO self.forcetbh_state = bool(payload[1] & 0x40)
+        self.fastdhw_state = bool(payload[1] & 0x40)
+        # TODO self.remote_onoff = bool(payload[1] & 0x80)
+
+        self.heat_enable = bool(payload[2] & 0x01)
+        self.cool_enable = bool(payload[2] & 0x02)
+        self.dhw_enable = bool(payload[2] & 0x04)
+        self.double_zone_enable = bool(payload[2] & 0x08)
+        self.zone1_temp_type = bool(payload[2] & 0x10)
+        self.zone2_temp_type = bool(payload[2] & 0x20)
+        # TODO self.room_thermalen_state = bool(payload[2] & 0x40)
+        # TODO self.room_thermalmode_state = bool(payload[2] & 0x80)
+
+        self.time_set_state = bool(payload[3] & 0x01)
+        self.silence_on_state = bool(payload[3] & 0x02)
+        self.holiday_on_state = bool(payload[3] & 0x04)
+        self.eco_on_state = bool(payload[3] & 0x08)
+        self.zone1_terminal_type = (payload[3] & 0x30) >> 4  # TODO enumerate?
+        self.zone1_terminal_type = (payload[3] & 0xC0) >> 4  # TODO enumerate?
+
+        self.run_mode_set = payload[4]  # TODO enumerate?
+        self.runmode_under_auto = payload[5]  # TODO enumerate?
+        self.zone1_target_temperature = payload[6]
+        self.zone2_target_temperature = payload[7]
+        self.dhw_target_temperature = payload[8]
+        self.room_target_temperature = payload[9]/2  # TODO divide or multiply?
+
+        # TODO units of these temperature readings
+
+        self.zone1_heat_max_temperature = payload[10]
+        self.zone1_heat_min_temperature = payload[11]
+        self.zone1_cool_max_temperature = payload[12]
+        self.zone1_cool_min_temperature = payload[13]
+
+        self.zone2_heat_max_temperature = payload[14]
+        self.zone2_heat_min_temperature = payload[15]
+        self.zone2_cool_max_temperature = payload[16]
+        self.zone2_cool_min_temperature = payload[17]
+
+        self.room_max_temperature = payload[18]/2  # TODO divide or multiply?
+        self.room_min_temperature = payload[19]/2  # TODO divide or multiply?
+        self.dhw_max_temperature = payload[20]
+        self.dhw_min_temperature = payload[21]
+
+        self.tank_temperature = payload[22]
+
+        self.error_code = payload[23]
+
+        self.boostertbh_en = bool(payload[24] & 0x80)
+
+        if len(payload) > 24:
+            # TODO newfunction_en = True
+            self.zone1_curve_type = payload[25]
+            self.zone2_curve_type = payload[26]
