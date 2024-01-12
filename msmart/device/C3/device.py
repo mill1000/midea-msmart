@@ -4,9 +4,9 @@ import logging
 from enum import IntEnum
 from typing import Any, List, Optional, cast
 
-from msmart.base_command import InvalidFrameException
 from msmart.base_device import Device
 from msmart.const import DeviceType
+from msmart.frame import InvalidFrameException
 
 from .command import Response
 

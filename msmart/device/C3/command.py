@@ -8,8 +8,8 @@ from enum import IntEnum
 from typing import Callable, Optional, Union
 
 import msmart.crc8 as crc8
-from msmart.base_command import Frame
 from msmart.const import DeviceType, FrameType
+from msmart.frame import Frame
 
 _LOGGER = logging.getLogger(__name__)
 
