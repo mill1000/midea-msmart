@@ -146,6 +146,25 @@ class Response():
     def payload(self) -> bytes:
         return self._payload
 
+    @classmethod
+    def validate(cls, frame: memoryview) -> None:
+        # Responses only have frame checksum
+        Frame.validate(frame)
+
+    @classmethod
+    def construct(cls, frame: bytes) -> Union[QueryBasicResponse, Response]:
+        # Build a memoryview of the frame for zero-copy slicing
+        with memoryview(frame) as frame_mv:
+            # Ensure frame is valid before parsing
+            Response.validate(frame_mv)
+
+            # Parse frame depending on id
+            type = frame_mv[10]
+            if type == QueryType.QUERY_BASIC:
+                return QueryBasicResponse(frame_mv)
+            else:
+                return Response(frame_mv)
+
 
 class QueryBasicResponse(Response):
     """Response to basic query."""
@@ -153,7 +172,7 @@ class QueryBasicResponse(Response):
     def __init__(self, frame: memoryview) -> None:
         super().__init__(frame)
 
-        _LOGGER.debug("%s payload: %s", __name__, self.payload.hex())
+        _LOGGER.debug("Query basic payload: %s", self.payload.hex())
 
         with memoryview(self.payload) as payload:
             self._parse(payload)
