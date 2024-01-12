@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import math
 import struct
-from abc import ABC
 from collections import namedtuple
 from enum import IntEnum
 from typing import Callable, Optional, Union
@@ -39,7 +38,7 @@ class QueryType(IntEnum):
     QUERY_DISINFECT = 0x9
 
 
-class QueryCommand(Frame, ABC):
+class QueryCommand(Frame):
     """Base class for query commands."""
 
     def __init__(self, type: QueryType) -> None:
@@ -67,7 +66,7 @@ class QueryEcoCommand(QueryCommand):
         super().__init__(QueryType.QUERY_ECO)
 
 
-class ControlCommand(Frame, ABC):
+class ControlCommand(Frame):
     """Base class for control commands."""
 
     def __init__(self, type: ControlType) -> None:
