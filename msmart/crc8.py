@@ -37,10 +37,5 @@ _CRC8_854_TABLE = [
 def calculate(data: bytes) -> int:
     crc_value = 0
     for m in data:
-        k = crc_value ^ m
-        if k > 256:
-            k -= 256
-        if k < 0:
-            k += 256
-        crc_value = _CRC8_854_TABLE[k]
+        crc_value = _CRC8_854_TABLE[(crc_value ^ m) & 0xFF]
     return crc_value
