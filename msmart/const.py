@@ -29,7 +29,7 @@ OPEN_MIDEA_APP_PASSWORD = "this_is_a_password1"
 
 class DeviceType(IntEnum):
     AIR_CONDITIONER = 0xAC
-    HEAT_PUMP = 0x3C
+    HEAT_PUMP = 0xC3
 
 
 class FrameType(IntEnum):
