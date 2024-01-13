@@ -93,7 +93,7 @@ class Command(Frame):
     def __init__(self, device_type: DeviceType, frame_type: FrameType) -> None:
         super().__init__(device_type, frame_type)
 
-    def tobytes(self, data: bytes | bytearray = bytes()) -> bytes:
+    def tobytes(self, data: Union[bytes, bytearray] = bytes()) -> bytes:
         # Append message ID to payload
         # TODO Message ID in reference is just a random value
         payload = data + bytes([self._next_message_id()])

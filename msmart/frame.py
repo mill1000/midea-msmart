@@ -1,4 +1,5 @@
 import logging
+from typing import Union
 
 from msmart.const import DeviceType, FrameType
 
@@ -19,7 +20,7 @@ class Frame():
         self._frame_type = frame_type
         self._protocol_version = 0
 
-    def tobytes(self, payload: bytes | bytearray = bytes()) -> bytes:
+    def tobytes(self, payload: Union[bytes, bytearray] = bytes()) -> bytes:
         # Build frame header
         header = bytearray(self._HEADER_LENGTH)
 
