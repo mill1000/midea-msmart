@@ -194,8 +194,11 @@ class QueryBasicResponse(Response):
         self.cool_enable = bool(payload[2] & 0x02)
         self.dhw_enable = bool(payload[2] & 0x04)
         self.double_zone_enable = bool(payload[2] & 0x08)
-        self.zone1_temp_type = int(bool(payload[2] & 0x10)) # 0 - Air, 1 - Water
+
+        # 0 - Air, 1 - Water
+        self.zone1_temp_type = int(bool(payload[2] & 0x10))
         self.zone2_temp_type = int(bool(payload[2] & 0x20))
+
         # TODO self.room_thermalen_state = bool(payload[2] & 0x40)
         # TODO self.room_thermalmode_state = bool(payload[2] & 0x80)
 
@@ -203,17 +206,15 @@ class QueryBasicResponse(Response):
         self.silence_on_state = bool(payload[3] & 0x02)
         self.holiday_on_state = bool(payload[3] & 0x04)
         self.eco_on_state = bool(payload[3] & 0x08)
-        self.zone1_terminal_type = (payload[3] & 0x30) >> 4  # TODO enumerate?
-        self.zone1_terminal_type = (payload[3] & 0xC0) >> 4  # TODO enumerate?
+        self.zone1_terminal_type = (payload[3] & 0x30) >> 4
+        self.zone1_terminal_type = (payload[3] & 0xC0) >> 4
 
-        self.run_mode_set = payload[4]  # TODO enumerate?
-        self.runmode_under_auto = payload[5]  # TODO enumerate?
+        self.run_mode_set = payload[4]
+        self.runmode_under_auto = payload[5]
         self.zone1_target_temperature = payload[6]
         self.zone2_target_temperature = payload[7]
         self.dhw_target_temperature = payload[8]
-        self.room_target_temperature = payload[9]/2  # TODO divide or multiply?
-
-        # TODO units of these temperature readings
+        self.room_target_temperature = payload[9]/2  # .5 ℃
 
         self.zone1_heat_max_temperature = payload[10]
         self.zone1_heat_min_temperature = payload[11]
@@ -225,12 +226,12 @@ class QueryBasicResponse(Response):
         self.zone2_cool_max_temperature = payload[16]
         self.zone2_cool_min_temperature = payload[17]
 
-        self.room_max_temperature = payload[18]/2  # TODO divide or multiply?
-        self.room_min_temperature = payload[19]/2  # TODO divide or multiply?
+        self.room_max_temperature = payload[18]/2  # .5 ℃
+        self.room_min_temperature = payload[19]/2  # .5 ℃
         self.dhw_max_temperature = payload[20]
         self.dhw_min_temperature = payload[21]
 
-        # Actual tank temperature in deg C
+        # Actual tank temperature in ℃
         self.tank_temperature = payload[22] if payload[22] != 0xFF else None
 
         self.error_code = payload[23]
