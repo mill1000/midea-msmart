@@ -236,7 +236,7 @@ class QueryBasicResponse(Response):
 
         self.boostertbh_en = bool(payload[24] & 0x80)
 
-        if len(payload) > 24:
+        if len(payload) > 25:
             # TODO newfunction_en = True
             self.zone1_curve_type = payload[25]
             self.zone2_curve_type = payload[26]
