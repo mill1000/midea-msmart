@@ -207,7 +207,7 @@ class QueryBasicResponse(Response):
         self.holiday_on_state = bool(payload[3] & 0x04)
         self.eco_on_state = bool(payload[3] & 0x08)
         self.zone1_terminal_type = (payload[3] & 0x30) >> 4
-        self.zone1_terminal_type = (payload[3] & 0xC0) >> 4
+        self.zone2_terminal_type = (payload[3] & 0xC0) >> 4
 
         self.run_mode_set = payload[4]
         self.runmode_under_auto = payload[5]
