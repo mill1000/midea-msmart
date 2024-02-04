@@ -46,5 +46,6 @@ class TestQueryBasicResponse(_TestResponseBase):
         # Assert response is a state response
         self.assertEqual(type(resp), QueryBasicResponse)
 
+
 if __name__ == "__main__":
     unittest.main()
