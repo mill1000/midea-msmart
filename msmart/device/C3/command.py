@@ -136,7 +136,7 @@ class Response():
     def __init__(self, frame: memoryview) -> None:
 
         self._type = frame[10]
-        self._payload = bytes(frame[10:0])
+        self._payload = bytes(frame[10:-1])
 
     @property
     def type(self) -> int:
