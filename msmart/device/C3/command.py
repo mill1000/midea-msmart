@@ -230,7 +230,8 @@ class QueryBasicResponse(Response):
         self.dhw_max_temperature = payload[20]
         self.dhw_min_temperature = payload[21]
 
-        self.tank_temperature = payload[22]
+        # Actual tank temperature in deg C
+        self.tank_temperature = payload[22] if payload[22] != 0xFF else None
 
         self.error_code = payload[23]
 
