@@ -194,8 +194,8 @@ class QueryBasicResponse(Response):
         self.cool_enable = bool(payload[2] & 0x02)
         self.dhw_enable = bool(payload[2] & 0x04)
         self.double_zone_enable = bool(payload[2] & 0x08)
-        self.zone1_temp_type = bool(payload[2] & 0x10)
-        self.zone2_temp_type = bool(payload[2] & 0x20)
+        self.zone1_temp_type = int(bool(payload[2] & 0x10)) # 0 - Air, 1 - Water
+        self.zone2_temp_type = int(bool(payload[2] & 0x20))
         # TODO self.room_thermalen_state = bool(payload[2] & 0x40)
         # TODO self.room_thermalmode_state = bool(payload[2] & 0x80)
 
