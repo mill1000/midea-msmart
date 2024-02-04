@@ -28,7 +28,7 @@ class Frame():
         header[0] = 0xAA
 
         # Length of header, payload and checksum
-        header[1] = len(payload) + self._HEADER_LENGTH + 1
+        header[1] = len(payload) + self._HEADER_LENGTH
 
         # Device/appliance type
         header[2] = self._device_type
