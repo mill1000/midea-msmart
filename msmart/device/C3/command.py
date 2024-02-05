@@ -186,23 +186,22 @@ class QueryBasicResponse(Response):
         self.dhw_power_state = bool(payload[1] & 0x04)
         self.zone1_curve_state = bool(payload[1] & 0x08)
         self.zone2_curve_state = bool(payload[1] & 0x10)
-        # TODO self.forcetbh_state = bool(payload[1] & 0x40)
+        self.tbh_power_state = bool(payload[1] & 0x40)  # Ref: forcetbh_state
         self.fastdhw_state = bool(payload[1] & 0x40)
-        # TODO self.remote_onoff = bool(payload[1] & 0x80)
+        # self.remote_onoff = bool(payload[1] & 0x80) # TODO never referenced in ref
 
         self.heat_enable = bool(payload[2] & 0x01)
         self.cool_enable = bool(payload[2] & 0x02)
         self.dhw_enable = bool(payload[2] & 0x04)
-        self.double_zone_enable = bool(payload[2] & 0x08)
+        self.zone2_enable = bool(payload[2] & 0x08)  # Ref: double_zone_enable
 
         # 0 - Air, 1 - Water
         self.zone1_temp_type = int(bool(payload[2] & 0x10))
         self.zone2_temp_type = int(bool(payload[2] & 0x20))
 
-        self.room_thermostat_power_state = bool(
-            payload[2] & 0x40)  # room_thermalen_state
-        self.room_thermostat_enable = bool(
-            payload[2] & 0x80)  # room_thermalmode_state
+        # Ref: room_thermalen_state, room_thermalmode_state
+        self.room_thermostat_power_state = bool(payload[2] & 0x40)
+        self.room_thermostat_enable = bool(payload[2] & 0x80)
 
         self.time_set_state = bool(payload[3] & 0x01)
         self.silence_on_state = bool(payload[3] & 0x02)
@@ -234,11 +233,13 @@ class QueryBasicResponse(Response):
         self.dhw_min_temperature = payload[21]
 
         # Actual tank temperature in ℃
+        # Ref: tank_actual_temp
         self.tank_temperature = payload[22] if payload[22] != 0xFF else None
 
         self.error_code = payload[23]
 
-        self.boostertbh_en = bool(payload[24] & 0x80)
+        # Ref: boostertbh_en
+        self.tbh_enable = bool(payload[24] & 0x80)
 
         if len(payload) > 25:
             # TODO newfunction_en = True
