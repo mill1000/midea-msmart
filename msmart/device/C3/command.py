@@ -199,8 +199,10 @@ class QueryBasicResponse(Response):
         self.zone1_temp_type = int(bool(payload[2] & 0x10))
         self.zone2_temp_type = int(bool(payload[2] & 0x20))
 
-        # TODO self.room_thermalen_state = bool(payload[2] & 0x40)
-        # TODO self.room_thermalmode_state = bool(payload[2] & 0x80)
+        self.room_thermostat_power_state = bool(
+            payload[2] & 0x40)  # room_thermalen_state
+        self.room_thermostat_enable = bool(
+            payload[2] & 0x80)  # room_thermalmode_state
 
         self.time_set_state = bool(payload[3] & 0x01)
         self.silence_on_state = bool(payload[3] & 0x02)
