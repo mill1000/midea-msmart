@@ -207,15 +207,17 @@ class QueryBasicResponse(Response):
         self.silence_on_state = bool(payload[3] & 0x02)
         self.holiday_on_state = bool(payload[3] & 0x04)
         self.eco_on_state = bool(payload[3] & 0x08)
+
         self.zone1_terminal_type = (payload[3] & 0x30) >> 4
         self.zone2_terminal_type = (payload[3] & 0xC0) >> 4
 
-        self.run_mode_set = payload[4]
-        self.runmode_under_auto = payload[5]
-        self.zone1_target_temperature = payload[6]
-        self.zone2_target_temperature = payload[7]
-        self.dhw_target_temperature = payload[8]
-        self.room_target_temperature = payload[9]/2  # .5 ℃
+        self.run_mode = payload[4]  # Ref: run_mode_set
+        self.run_mode_under_auto = payload[5]  # Ref: runmode_under_auto
+
+        self.zone1_target_temperature = payload[6]  # Ref: zone1_temp_set
+        self.zone2_target_temperature = payload[7]  # Ref: zone2_temp_set
+        self.dhw_target_temperature = payload[8]  # Ref: dhw_temp_set
+        self.room_target_temperature = payload[9]/2  # .5 ℃ Ref: room_temp_set
 
         self.zone1_heat_max_temperature = payload[10]
         self.zone1_heat_min_temperature = payload[11]
@@ -229,6 +231,7 @@ class QueryBasicResponse(Response):
 
         self.room_max_temperature = payload[18]/2  # .5 ℃
         self.room_min_temperature = payload[19]/2  # .5 ℃
+
         self.dhw_max_temperature = payload[20]
         self.dhw_min_temperature = payload[21]
 
