@@ -8,7 +8,7 @@ from msmart.base_device import Device
 from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 
-from .command import Response, QueryBasicResponse
+from .command import QueryBasicResponse, Response
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -91,11 +91,19 @@ class HeatPump(Device):
         self._dhw_min_temperature = res.dhw_min_temperature
         self._dhw_max_temperature = res.dhw_max_temperature
 
+        # TODO fastdhw
+
         self._room_thermostat_enable = res.room_thermostat_enable
         self._room_thermostat_power_state = res.room_thermostat_power_state
         self._room_thermostat_target_temperature = res.room_target_temperature
         self._room_thermostat_min_temperature = res.room_min_temperature
         self._room_thermostat_max_temperature = res.room_max_temperature
+
+        # TOOD run modes
+        # TODO heat enable, cool enable, double zone enable
+        # TODO time set state, silence state, holiday state, eco state
+        # TODO boostertbh_en
+        # TODO error code
 
         self._tank_temperature = res.tank_temperature
 
