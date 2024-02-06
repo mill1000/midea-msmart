@@ -85,7 +85,7 @@ class ControlBasicCommand(ControlCommand):
         self.zone2_power_state = False
         self.dhw_power_state = False
 
-        self.run_mode_set = 0  # TODO??
+        self.run_mode = 0  # TODO??
 
         # TODO default values?
         self.zone1_target_temperature = 0
@@ -96,7 +96,7 @@ class ControlBasicCommand(ControlCommand):
         self.zone1_curve_state = False
         self.zone2_curve_state = False
 
-        # TODO forcetbh_state
+        self.tbh_enable = False
         self.fastdhw_state = False
 
         # TODO "newfunction_en"
@@ -112,15 +112,15 @@ class ControlBasicCommand(ControlCommand):
         payload[1] |= 1 << 1 if self.zone2_power_state else 0
         payload[1] |= 1 << 2 if self.dhw_power_state else 0
 
-        payload[2] = self.run_mode_set
+        payload[2] = self.run_mode
         payload[3] = self.zone1_target_temperature
         payload[4] = self.zone2_target_temperature
         payload[5] = self.dhw_target_temperature
-        payload[6] = self.room_target_temperature * 2  # TODO ??
+        payload[6] = self.room_target_temperature * 2 # Convert ℃ to .5 ℃
 
         payload[7] |= 1 << 0 if self.zone1_curve_state else 0
         payload[7] |= 1 << 1 if self.zone2_curve_state else 0
-        # payload[7] |= 1 << 2 if self.forcetbh_state else 0
+        payload[7] |= 1 << 2 if self.tbh_enable else 0
         payload[7] |= 1 << 3 if self.fastdhw_state else 0
 
         # TODO newfunction_en
@@ -180,6 +180,9 @@ class QueryBasicResponse(Response):
     def _parse(self, payload: memoryview) -> None:
 
         # TODO names are mostly direct from reference, better names might be in order
+        # Useful acronyms
+        # DHW - Domestic hot water
+        # TBH - Tank booster heater
 
         self.zone1_power_state = bool(payload[1] & 0x01)
         self.zone2_power_state = bool(payload[1] & 0x02)
