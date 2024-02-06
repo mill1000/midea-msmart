@@ -36,6 +36,7 @@ class QueryType(IntEnum):
     QUERY_ECO = 0x7
     QUERY_INSTALL = 0x8
     QUERY_DISINFECT = 0x9
+    QUERY_UNIT_PARAMETERS = 0x10
 
 
 class QueryCommand(Frame):
@@ -64,6 +65,13 @@ class QueryEcoCommand(QueryCommand):
 
     def __init__(self) -> None:
         super().__init__(QueryType.QUERY_ECO)
+
+
+class QueryUnitParametersCommand(QueryCommand):
+    """Command to query ECO state."""
+
+    def __init__(self) -> None:
+        super().__init__(QueryType.QUERY_UNIT_PARAMETERS)
 
 
 class ControlCommand(Frame):
@@ -251,3 +259,29 @@ class QueryBasicResponse(Response):
             # TODO newfunction_en = True
             self.zone1_curve_type = payload[25]
             self.zone2_curve_type = payload[26]
+
+
+class QueryUnitParametersResponse(Response):
+    """Response to unit parameters query."""
+
+    def __init__(self, frame: memoryview) -> None:
+        super().__init__(frame)
+
+        _LOGGER.debug("Query unit parameters payload: %s", self.payload.hex())
+
+        with memoryview(self.payload) as payload:
+            self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+
+        # There are many fields of this response that are unused and thus not parsed
+
+        # Local function to convert byte to signed int
+        def signed_int(data):
+            return struct.unpack("b", data)[0]
+
+        self.outdoor_temperature = signed_int(payload[8])  # Ref: tempT4
+        self.water_temperature_2 = signed_int(payload[11])  # Ref: tempTwout
+        # Referenced in JS w/o friendly name
+        self.tempT5 = signed_int(payload[38])
+        self.room_temperature = signed_int(payload[39])  # Ref: tempTa
