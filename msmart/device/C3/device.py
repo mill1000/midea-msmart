@@ -8,7 +8,7 @@ from msmart.base_device import Device
 from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 
-from .command import QueryBasicResponse, Response
+from .command import QueryBasicCommand, QueryBasicResponse, QueryType, Response
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,8 +38,8 @@ class HeatPump(Device):
             # TODO properties?
             self._power_state = False
             self._curve_state = False
-            self._temperature_type = HeatPump.TemperatureType.AIR
-            self._terminal_type = None  # TODO enum
+            self._temperature_type = None
+            self._terminal_type = None
 
             self._target_temperature = 25
 
@@ -55,6 +55,11 @@ class HeatPump(Device):
 
         super().__init__(ip=ip, port=port, device_id=device_id,
                          device_type=DeviceType.HEAT_PUMP, **kwargs)
+
+        self._run_mode = None
+        self._heat_enable = False
+        self._cool_enable = False
+        self._zone2_enable = False
 
         self._zone_1 = HeatPump.Zone()
         self._zone_2 = HeatPump.Zone()
@@ -73,9 +78,20 @@ class HeatPump(Device):
         self._room_min_temperature = 17
         self._room_max_temperature = 30
 
+        # Misc
+        self._tbh_state = False
+        self._fastdhw_state = False
+
         self._tank_temperature = None
 
     def _update_state(self, res: QueryBasicResponse) -> None:
+
+        self._run_mode = HeatPump.RunMode(res.run_mode)
+        # TODO Run mode in auto?
+        self._heat_enable = res.heat_enable
+        self._cool_enable = res.cool_enable
+        self._zone2_enable = res.zone2_enable
+
         for i, zone in enumerate([self._zone_1, self._zone_2], start=1):
             zone._power_state = getattr(res, f"zone{i}_power_state")
             zone._curve_state = getattr(res, f"zone{i}_curve_state")
@@ -103,24 +119,31 @@ class HeatPump(Device):
         self._dhw_min_temperature = res.dhw_min_temperature
         self._dhw_max_temperature = res.dhw_max_temperature
 
-        # TODO fastdhw
-
         self._room_thermostat_enable = res.room_thermostat_enable
         self._room_thermostat_power_state = res.room_thermostat_power_state
         self._room_thermostat_target_temperature = res.room_target_temperature
         self._room_thermostat_min_temperature = res.room_min_temperature
         self._room_thermostat_max_temperature = res.room_max_temperature
 
-        # TOOD run modes
-        # TODO heat enable, cool enable, double zone enable
+        self._tbh_state = res.tbh_state
+        self._fastdhw_state = res.fastdhw_state
+
         # TODO time set state, silence state, holiday state, eco state
-        # TODO boostertbh_en
         # TODO error code
 
         self._tank_temperature = res.tank_temperature
 
+    def _process_state_response(self, response: Response) -> None:
+        """Update the local state from a device state response."""
+
+        if response.type == QueryType.QUERY_BASIC:
+            self._update_state(cast(QueryBasicResponse, response))
+        else:
+            _LOGGER.debug("Ignored unknown response from %s:%d: %s",
+                          self.ip, self.port, response.payload.hex())
+
     async def _send_command_get_responses(self, command) -> List[Response]:
-        """Send a command and yield an iterator of valid response."""
+        """Send a command and return a list of valid response."""
 
         responses = await super()._send_command(command)
 
@@ -147,3 +170,11 @@ class HeatPump(Device):
             valid_responses.append(response)
 
         return valid_responses
+
+    async def refresh(self) -> None:
+        """Refresh the local copy of the device state."""
+
+        cmd = QueryBasicCommand()
+        # Process any state responses from the device
+        for response in await self._send_command_get_responses(cmd):
+            self._process_state_response(response)
