@@ -15,6 +15,18 @@ _LOGGER = logging.getLogger(__name__)
 
 class HeatPump(Device):
 
+    class RunMode(IntEnum):
+        # TODO is 0 off?
+        AUTO = 1
+        COOL = 2
+        HEAT = 3
+        DHW = 5
+
+    class TerminalType(IntEnum):
+        FAN_COIL = 0
+        FLOOR_HEAT = 1
+        RADIATOR = 2
+
     class TemperatureType(IntEnum):
         AIR = 0
         WATER = 1
