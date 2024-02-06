@@ -96,7 +96,7 @@ class ControlBasicCommand(ControlCommand):
         self.zone1_curve_state = False
         self.zone2_curve_state = False
 
-        self.tbh_enable = False
+        self.tbh_state = False
         self.fastdhw_state = False
 
         # TODO "newfunction_en"
@@ -116,16 +116,16 @@ class ControlBasicCommand(ControlCommand):
         payload[3] = self.zone1_target_temperature
         payload[4] = self.zone2_target_temperature
         payload[5] = self.dhw_target_temperature
-        payload[6] = self.room_target_temperature * 2 # Convert ℃ to .5 ℃
+        payload[6] = self.room_target_temperature * 2  # Convert ℃ to .5 ℃
 
         payload[7] |= 1 << 0 if self.zone1_curve_state else 0
         payload[7] |= 1 << 1 if self.zone2_curve_state else 0
-        payload[7] |= 1 << 2 if self.tbh_enable else 0
+        payload[7] |= 1 << 2 if self.tbh_state else 0
         payload[7] |= 1 << 3 if self.fastdhw_state else 0
 
         # TODO newfunction_en
-        payload[8] = self.zone1_curve_type
-        payload[9] = self.zone2_curve_type
+        # payload[8] = self.zone1_curve_type
+        # payload[9] = self.zone2_curve_type
 
         return super().tobytes(payload)
 
@@ -189,7 +189,7 @@ class QueryBasicResponse(Response):
         self.dhw_power_state = bool(payload[1] & 0x04)
         self.zone1_curve_state = bool(payload[1] & 0x08)
         self.zone2_curve_state = bool(payload[1] & 0x10)
-        self.tbh_power_state = bool(payload[1] & 0x40)  # Ref: forcetbh_state
+        self.tbh_state = bool(payload[1] & 0x40)  # Ref: forcetbh_state
         self.fastdhw_state = bool(payload[1] & 0x40)
         # self.remote_onoff = bool(payload[1] & 0x80) # TODO never referenced in ref
 
