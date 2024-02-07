@@ -160,7 +160,7 @@ class Response():
         Frame.validate(frame)
 
     @classmethod
-    def construct(cls, frame: bytes) -> Union[QueryBasicResponse, Response]:
+    def construct(cls, frame: bytes) -> Union[QueryBasicResponse, QueryUnitParametersResponse, Response]:
         # Build a memoryview of the frame for zero-copy slicing
         with memoryview(frame) as frame_mv:
             # Ensure frame is valid before parsing
@@ -170,6 +170,8 @@ class Response():
             type = frame_mv[10]
             if type == QueryType.QUERY_BASIC:
                 return QueryBasicResponse(frame_mv)
+            elif type == QueryType.QUERY_UNIT_PARAMETERS:
+                return QueryUnitParametersResponse(frame_mv)
             else:
                 return Response(frame_mv)
 
