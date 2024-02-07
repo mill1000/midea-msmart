@@ -96,7 +96,7 @@ class HeatPump(Device):
             zone._power_state = getattr(res, f"zone{i}_power_state")
             zone._curve_state = getattr(res, f"zone{i}_curve_state")
             zone._temperature_type = HeatPump.TemperatureType(
-                getattr(res, f"zone{i}_temp_type)"))
+                getattr(res, f"zone{i}_temp_type"))
             zone._terminal_type = getattr(
                 res, f"zone{i}_terminal_type")  # TODO enum
 
