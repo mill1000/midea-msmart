@@ -2,8 +2,8 @@ import logging
 import unittest
 from typing import Union, cast
 
-from .command import (CapabilitiesResponse, CapabilityId, Response,
-                      StateResponse)
+from .command import (CapabilitiesResponse, CapabilityId, GetPropertiesCommand,
+                      PropertyId, Response, StateResponse)
 
 
 class _TestResponseBase(unittest.TestCase):
@@ -528,6 +528,28 @@ class TestCapabilitiesResponse(_TestResponseBase):
         for prop in self.EXPECTED_PROPERTIES:
             self.assertEqual(getattr(resp, prop),
                              EXPECTED_CAPABILITIES[prop], prop)
+
+
+class TestGetPropertiesCommand(unittest.TestCase):
+
+    def test_payload(self) -> None:
+        """Test that we encode properties payloads correctly."""
+        # TODO this test is not based on a real world sample
+        PROPS = [PropertyId.INDOOR_HUMIDITY, PropertyId.SWING_UD_ANGLE]
+
+        # Build command
+        command = GetPropertiesCommand(PROPS)
+
+        # Fetch payload
+        payload = command.payload
+
+        # Assert payload header looks correct
+        self.assertEqual(payload[0], 0xB1)
+        self.assertEqual(payload[1], len(PROPS))
+
+        # Assert that property ID was packed correctly
+        self.assertEqual(payload[2], PropertyId.INDOOR_HUMIDITY & 0xFF)
+        self.assertEqual(payload[3], PropertyId.INDOOR_HUMIDITY >> 8 & 0xFF)
 
 
 if __name__ == "__main__":

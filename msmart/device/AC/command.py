@@ -5,7 +5,7 @@ import math
 import struct
 from collections import namedtuple
 from enum import IntEnum
-from typing import Callable, Optional, Union
+from typing import Callable, List, Optional, Union
 
 import msmart.crc8 as crc8
 from msmart.base_command import Command
@@ -65,6 +65,13 @@ class CapabilityId(IntEnum):
     TWINS_MACHINE = 0x0232  # ??
     GUIDE_STRIP_TYPE = 0x0233  # ??
     BODY_CHECK = 0x0234  # ??
+
+
+class PropertyId(IntEnum):
+    SWING_UD_ANGLE = 0x0009
+    SWING_LR_ANGLE = 0x000A
+    INDOOR_HUMIDITY = 0x0015
+    ANION = 0x021E
 
 
 class TemperatureType(IntEnum):
@@ -230,6 +237,27 @@ class ToggleDisplayCommand(Command):
             0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00,
         ])
+
+
+class GetPropertiesCommand(Command):
+    """Command to query specific properties from the device."""
+
+    def __init__(self, props: List[PropertyId]) -> None:
+        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.REQUEST)
+
+        self._properties = props
+
+    @property
+    def payload(self) -> bytes:
+        payload = bytearray({
+            0xB1,  # Property request
+            len(self._properties),
+        })
+
+        for prop in self._properties:
+            payload += struct.pack("<H", prop)
+
+        return payload
 
 
 class Response():
