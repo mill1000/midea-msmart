@@ -686,3 +686,77 @@ class StateResponse(Response):
             return
 
         self.freeze_protection_mode = bool(payload[21] & 0x80)
+
+
+class PropertiesResponse(Response):
+    """Response to properties query."""
+
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
+
+        self._properties = {}
+
+        _LOGGER.debug("Properties response payload: %s", payload.hex())
+
+        self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+        # Clear existing properties
+        self._properties.clear()
+
+        # Define a type to parse properties
+        Parser = namedtuple("Parser", "name parse")
+
+        # Create a map of capability ID to decoders
+        parsers = {
+            PropertyId.SWING_UD_ANGLE: Parser("swing_vertical_angle", lambda v: v[0]),
+            PropertyId.SWING_LR_ANGLE: Parser("swing_horizontal_angle", lambda v: v[0]),
+            PropertyId.INDOOR_HUMIDITY: Parser("indoor_humidity", lambda v: v[0]),
+        }
+
+        count = payload[1]
+        props = payload[2:]
+
+        # Loop through each property
+        for _ in range(0, count):
+            # Stop if out of data
+            if len(props) < 4:
+                break
+
+            # Skip empty properties
+            size = props[3]
+            if size == 0:
+                props = props[4:]
+                continue
+
+            # Unpack 16 bit ID
+            (raw_id, ) = struct.unpack("<H", props[0:2])
+
+            # Covert ID to enumerate type
+            try:
+                property = PropertyId(raw_id)
+            except ValueError:
+                _LOGGER.warning(
+                    "Unknown property. ID: 0x%4X, Size: %d.", raw_id, size)
+                # Advanced to next property
+                props = props[4+size:]
+                continue
+
+            # Fetch parser for this property
+            parser = parsers.get(property, None)
+
+            # Apply parser if it exists
+            if parser is not None:
+                # Parse the property
+                self._properties.update({parser.name: parser.parse(props[4:])})
+
+            else:
+                _LOGGER.warning(
+                    "Unsupported property. ID: 0x%04X, Size: %d.", property, size)
+
+            # Advanced to next property
+            props = props[4+size:]
+
+    @property
+    def indoor_humidity(self) -> Optional[int]:
+        return self._properties.get("indoor_humidity", None)

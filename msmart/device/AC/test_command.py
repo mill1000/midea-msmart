@@ -3,7 +3,7 @@ import unittest
 from typing import Union, cast
 
 from .command import (CapabilitiesResponse, CapabilityId, GetPropertiesCommand,
-                      PropertyId, Response, StateResponse)
+                      PropertiesResponse, PropertyId, Response, StateResponse)
 
 
 class _TestResponseBase(unittest.TestCase):
@@ -550,6 +550,27 @@ class TestGetPropertiesCommand(unittest.TestCase):
         # Assert that property ID was packed correctly
         self.assertEqual(payload[2], PropertyId.INDOOR_HUMIDITY & 0xFF)
         self.assertEqual(payload[3], PropertyId.INDOOR_HUMIDITY >> 8 & 0xFF)
+
+
+class TestPropertiesResponse(_TestResponseBase):
+    """Test properties response messages."""
+
+    def test_properties_parsing(self) -> None:
+        """Test we decode properties correctly."""
+        # TODO This is not real world data
+        TEST_PAYLOAD = bytes.fromhex("b1021500000123090000014b")
+
+        with memoryview(TEST_PAYLOAD) as mv_payload:
+            resp = PropertiesResponse(mv_payload)
+
+        EXPECTED_RAW_PROPERTIES = {
+            "indoor_humidity": 35, "swing_vertical_angle": 75,
+        }
+        # Ensure raw decoded properties match
+        self.assertEqual(resp._properties, EXPECTED_RAW_PROPERTIES)
+
+        # Check state
+        self.assertEqual(resp.indoor_humidity, 35)
 
 
 if __name__ == "__main__":
