@@ -36,6 +36,7 @@ class QueryType(IntEnum):
     QUERY_ECO = 0x7
     QUERY_INSTALL = 0x8
     QUERY_DISINFECT = 0x9
+    QUERY_HMI_PARAMETERS = 0x0A
     QUERY_UNIT_PARAMETERS = 0x10
 
 
