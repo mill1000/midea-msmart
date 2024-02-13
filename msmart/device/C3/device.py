@@ -61,10 +61,9 @@ class HeatPump(Device):
         self._run_mode = None
         self._heat_enable = False
         self._cool_enable = False
-        self._zone2_enable = False
 
         self._zone_1 = HeatPump.Zone()
-        self._zone_2 = HeatPump.Zone()
+        self._zone_2 = None
 
         # Domestic hot water
         self._dhw_enable = False
@@ -99,15 +98,23 @@ class HeatPump(Device):
             # TODO Run mode in auto?
             self._heat_enable = res.heat_enable
             self._cool_enable = res.cool_enable
-            self._zone2_enable = res.zone2_enable
+
+            # Create zone 2 if supported
+            if res.zone2_enable and self._zone_2 is None:
+                self._zone_2 = HeatPump.Zone()
 
             for i, zone in enumerate([self._zone_1, self._zone_2], start=1):
+
+                # Skip nonexistent zones
+                if zone is None:
+                    continue
+
                 zone._power_state = getattr(res, f"zone{i}_power_state")
                 zone._curve_state = getattr(res, f"zone{i}_curve_state")
                 zone._temperature_type = HeatPump.TemperatureType(
                     getattr(res, f"zone{i}_temp_type"))
-                zone._terminal_type = getattr(
-                    res, f"zone{i}_terminal_type")  # TODO enum
+                zone._terminal_type = HeatPump.TerminalType(getattr(
+                    res, f"zone{i}_terminal_type"))
 
                 zone._target_temperature = getattr(
                     res, f"zone{i}_target_temperature")
