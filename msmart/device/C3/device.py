@@ -197,3 +197,19 @@ class HeatPump(Device):
         cmd = QueryUnitParametersCommand()
         await self._send_command_parse_responses(cmd)
 
+
+    @property
+    def dhw_min_temperature(self) -> int:
+        return self._dhw_min_temperature
+
+    @property
+    def dhw_max_temperature(self) -> int:
+        return self._dhw_max_temperature
+
+    @property
+    def dhw_target_temperature(self) -> float:
+        return self._dhw_target_temperature
+
+    @dhw_target_temperature.setter
+    def target_temperature(self, temperature_celsius: float) -> None:
+        self._dhw_target_temperature = temperature_celsius
