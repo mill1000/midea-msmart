@@ -21,6 +21,7 @@ class InvalidResponseException(Exception):
 class ResponseId(IntEnum):
     STATE = 0xC0
     CAPABILITIES = 0xB5
+    PROPERTIES = 0xB1
 
 
 class CapabilityId(IntEnum):
@@ -307,6 +308,8 @@ class Response():
                 return StateResponse(payload)
             elif response_id == ResponseId.CAPABILITIES:
                 return CapabilitiesResponse(payload)
+            elif response_id == ResponseId.PROPERTIES:
+                return PropertiesResponse(payload)
             else:
                 return Response(payload)
 
