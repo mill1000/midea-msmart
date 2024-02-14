@@ -72,6 +72,9 @@ class PropertyId(IntEnum):
     SWING_UD_ANGLE = 0x0009
     SWING_LR_ANGLE = 0x000A
     INDOOR_HUMIDITY = 0x0015
+    SELF_CLEAN = 0x0039
+    RATE_SELECT = 0x0048
+    FRESH_AIR = 0x004B
     ANION = 0x021E
 
 
