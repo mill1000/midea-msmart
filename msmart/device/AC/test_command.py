@@ -557,20 +557,25 @@ class TestPropertiesResponse(_TestResponseBase):
 
     def test_properties_parsing(self) -> None:
         """Test we decode properties correctly."""
-        # TODO This is not real world data
-        TEST_PAYLOAD = bytes.fromhex("b1021500000123090000014b")
+        # https://github.com/mill1000/midea-ac-py/issues/60#issuecomment-1936976587
+        TEST_RESPONSE = bytes.fromhex(
+            "aa21ac00000000000303b10409000001000a00000100150000012b1e020000005fa3")
 
-        with memoryview(TEST_PAYLOAD) as mv_payload:
-            resp = PropertiesResponse(mv_payload)
+        resp = self._test_build_response(TEST_RESPONSE)
+
+        # Assert response is a correct type
+        self.assertEqual(type(resp), PropertiesResponse)
 
         EXPECTED_RAW_PROPERTIES = {
-            "indoor_humidity": 35, "swing_vertical_angle": 75,
+            PropertyId.INDOOR_HUMIDITY: 43,
+            PropertyId.SWING_UD_ANGLE: 0,
+            PropertyId.SWING_LR_ANGLE: 0,
         }
         # Ensure raw decoded properties match
         self.assertEqual(resp._properties, EXPECTED_RAW_PROPERTIES)
 
         # Check state
-        self.assertEqual(resp.indoor_humidity, 35)
+        self.assertEqual(resp.indoor_humidity, 43)
 
 
 if __name__ == "__main__":
