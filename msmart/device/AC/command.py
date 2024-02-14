@@ -171,6 +171,7 @@ class SetStateCommand(Command):
         self.freeze_protection_mode = False
         self.follow_me = False
         self.purifier = False
+        self.target_humidity = 40
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
         # Build beep and power status bytes
@@ -212,7 +213,10 @@ class SetStateCommand(Command):
         turbo_alt = 0x20 if self.turbo_mode else 0
         follow_me = 0x80 if self.follow_me else 0
 
-        # Build alternate turbo byte
+        # Build target humidity byte
+        humidity = self.target_humidity & 0x7F
+
+        # Build freeze protection byte
         freeze_protect = 0x80 if self.freeze_protection_mode else 0
 
         return super().tobytes(bytes([
@@ -239,8 +243,10 @@ class SetStateCommand(Command):
             0x00, 0x00, 0x00,
             # Alternate temperature
             temperature_alt,
+            # Target humidity
+            humidity,
             # Unknown
-            0x00, 0x00,
+            0x00,
             # Frost/freeze protection
             freeze_protect,
             # Unknown
@@ -763,10 +769,13 @@ class StateResponse(Response):
         if self.outdoor_temperature:
             self.outdoor_temperature += (payload[15] >> 4) / 10
 
-        # TODO dudanov/MideaUART humidity set point in byte 19, mask 0x7F
-
         # TODO Some payloads are shorter than expected. Unsure what, when or why
-        # This length was picked arbitrarily from one user's shorter payload
+        # The lengths below were picked arbitrarily from user payload data
+        if len(payload) < 20:
+            return
+
+        self.target_humidity = payload[19] & 0x7F
+
         if len(payload) < 22:
             return
 
