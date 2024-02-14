@@ -772,9 +772,13 @@ class PropertiesResponse(Response):
         return self._properties.get(PropertyId.INDOOR_HUMIDITY, None)
 
     @property
-    def swing_vertical_angle(self) -> Optional[int]:
-        return self._properties.get(PropertyId.SWING_UD_ANGLE, None)
+    def rate_select(self) -> Optional[int]:
+        return self._properties.get(PropertyId.RATE_SELECT, None)
 
     @property
     def swing_horizontal_angle(self) -> Optional[int]:
         return self._properties.get(PropertyId.SWING_LR_ANGLE, None)
+
+    @property
+    def swing_vertical_angle(self) -> Optional[int]:
+        return self._properties.get(PropertyId.SWING_UD_ANGLE, None)
