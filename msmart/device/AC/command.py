@@ -710,14 +710,18 @@ class PropertiesResponse(Response):
         # Clear existing properties
         self._properties.clear()
 
-        # Define a type to parse properties
-        Parser = namedtuple("Parser", "name parse")
-
-        # Create a map of capability ID to decoders
+        # Define parsing functions for supported properties
+        # TODO when a properties has multiple field .e.g fresh air
+        # should they be stored all under the fresh_air key or create different
+        # keys for each. e.g. capabilities
         parsers = {
-            PropertyId.SWING_UD_ANGLE: Parser("swing_vertical_angle", lambda v: v[0]),
-            PropertyId.SWING_LR_ANGLE: Parser("swing_horizontal_angle", lambda v: v[0]),
-            PropertyId.INDOOR_HUMIDITY: Parser("indoor_humidity", lambda v: v[0]),
+            PropertyId.ANION: lambda v: v[0],
+            PropertyId.FRESH_AIR: lambda v: (v[0], v[1], v[2]),
+            PropertyId.INDOOR_HUMIDITY: lambda v: v[0],
+            PropertyId.RATE_SELECT: lambda v: v[0],
+            PropertyId.SELF_CLEAN: lambda v: v[0],
+            PropertyId.SWING_UD_ANGLE: lambda v: v[0],
+            PropertyId.SWING_LR_ANGLE: lambda v: v[0],
         }
 
         count = payload[1]
@@ -754,7 +758,7 @@ class PropertiesResponse(Response):
             # Apply parser if it exists
             if parser is not None:
                 # Parse the property
-                self._properties.update({parser.name: parser.parse(props[4:])})
+                self._properties.update({property: parser(props[4:])})
 
             else:
                 _LOGGER.warning(
@@ -765,4 +769,12 @@ class PropertiesResponse(Response):
 
     @property
     def indoor_humidity(self) -> Optional[int]:
-        return self._properties.get("indoor_humidity", None)
+        return self._properties.get(PropertyId.INDOOR_HUMIDITY, None)
+
+    @property
+    def swing_vertical_angle(self) -> Optional[int]:
+        return self._properties.get(PropertyId.SWING_UD_ANGLE, None)
+
+    @property
+    def swing_horizontal_angle(self) -> Optional[int]:
+        return self._properties.get(PropertyId.SWING_LR_ANGLE, None)
