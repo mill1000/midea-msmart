@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from enum import IntEnum
-from typing import Any, List, Optional, cast
+from typing import Any, List, Optional, Union, cast
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
@@ -129,41 +129,52 @@ class AirConditioner(Device):
         # Default to assuming device can't handle properties commands
         self._supports_properties = False
 
-    def _update_state(self, res: StateResponse) -> None:
-        self._power_state = res.power_on
+        self._horizontal_swing_angle = None
+        self._vertical_swing_angle = None
 
-        self._target_temperature = res.target_temperature
-        self._operational_mode = AirConditioner.OperationalMode.get_from_value(
-            res.operational_mode)
+    def _update_state(self, res: Union[StateResponse, PropertiesResponse]) -> None:
+        if res.id == ResponseId.STATE:
+            res = cast(StateResponse, res)
+            self._power_state = res.power_on
 
-        if self._supports_custom_fan_speed:
-            # Attempt to fetch enum of fan speed, but fallback to raw int if custom
-            try:
-                self._fan_speed = AirConditioner.FanSpeed(
-                    cast(int, res.fan_speed))
-            except ValueError:
-                self._fan_speed = cast(int, res.fan_speed)
-        else:
-            self._fan_speed = AirConditioner.FanSpeed.get_from_value(
-                res.fan_speed)
+            self._target_temperature = res.target_temperature
+            self._operational_mode = AirConditioner.OperationalMode.get_from_value(
+                res.operational_mode)
 
-        self._swing_mode = AirConditioner.SwingMode.get_from_value(
-            res.swing_mode)
+            if self._supports_custom_fan_speed:
+                # Attempt to fetch enum of fan speed, but fallback to raw int if custom
+                try:
+                    self._fan_speed = AirConditioner.FanSpeed(
+                        cast(int, res.fan_speed))
+                except ValueError:
+                    self._fan_speed = cast(int, res.fan_speed)
+            else:
+                self._fan_speed = AirConditioner.FanSpeed.get_from_value(
+                    res.fan_speed)
 
-        self._eco_mode = res.eco_mode
-        self._turbo_mode = res.turbo_mode
-        self._freeze_protection_mode = res.freeze_protection_mode
-        self._sleep_mode = res.sleep_mode
+            self._swing_mode = AirConditioner.SwingMode.get_from_value(
+                res.swing_mode)
 
-        self._indoor_temperature = res.indoor_temperature
-        self._outdoor_temperature = res.outdoor_temperature
+            self._eco_mode = res.eco_mode
+            self._turbo_mode = res.turbo_mode
+            self._freeze_protection_mode = res.freeze_protection_mode
+            self._sleep_mode = res.sleep_mode
 
-        self._display_on = res.display_on
-        self._fahrenheit_unit = res.fahrenheit
+            self._indoor_temperature = res.indoor_temperature
+            self._outdoor_temperature = res.outdoor_temperature
 
-        self._filter_alert = res.filter_alert
+            self._display_on = res.display_on
+            self._fahrenheit_unit = res.fahrenheit
 
-        self._follow_me = res.follow_me
+            self._filter_alert = res.filter_alert
+
+            self._follow_me = res.follow_me
+
+        elif res.id == ResponseId.PROPERTIES:
+            res = cast(PropertiesResponse, res)
+
+            self._horizontal_swing_angle = res.swing_horizontal_angle
+            self._vertical_swing_angle = res.swing_vertical_angle
 
     def _update_capabilities(self, res: CapabilitiesResponse) -> None:
         # Build list of supported operation modes
@@ -216,11 +227,19 @@ class AirConditioner(Device):
         self._min_target_temperature = res.min_temperature
         self._max_target_temperature = res.max_temperature
 
+        self._supports_vertical_swing_angle = res.swing_ud_angle
+        self._support_horizontal_swing_angle = res.swing_lr_angle
+
+        # Assume properties are supported if any property driven capabilties are
+        self._supports_properties = any([
+            self._supports_vertical_swing_angle,
+            self._support_horizontal_swing_angle
+        ])
+
     def _process_state_response(self, response: Response) -> None:
         """Update the local state from a device state response."""
 
-        if response.id == ResponseId.STATE:
-            response = cast(StateResponse, response)
+        if response.id in [ResponseId.STATE, ResponseId.PROPERTIES]:
             self._update_state(response)
         else:
             _LOGGER.debug("Ignored unknown response from %s:%d: %s",
@@ -295,15 +314,6 @@ class AirConditioner(Device):
         # Update device capabilities
         self._update_capabilities(response)
 
-        # Send a dummy get properties command to determine if they are supported
-        cmd = GetPropertiesCommand([PropertyId.SWING_UD_ANGLE])
-        responses = await super()._send_command(cmd)
-
-        self._supports_properties = any([
-            isinstance(Response.construct(r), PropertiesResponse)
-            for r in responses
-        ])
-
     async def toggle_display(self) -> None:
         """Toggle the device display if the device supports it."""
 
@@ -323,6 +333,17 @@ class AirConditioner(Device):
 
         cmd = GetStateCommand()
         # Process any state responses from the device
+        for response in await self._send_command_get_responses(cmd):
+            self._process_state_response(response)
+
+        if not self._supports_properties:
+            return
+        
+        # Update properties
+        cmd = GetPropertiesCommand([
+            PropertyId.SWING_UD_ANGLE,
+            PropertyId.SWING_LR_ANGLE
+        ])
         for response in await self._send_command_get_responses(cmd):
             self._process_state_response(response)
 
