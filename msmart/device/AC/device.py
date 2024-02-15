@@ -84,6 +84,7 @@ class AirConditioner(Device):
         self._filter_alert = False
         self._follow_me = False
         self._purifier = False
+        self._target_humidity = 40
 
         # Support all known modes initially
         self._supported_op_modes = cast(
@@ -104,6 +105,7 @@ class AirConditioner(Device):
 
         self._indoor_temperature = None
         self._outdoor_temperature = None
+        self._indoor_humidity = None
 
         # Default to assuming device can't handle any properties
         self._supported_properties = set()
