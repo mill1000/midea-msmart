@@ -541,6 +541,14 @@ class CapabilitiesResponse(Response):
         return self._capabilities.get("fan_custom", False)
 
     @property
+    def swing_horizontal_angle(self) -> bool:
+        return self._capabilities.get("swing_horizontal_angle", False)
+
+    @property
+    def swing_vertical_angle(self) -> bool:
+        return self._capabilities.get("swing_vertical_angle", False)
+
+    @property
     def swing_horizontal(self) -> bool:
         return self._capabilities.get("swing_horizontal", False)
 
