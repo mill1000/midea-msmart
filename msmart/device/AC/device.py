@@ -85,6 +85,23 @@ class AirConditioner(Device):
         def get_from_name(cls, name: str, default=OFF) -> AirConditioner.SwingMode:
             return cast(cls, super().get_from_name(name, default))
 
+    # TODO enumerate?
+    class RateSelect(IntEnum):
+        LEVEL_1 = 1
+        LEVEL_2 = 20
+        LEVEL_3 = 40
+        LEVEL_4 = 60
+        LEVEL_5 = 80
+        OFF = 100
+
+    class SwingAngle(IntEnum):
+        OFF = 0
+        POS_1 = 1
+        POS_2 = 25
+        POS_3 = 50
+        POS_4 = 75
+        POS_5 = 100
+
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
         # Remove possible duplicate device_type kwarg
         kwargs.pop("device_type", None)
@@ -126,13 +143,13 @@ class AirConditioner(Device):
         self._indoor_temperature = None
         self._outdoor_temperature = None
 
-        # Default to assuming device can't handle properties commands
-        self._supports_properties = False
+        # Default to assuming device can't handle any properties
+        self._supported_properties = []
 
         self._horizontal_swing_angle = None
         self._vertical_swing_angle = None
 
-    def _update_state(self, res: Union[StateResponse, PropertiesResponse]) -> None:
+    def _update_state(self, res: Response) -> None:
         if res.id == ResponseId.STATE:
             res = cast(StateResponse, res)
             self._power_state = res.power_on
@@ -227,14 +244,15 @@ class AirConditioner(Device):
         self._min_target_temperature = res.min_temperature
         self._max_target_temperature = res.max_temperature
 
-        self._supports_vertical_swing_angle = res.swing_ud_angle
-        self._support_horizontal_swing_angle = res.swing_lr_angle
+        self._supports_vertical_swing_angle = res.swing_vertical_angle
+        self._support_horizontal_swing_angle = res.swing_horizontal_angle
 
-        # Assume properties are supported if any property driven capabilties are
-        self._supports_properties = any([
-            self._supports_vertical_swing_angle,
-            self._support_horizontal_swing_angle
-        ])
+        # Add supported properties based on capabilities
+        if self._supports_vertical_swing_angle:
+            self._supported_properties.append(PropertyId.SWING_UD_ANGLE)
+
+        if self._support_horizontal_swing_angle:
+            self._supported_properties.append(PropertyId.SWING_LR_ANGLE)
 
     def _process_state_response(self, response: Response) -> None:
         """Update the local state from a device state response."""
@@ -336,16 +354,11 @@ class AirConditioner(Device):
         for response in await self._send_command_get_responses(cmd):
             self._process_state_response(response)
 
-        if not self._supports_properties:
-            return
-        
-        # Update properties
-        cmd = GetPropertiesCommand([
-            PropertyId.SWING_UD_ANGLE,
-            PropertyId.SWING_LR_ANGLE
-        ])
-        for response in await self._send_command_get_responses(cmd):
-            self._process_state_response(response)
+        # Update supported properties
+        if len(self._supported_properties):
+            cmd = GetPropertiesCommand(self._supported_properties)
+            for response in await self._send_command_get_responses(cmd):
+                self._process_state_response(response)
 
     async def apply(self) -> None:
         """Apply the local state to the device."""
