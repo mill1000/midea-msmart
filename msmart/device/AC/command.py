@@ -5,7 +5,7 @@ import math
 import struct
 from collections import namedtuple
 from enum import IntEnum
-from typing import Callable, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import msmart.crc8 as crc8
 from msmart.base_command import Command
@@ -71,7 +71,7 @@ class CapabilityId(IntEnum):
 class PropertyId(IntEnum):
     SWING_UD_ANGLE = 0x0009
     SWING_LR_ANGLE = 0x000A
-    INDOOR_HUMIDITY = 0x0015
+    INDOOR_HUMIDITY = 0x0015  # TODO Reference refers to a potential bug with this
     SELF_CLEAN = 0x0039
     RATE_SELECT = 0x0048
     FRESH_AIR = 0x004B
@@ -260,6 +260,29 @@ class GetPropertiesCommand(Command):
 
         for prop in self._properties:
             payload += struct.pack("<H", prop)
+
+        return payload
+
+
+class SetPropertiesCommand(Command):
+    """Command to set specific properties of the device."""
+
+    def __init__(self, props: Dict[PropertyId, Union[bytes, int]]) -> None:
+        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.SET)
+
+        self._properties = props
+
+    @property
+    def payload(self) -> bytes:
+        payload = bytearray({
+            0xB0,  # Property request
+            len(self._properties),
+        })
+
+        for prop, value in self._properties.items():
+            payload += struct.pack("<H", prop)
+            payload += bytes([len(value)])
+            payload += value
 
         return payload
 

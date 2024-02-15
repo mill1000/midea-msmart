@@ -3,7 +3,8 @@ import unittest
 from typing import Union, cast
 
 from .command import (CapabilitiesResponse, CapabilityId, GetPropertiesCommand,
-                      PropertiesResponse, PropertyId, Response, StateResponse)
+                      PropertiesResponse, PropertyId, Response,
+                      SetPropertiesCommand, StateResponse)
 
 
 class _TestResponseBase(unittest.TestCase):
@@ -550,6 +551,35 @@ class TestGetPropertiesCommand(unittest.TestCase):
         # Assert that property ID was packed correctly
         self.assertEqual(payload[2], PropertyId.INDOOR_HUMIDITY & 0xFF)
         self.assertEqual(payload[3], PropertyId.INDOOR_HUMIDITY >> 8 & 0xFF)
+
+
+class TestSetPropertiesCommand(unittest.TestCase):
+
+    def test_payload(self) -> None:
+        """Test that we encode set properties payloads correctly."""
+        # TODO this test is not based on a real world sample
+        PROPS = {PropertyId.SWING_UD_ANGLE: bytes(
+            [25]), PropertyId.SWING_LR_ANGLE: bytes([75])}
+
+        # Build command
+        command = SetPropertiesCommand(PROPS)
+
+        # Fetch payload
+        payload = command.payload
+
+        # Assert payload header looks correct
+        self.assertEqual(payload[0], 0xB0)
+        self.assertEqual(payload[1], len(PROPS))
+
+        # Assert that property ID was packed correctly
+        self.assertEqual(payload[2], PropertyId.SWING_UD_ANGLE & 0xFF)
+        self.assertEqual(payload[3], PropertyId.SWING_UD_ANGLE >> 8 & 0xFF)
+
+        # Assert length is correct
+        self.assertEqual(payload[4], len(PROPS[PropertyId.SWING_UD_ANGLE]))
+
+        # Assert data is correct
+        self.assertEqual(payload[5], PROPS[PropertyId.SWING_UD_ANGLE][0])
 
 
 class TestPropertiesResponse(_TestResponseBase):
