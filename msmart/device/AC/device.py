@@ -8,8 +8,9 @@ from msmart.base_device import Device
 from msmart.const import DeviceType
 
 from .command import (CapabilitiesResponse, GetCapabilitiesCommand,
-                      GetStateCommand, InvalidResponseException, Response,
-                      ResponseId, SetStateCommand, StateResponse,
+                      GetPropertiesCommand, GetStateCommand,
+                      InvalidResponseException, PropertiesResponse, PropertyId,
+                      Response, ResponseId, SetStateCommand, StateResponse,
                       ToggleDisplayCommand)
 
 _LOGGER = logging.getLogger(__name__)
@@ -124,6 +125,9 @@ class AirConditioner(Device):
 
         self._indoor_temperature = None
         self._outdoor_temperature = None
+
+        # Default to assuming device can't handle properties commands
+        self._supports_properties = False
 
     def _update_state(self, res: StateResponse) -> None:
         self._power_state = res.power_on
@@ -290,6 +294,15 @@ class AirConditioner(Device):
 
         # Update device capabilities
         self._update_capabilities(response)
+
+        # Send a dummy get properties command to determine if they are supported
+        cmd = GetPropertiesCommand([PropertyId.SWING_UD_ANGLE])
+        responses = await super()._send_command(cmd)
+
+        self._supports_properties = any([
+            isinstance(Response.construct(r), PropertiesResponse)
+            for r in responses
+        ])
 
     async def toggle_display(self) -> None:
         """Toggle the device display if the device supports it."""
