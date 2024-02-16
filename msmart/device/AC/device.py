@@ -18,24 +18,29 @@ _LOGGER = logging.getLogger(__name__)
 
 class IntEnumHelper(IntEnum):
     """Helper class to convert IntEnums to/from strings."""
-    @classmethod
-    def list(cls) -> List[IntEnumHelper]:
-        return list(map(lambda c: c, cls))
 
     @classmethod
-    def get_from_value(cls, value: Optional[int], default: IntEnumHelper) -> IntEnumHelper:
+    def list(cls) -> List[IntEnumHelper]:
+        return list(cls)
+
+    @classmethod
+    def get_from_value(cls, value: Optional[int], default: Optional[IntEnumHelper] = None) -> IntEnumHelper:
         try:
             return cls(cast(int, value))
         except ValueError:
             _LOGGER.debug("Unknown %s: %d", cls, value)
+            if default is None:
+                default = cls.DEFAULT
             return cls(default)
 
     @classmethod
-    def get_from_name(cls, name: str, default: IntEnumHelper) -> IntEnumHelper:
+    def get_from_name(cls, name: str, default: Optional[IntEnumHelper] = None) -> IntEnumHelper:
         try:
             return cls[name]
         except KeyError:
             _LOGGER.debug("Unknown %s: %d", cls, name)
+            if default is None:
+                default = cls.DEFAULT
             return cls(default)
 
 
@@ -48,13 +53,7 @@ class AirConditioner(Device):
         LOW = 40
         SILENT = 20
 
-        @classmethod
-        def get_from_value(cls, value: Optional[int], default=AUTO) -> AirConditioner.FanSpeed:
-            return cast(cls, super().get_from_value(value, default))
-
-        @classmethod
-        def get_from_name(cls, name: str, default=AUTO) -> AirConditioner.FanSpeed:
-            return cast(cls, super().get_from_name(name, default))
+        DEFAULT = AUTO
 
     class OperationalMode(IntEnumHelper):
         AUTO = 1
@@ -63,13 +62,7 @@ class AirConditioner(Device):
         HEAT = 4
         FAN_ONLY = 5
 
-        @classmethod
-        def get_from_value(cls, value: Optional[int], default=FAN_ONLY) -> AirConditioner.OperationalMode:
-            return cast(cls, super().get_from_value(value, default))
-
-        @classmethod
-        def get_from_name(cls, name: str, default=FAN_ONLY) -> AirConditioner.OperationalMode:
-            return cast(cls, super().get_from_name(name, default))
+        DEFAULT = FAN_ONLY
 
     class SwingMode(IntEnumHelper):
         OFF = 0x0
@@ -77,30 +70,17 @@ class AirConditioner(Device):
         HORIZONTAL = 0x3
         BOTH = 0xF
 
-        @classmethod
-        def get_from_value(cls, value: Optional[int], default=OFF) -> AirConditioner.SwingMode:
-            return cast(cls, super().get_from_value(value, default))
+        DEFAULT = OFF
 
-        @classmethod
-        def get_from_name(cls, name: str, default=OFF) -> AirConditioner.SwingMode:
-            return cast(cls, super().get_from_name(name, default))
-
-    # TODO enumerate?
-    class RateSelect(IntEnum):
-        LEVEL_1 = 1
-        LEVEL_2 = 20
-        LEVEL_3 = 40
-        LEVEL_4 = 60
-        LEVEL_5 = 80
-        OFF = 100
-
-    class SwingAngle(IntEnum):
+    class SwingAngle(IntEnumHelper):
         OFF = 0
         POS_1 = 1
         POS_2 = 25
         POS_3 = 50
         POS_4 = 75
         POS_5 = 100
+
+        DEFAULT = OFF
 
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
         # Remove possible duplicate device_type kwarg
