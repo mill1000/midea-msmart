@@ -126,8 +126,8 @@ class AirConditioner(Device):
         # Default to assuming device can't handle any properties
         self._supported_properties = []
 
-        self._horizontal_swing_angle = None
-        self._vertical_swing_angle = None
+        self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
+        self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
 
     def _update_state(self, res: Response) -> None:
         if res.id == ResponseId.STATE:
@@ -170,8 +170,10 @@ class AirConditioner(Device):
         elif res.id == ResponseId.PROPERTIES:
             res = cast(PropertiesResponse, res)
 
-            self._horizontal_swing_angle = res.swing_horizontal_angle
-            self._vertical_swing_angle = res.swing_vertical_angle
+            self._horizontal_swing_angle = AirConditioner.SwingAngle.get_from_value(
+                res.swing_horizontal_angle)
+            self._vertical_swing_angle = AirConditioner.SwingAngle.get_from_value(
+                res.swing_vertical_angle)
 
     def _update_capabilities(self, res: CapabilitiesResponse) -> None:
         # Build list of supported operation modes
