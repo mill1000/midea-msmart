@@ -193,9 +193,9 @@ class HeatPump(Device):
         cmd = QueryBasicCommand()
         await self._send_command_parse_responses(cmd)
 
-        # Query unit parameters
-        cmd = QueryUnitParametersCommand()
-        await self._send_command_parse_responses(cmd)
+        # # Query unit parameters
+        # cmd = QueryUnitParametersCommand()
+        # await self._send_command_parse_responses(cmd)
 
 
     @property
