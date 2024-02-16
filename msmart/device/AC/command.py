@@ -253,10 +253,10 @@ class GetPropertiesCommand(Command):
 
     @property
     def payload(self) -> bytes:
-        payload = bytearray({
+        payload = bytearray([
             0xB1,  # Property request
             len(self._properties),
-        })
+        ])
 
         for prop in self._properties:
             payload += struct.pack("<H", prop)
@@ -274,13 +274,17 @@ class SetPropertiesCommand(Command):
 
     @property
     def payload(self) -> bytes:
-        payload = bytearray({
+        payload = bytearray([
             0xB0,  # Property request
             len(self._properties),
-        })
+        ])
 
         for prop, value in self._properties.items():
             payload += struct.pack("<H", prop)
+
+            if isinstance(value, int):
+                value = bytes([value])
+
             payload += bytes([len(value)])
             payload += value
 
