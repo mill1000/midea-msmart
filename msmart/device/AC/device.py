@@ -226,14 +226,11 @@ class AirConditioner(Device):
         self._min_target_temperature = res.min_temperature
         self._max_target_temperature = res.max_temperature
 
-        self._supports_vertical_swing_angle = res.swing_vertical_angle
-        self._support_horizontal_swing_angle = res.swing_horizontal_angle
-
         # Add supported properties based on capabilities
-        if self._supports_vertical_swing_angle:
+        if res.swing_vertical_angle:
             self._supported_properties.append(PropertyId.SWING_UD_ANGLE)
 
-        if self._support_horizontal_swing_angle:
+        if res.swing_horizontal_angle:
             self._supported_properties.append(PropertyId.SWING_LR_ANGLE)
 
     def _process_state_response(self, response: Response) -> None:
