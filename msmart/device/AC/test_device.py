@@ -69,6 +69,22 @@ class TestDeviceEnums(unittest.TestCase):
         self.assertEqual(enum, AC.SwingMode.OFF)
         self.assertIsInstance(enum, AC.SwingMode)
 
+    def test_swing_angle(self) -> None:
+        """Test SwingAngle enum conversion from value/name."""
+
+        # Test enum members
+        self._test_enum_members(AC.SwingAngle)
+
+        # Test fall back behavior to "OFF"
+        enum = AC.SwingAngle.get_from_name("INVALID_NAME")
+        self.assertEqual(enum, AC.SwingAngle.OFF)
+        self.assertIsInstance(enum, AC.SwingAngle)
+
+        # Test fall back behavior to "OFF"
+        enum = AC.SwingAngle.get_from_value(1234567)
+        self.assertEqual(enum, AC.SwingAngle.OFF)
+        self.assertIsInstance(enum, AC.SwingAngle)
+
 
 if __name__ == "__main__":
     unittest.main()
