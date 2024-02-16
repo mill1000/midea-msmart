@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from enum import IntEnum
-from typing import Any, List, Optional, Union, cast
+from typing import Any, List, Optional, cast
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
@@ -10,8 +10,8 @@ from msmart.const import DeviceType
 from .command import (CapabilitiesResponse, GetCapabilitiesCommand,
                       GetPropertiesCommand, GetStateCommand,
                       InvalidResponseException, PropertiesResponse, PropertyId,
-                      Response, ResponseId, SetStateCommand, StateResponse,
-                      ToggleDisplayCommand)
+                      Response, ResponseId, SetPropertiesCommand,
+                      SetStateCommand, StateResponse, ToggleDisplayCommand)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -385,6 +385,27 @@ class AirConditioner(Device):
         cmd.follow_me = or_default(self._follow_me, False)
 
         # Process any state responses from the device
+        for response in await self._send_command_get_responses(cmd):
+            self._process_state_response(response)
+
+        # Done updating if no supported properties
+        if not len(self._supported_properties):
+            return
+
+        # Warn if trying to use unsupported properties
+        if (self._horizontal_swing_angle != AirConditioner.SwingAngle.OFF and
+                PropertyId.SWING_LR_ANGLE not in self._supported_properties):
+            _LOGGER.warning("Device is not capable of horizontal swing angle.")
+
+        if (self._vertical_swing_angle != AirConditioner.SwingAngle.OFF and
+                PropertyId.SWING_UD_ANGLE not in self._supported_properties):
+            _LOGGER.warning("Device is not capable of vertical swing angle.")
+
+        # Build set properties command with current state
+        cmd = SetPropertiesCommand({
+            PropertyId.SWING_LR_ANGLE: self._horizontal_swing_angle,
+            PropertyId.SWING_UD_ANGLE: self._vertical_swing_angle
+        })
         for response in await self._send_command_get_responses(cmd):
             self._process_state_response(response)
 
