@@ -607,6 +607,27 @@ class TestPropertiesResponse(_TestResponseBase):
         # Check state
         self.assertEqual(resp.indoor_humidity, 43)
 
+    def test_properties_ack(self) -> None:
+        """Test we decode an acknowledgement from a set properties command correctly."""
+        # https://github.com/mill1000/midea-msmart/issues/97#issuecomment-1949495900
+        TEST_RESPONSE = bytes.fromhex(
+            "aa18ac00000000000302b0020a0000013209001101000089a4")
+
+        resp = self._test_build_response(TEST_RESPONSE)
+
+        # Assert response is a correct type
+        self.assertEqual(type(resp), PropertiesResponse)
+
+        EXPECTED_RAW_PROPERTIES = {
+            PropertyId.SWING_UD_ANGLE: 0,
+            PropertyId.SWING_LR_ANGLE: 50,
+        }
+        # Ensure raw decoded properties match
+        self.assertEqual(resp._properties, EXPECTED_RAW_PROPERTIES)
+
+        # Check state
+        self.assertEqual(resp.swing_horizontal_angle, 50)
+
 
 if __name__ == "__main__":
     unittest.main()
