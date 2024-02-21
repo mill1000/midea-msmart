@@ -85,6 +85,15 @@ class TestDeviceEnums(unittest.TestCase):
         self.assertEqual(enum, AC.SwingAngle.OFF)
         self.assertIsInstance(enum, AC.SwingAngle)
 
+        # Test that converting from None works
+        enum = AC.SwingAngle.get_from_value(None)
+        self.assertEqual(enum, AC.SwingAngle.OFF)
+        self.assertIsInstance(enum, AC.SwingAngle)
+
+        enum = AC.SwingAngle.get_from_name(None)
+        self.assertEqual(enum, AC.SwingAngle.OFF)
+        self.assertIsInstance(enum, AC.SwingAngle)
+
 
 if __name__ == "__main__":
     unittest.main()

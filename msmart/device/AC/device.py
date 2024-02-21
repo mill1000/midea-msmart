@@ -28,7 +28,7 @@ class IntEnumHelper(IntEnum):
         try:
             return cls(cast(int, value))
         except ValueError:
-            _LOGGER.debug("Unknown %s: %d", cls, value)
+            _LOGGER.debug("Unknown %s: %s", cls, value)
             if default is None:
                 default = cls.DEFAULT
             return cls(default)
@@ -38,7 +38,7 @@ class IntEnumHelper(IntEnum):
         try:
             return cls[name]
         except KeyError:
-            _LOGGER.debug("Unknown %s: %d", cls, name)
+            _LOGGER.debug("Unknown %s: %s", cls, name)
             if default is None:
                 default = cls.DEFAULT
             return cls(default)
