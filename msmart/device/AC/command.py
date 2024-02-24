@@ -5,7 +5,7 @@ import math
 import struct
 from collections import namedtuple
 from enum import IntEnum
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Collection, Mapping, Optional, Union
 
 import msmart.crc8 as crc8
 from msmart.base_command import Command
@@ -247,7 +247,7 @@ class ToggleDisplayCommand(Command):
 class GetPropertiesCommand(Command):
     """Command to query specific properties from the device."""
 
-    def __init__(self, props: List[PropertyId]) -> None:
+    def __init__(self, props: Collection[PropertyId]) -> None:
         super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.REQUEST)
 
         self._properties = props
@@ -268,7 +268,7 @@ class GetPropertiesCommand(Command):
 class SetPropertiesCommand(Command):
     """Command to set specific properties of the device."""
 
-    def __init__(self, props: Dict[PropertyId, Union[bytes, int]]) -> None:
+    def __init__(self, props: Mapping[PropertyId, Union[bytes, int]]) -> None:
         super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.SET)
 
         self._properties = props

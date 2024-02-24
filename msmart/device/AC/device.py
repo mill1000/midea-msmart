@@ -30,17 +30,17 @@ class IntEnumHelper(IntEnum):
         except ValueError:
             _LOGGER.debug("Unknown %s: %s", cls, value)
             if default is None:
-                default = cls.DEFAULT
+                default = cls.DEFAULT  # pyright: ignore[reportAttributeAccessIssue] # nopep8
             return cls(default)
 
     @classmethod
-    def get_from_name(cls, name: str, default: Optional[IntEnumHelper] = None) -> IntEnumHelper:
+    def get_from_name(cls, name: Optional[str], default: Optional[IntEnumHelper] = None) -> IntEnumHelper:
         try:
-            return cls[name]
+            return cls[cast(str, name)]
         except KeyError:
             _LOGGER.debug("Unknown %s: %s", cls, name)
             if default is None:
-                default = cls.DEFAULT
+                default = cls.DEFAULT  # pyright: ignore[reportAttributeAccessIssue] # nopep8
             return cls(default)
 
 
@@ -142,8 +142,9 @@ class AirConditioner(Device):
             self._power_state = res.power_on
 
             self._target_temperature = res.target_temperature
-            self._operational_mode = AirConditioner.OperationalMode.get_from_value(
-                res.operational_mode)
+            self._operational_mode = cast(
+                AirConditioner.OperationalMode,
+                AirConditioner.OperationalMode.get_from_value(res.operational_mode))
 
             if self._supports_custom_fan_speed:
                 # Attempt to fetch enum of fan speed, but fallback to raw int if custom
@@ -156,8 +157,9 @@ class AirConditioner(Device):
                 self._fan_speed = AirConditioner.FanSpeed.get_from_value(
                     res.fan_speed)
 
-            self._swing_mode = AirConditioner.SwingMode.get_from_value(
-                res.swing_mode)
+            self._swing_mode = cast(
+                AirConditioner.SwingMode,
+                AirConditioner.SwingMode.get_from_value(res.swing_mode))
 
             self._eco_mode = res.eco_mode
             self._turbo_mode = res.turbo_mode
@@ -177,10 +179,14 @@ class AirConditioner(Device):
         elif res.id == ResponseId.PROPERTIES:
             res = cast(PropertiesResponse, res)
 
-            self._horizontal_swing_angle = AirConditioner.SwingAngle.get_from_value(
-                res.swing_horizontal_angle)
-            self._vertical_swing_angle = AirConditioner.SwingAngle.get_from_value(
-                res.swing_vertical_angle)
+            self._horizontal_swing_angle = cast(
+                AirConditioner.SwingAngle,
+                AirConditioner.SwingAngle.get_from_value(
+                    res.swing_horizontal_angle))
+            self._vertical_swing_angle = cast(
+                AirConditioner.SwingAngle,
+                AirConditioner.SwingAngle.get_from_value(
+                    res.swing_vertical_angle))
 
     def _update_capabilities(self, res: CapabilitiesResponse) -> None:
         # Build list of supported operation modes

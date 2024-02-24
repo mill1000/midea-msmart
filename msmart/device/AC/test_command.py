@@ -15,7 +15,7 @@ class _TestResponseBase(unittest.TestCase):
         self.assertTrue(hasattr(obj, attr),
                         msg=f"Object {obj} lacks attribute '{attr}'.")
 
-    def _test_build_response(self, msg) -> Union[StateResponse, CapabilitiesResponse, Response]:
+    def _test_build_response(self, msg) -> Union[StateResponse, CapabilitiesResponse, PropertiesResponse, Response]:
         """Build a response from the frame and assert it exists."""
         resp = Response.construct(msg)
         self.assertIsNotNone(resp)
@@ -595,6 +595,7 @@ class TestPropertiesResponse(_TestResponseBase):
 
         # Assert response is a correct type
         self.assertEqual(type(resp), PropertiesResponse)
+        resp = cast(PropertiesResponse, resp)
 
         EXPECTED_RAW_PROPERTIES = {
             PropertyId.INDOOR_HUMIDITY: 43,
@@ -614,6 +615,7 @@ class TestPropertiesResponse(_TestResponseBase):
             "aa18ac00000000000302b0020a0000013209001101000089a4")
 
         resp = self._test_build_response(TEST_RESPONSE)
+        resp = cast(PropertiesResponse, resp)
 
         # Assert response is a correct type
         self.assertEqual(type(resp), PropertiesResponse)
