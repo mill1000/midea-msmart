@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from enum import IntEnum
-from typing import Any, List, Optional, cast
+from typing import Any, List, Optional, Union, cast
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
@@ -136,9 +136,9 @@ class AirConditioner(Device):
         self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
 
-    def _update_state(self, res: Response) -> None:
-        if res.id == ResponseId.STATE:
-            res = cast(StateResponse, res)
+    def _update_state(self, res: Union[StateResponse, PropertiesResponse]) -> None:
+        if isinstance(res, StateResponse):
+
             self._power_state = res.power_on
 
             self._target_temperature = res.target_temperature
@@ -176,8 +176,7 @@ class AirConditioner(Device):
 
             self._follow_me = res.follow_me
 
-        elif res.id == ResponseId.PROPERTIES:
-            res = cast(PropertiesResponse, res)
+        elif isinstance(res, PropertiesResponse):
 
             self._horizontal_swing_angle = cast(
                 AirConditioner.SwingAngle,
@@ -250,7 +249,7 @@ class AirConditioner(Device):
     def _process_state_response(self, response: Response) -> None:
         """Update the local state from a device state response."""
 
-        if response.id in [ResponseId.STATE, ResponseId.PROPERTIES]:
+        if isinstance(response, (StateResponse, PropertiesResponse)):
             self._update_state(response)
         else:
             _LOGGER.debug("Ignored unknown response from %s:%d: %s",
