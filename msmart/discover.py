@@ -11,7 +11,7 @@ from msmart.const import (DEVICE_INFO_MSG, DISCOVERY_MSG,
                           OPEN_MIDEA_APP_ACCOUNT, OPEN_MIDEA_APP_PASSWORD,
                           DeviceType)
 from msmart.device import AirConditioner, Device
-from msmart.lan import Security
+from msmart.lan import AuthenticationError, Security
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -381,8 +381,11 @@ class Discover:
                 _LOGGER.error(e)
                 continue
 
-            if await dev.authenticate(token, key, silent=True):
+            try:
+                await dev.authenticate(token, key)
                 return True
+            except AuthenticationError:
+                continue
 
         return False
 

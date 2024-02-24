@@ -8,6 +8,7 @@ from msmart.cloud import Cloud, CloudError
 from msmart.const import OPEN_MIDEA_APP_ACCOUNT, OPEN_MIDEA_APP_PASSWORD
 from msmart.device import AirConditioner as AC
 from msmart.discover import Discover
+from msmart.lan import AuthenticationError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,7 +59,11 @@ async def _query(args) -> None:
         # Manually create device and authenticate
         device = AC(ip=args.host, port=6444, device_id=args.device_id)
         if args.token and args.key:
-            await device.authenticate(args.token, args.key)
+            try:
+                await device.authenticate(args.token, args.key)
+            except AuthenticationError as e:
+                _LOGGER.error("Authentication failed. Error: %s", e)
+                exit(1)
 
     if not isinstance(device, AC):
         _LOGGER.error("Device is not supported.")

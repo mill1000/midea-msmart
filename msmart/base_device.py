@@ -60,16 +60,12 @@ class Device():
     async def apply(self) -> None:
         raise NotImplementedError()
 
-    async def authenticate(self, token: Token, key: Key, *, silent=False) -> bool:
+    async def authenticate(self, token: Token, key: Key) -> None:
         """Authenticate with a V3 device."""
         try:
             await self._lan.authenticate(token, key)
-            return True
-        except (AuthenticationError, TimeoutError) as e:
-            # TODO feels like a hack, should we make caller try/except instead?
-            if not silent:
-                _LOGGER.error("Authentication failed. Error: %s", e)
-            return False
+        except (ProtocolError, TimeoutError) as e:
+            raise AuthenticationError(e) from e
 
     def set_max_connection_lifetime(self, seconds: Optional[int]) -> None:
         """Set the maximum connection lifetime of the LAN protocol."""
