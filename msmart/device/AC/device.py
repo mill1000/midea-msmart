@@ -82,6 +82,12 @@ class AirConditioner(Device):
 
         DEFAULT = OFF
 
+    # Create a dict to map properties to attribute names
+    _PROPERTY_MAP = {
+        PropertyId.SWING_LR_ANGLE: "_horizontal_swing_angle",
+        PropertyId.SWING_UD_ANGLE: "_vertical_swing_angle"
+    }
+
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
         # Remove possible duplicate device_type kwarg
         kwargs.pop("device_type", None)
@@ -124,7 +130,8 @@ class AirConditioner(Device):
         self._outdoor_temperature = None
 
         # Default to assuming device can't handle any properties
-        self._supported_properties = []
+        self._supported_properties = set()
+        self._updated_properties = set()
 
         self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
@@ -226,12 +233,13 @@ class AirConditioner(Device):
         self._min_target_temperature = res.min_temperature
         self._max_target_temperature = res.max_temperature
 
+        self._supported_properties.clear()
         # Add supported properties based on capabilities
         if res.swing_vertical_angle:
-            self._supported_properties.append(PropertyId.SWING_UD_ANGLE)
+            self._supported_properties.add(PropertyId.SWING_UD_ANGLE)
 
         if res.swing_horizontal_angle:
-            self._supported_properties.append(PropertyId.SWING_LR_ANGLE)
+            self._supported_properties.add(PropertyId.SWING_LR_ANGLE)
 
     def _process_state_response(self, response: Response) -> None:
         """Update the local state from a device state response."""
@@ -388,26 +396,24 @@ class AirConditioner(Device):
         for response in await self._send_command_get_responses(cmd):
             self._process_state_response(response)
 
-        # Done updating if no supported properties
-        if not len(self._supported_properties):
+        # Done if no properties need updating
+        if not len(self._updated_properties):
             return
 
-        # Warn if trying to use unsupported properties
-        if (self._horizontal_swing_angle != AirConditioner.SwingAngle.OFF and
-                PropertyId.SWING_LR_ANGLE not in self._supported_properties):
-            _LOGGER.warning("Device is not capable of horizontal swing angle.")
+        # Warn if attempting to update a property that isn't supported
+        for prop in (self._updated_properties - self._supported_properties):
+            _LOGGER.warning("Device is not capable of %s.", prop)
 
-        if (self._vertical_swing_angle != AirConditioner.SwingAngle.OFF and
-                PropertyId.SWING_UD_ANGLE not in self._supported_properties):
-            _LOGGER.warning("Device is not capable of vertical swing angle.")
-
-        # Build set properties command with current state
+        # Build command with current state of updated properties
         cmd = SetPropertiesCommand({
-            PropertyId.SWING_LR_ANGLE: self._horizontal_swing_angle,
-            PropertyId.SWING_UD_ANGLE: self._vertical_swing_angle
+            k: getattr(self, self._PROPERTY_MAP[k])
+            for k in self._updated_properties & self._PROPERTY_MAP.keys()
         })
         for response in await self._send_command_get_responses(cmd):
             self._process_state_response(response)
+
+        # Reset updated properties set
+        self._updated_properties.clear()
 
     @property
     def beep(self) -> bool:
@@ -484,6 +490,32 @@ class AirConditioner(Device):
     @swing_mode.setter
     def swing_mode(self, mode: SwingMode) -> None:
         self._swing_mode = mode
+
+    @property
+    def supports_horizontal_swing_angle(self) -> bool:
+        return PropertyId.SWING_LR_ANGLE in self._supported_properties
+
+    @property
+    def supports_vertical_swing_angle(self) -> bool:
+        return PropertyId.SWING_UD_ANGLE in self._supported_properties
+
+    @property
+    def horizontal_swing_angle(self) -> SwingAngle:
+        return self._horizontal_swing_angle
+
+    @horizontal_swing_angle.setter
+    def horizontal_swing_angle(self, angle: SwingAngle) -> None:
+        self._horizontal_swing_angle = angle
+        self._updated_properties.add(PropertyId.SWING_LR_ANGLE)
+
+    @property
+    def vertical_swing_angle(self) -> SwingAngle:
+        return self._vertical_swing_angle
+
+    @vertical_swing_angle.setter
+    def vertical_swing_angle(self, angle: SwingAngle) -> None:
+        self._vertical_swing_angle = angle
+        self._updated_properties.add(PropertyId.SWING_UD_ANGLE)
 
     @property
     def supports_eco_mode(self) -> Optional[bool]:
