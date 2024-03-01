@@ -152,6 +152,40 @@ class GetStateCommand(Command):
         ]))
 
 
+class GetPowerUsageCommand(Command):
+    """Command to query power usage from device."""
+
+    def __init__(self) -> None:
+        super().__init__(frame_type=FrameType.QUERY)
+
+    def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
+        payload = bytearray(20)
+
+        payload[0] = 0x41
+        payload[1] = 0x21
+        payload[2] = 0x01
+        payload[3] = 0x44
+
+        return super().tobytes(payload)
+
+
+class GetHumidityCommand(Command):
+    """Command to query indoor humidity from device."""
+
+    def __init__(self) -> None:
+        super().__init__(frame_type=FrameType.QUERY)
+
+    def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
+        payload = bytearray(20)
+
+        payload[0] = 0x41
+        payload[1] = 0x21
+        payload[2] = 0x01
+        payload[3] = 0x45
+
+        return super().tobytes(payload)
+
+
 class SetStateCommand(Command):
     """Command to set basic state of the device."""
 
