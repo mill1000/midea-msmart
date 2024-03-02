@@ -1,6 +1,6 @@
 import logging
 import unittest
-from typing import Union, cast
+from typing import cast
 
 from msmart.const import DeviceType, FrameType
 from msmart.frame import Frame, InvalidFrameException
@@ -19,7 +19,7 @@ class _TestResponseBase(unittest.TestCase):
         self.assertTrue(hasattr(obj, attr),
                         msg=f"Object {obj} lacks attribute '{attr}'.")
 
-    def _test_build_response(self, msg) -> Union[StateResponse, CapabilitiesResponse, PropertiesResponse, Response]:
+    def _test_build_response(self, msg) -> Response:
         """Build a response from the frame and assert it exists."""
         resp = Response.construct(msg)
         self.assertIsNotNone(resp)

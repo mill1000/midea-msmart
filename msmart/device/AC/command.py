@@ -19,10 +19,11 @@ class InvalidResponseException(Exception):
 
 
 class ResponseId(IntEnum):
-    STATE = 0xC0
-    CAPABILITIES = 0xB5
     PROPERTIES_ACK = 0xB0  # In response to property commands
     PROPERTIES = 0xB1
+    CAPABILITIES = 0xB5
+    STATE = 0xC0
+    GROUP_DATA = 0xC1
 
 
 class CapabilityId(IntEnum):
@@ -397,6 +398,9 @@ class Response():
             # Validate the frame
             Frame.validate(frame_mv)
 
+            # Default to base class
+            response_class = Response
+
             # Fetch the appropriate response class from the ID
             frame_type = frame_mv[9]
             response_id = frame_mv[10]
@@ -407,8 +411,13 @@ class Response():
                 response_class = CapabilitiesResponse
             elif response_id in [ResponseId.PROPERTIES, ResponseId.PROPERTIES_ACK]:
                 response_class = PropertiesResponse
-            else:
-                response_class = Response
+            elif response_id == ResponseId.GROUP_DATA:
+                # Response type depends on an additional "group" byte
+                group = frame_mv[13] & 0xF
+                if group == 4:
+                    response_class = PowerUsageResponse
+                elif group == 5:
+                    response_class = HumidityResponse
 
             # Validate the payload CRC
             # ...except for properties which certain devices send invalid CRCs
@@ -893,3 +902,52 @@ class PropertiesResponse(Response):
 
     def get_property(self, id: PropertyId) -> Optional[Any]:
         return self._properties.get(id, None)
+
+
+class PowerUsageResponse(Response):
+    """Response to a GetPowerUsageCommand."""
+
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
+
+        self.power = None
+        self.power_bcd = None
+
+        _LOGGER.debug("Power response payload: %s", payload.hex())
+
+        self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+        # Response is technically a "group data 4" response
+        # and may contain other interesting data
+
+        def decode_bcd(d: int) -> int:
+            return 10 * (d >> 4) + (d & 0xF)
+
+        # TODO More power data in this payload?
+
+        # Either interpretation may be valid depending on device
+        self.power = (payload[16] << 16 | payload[17] << 8 | payload[18]) / 10
+
+        self.power_bcd = (1000 * decode_bcd(payload[16]) +
+                          10 * decode_bcd(payload[17]) +
+                          decode_bcd(payload[18]) / 10)
+
+
+class HumidityResponse(Response):
+    """Response to a GetHumidityCommand."""
+
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
+
+        self.humidity = None
+
+        _LOGGER.debug("Humidity response payload: %s", payload.hex())
+
+        self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+        # Response is technically a "group data 5" response
+        # and may contain other interesting data
+
+        self.humidity = payload[4]
