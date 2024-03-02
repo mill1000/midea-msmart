@@ -34,6 +34,7 @@ class AirConditioner(Device):
         DRY = 3
         HEAT = 4
         FAN_ONLY = 5
+        # TODO SMART_DRY = 6
 
         DEFAULT = FAN_ONLY
 
