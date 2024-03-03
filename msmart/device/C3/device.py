@@ -197,7 +197,6 @@ class HeatPump(Device):
         # cmd = QueryUnitParametersCommand()
         # await self._send_command_parse_responses(cmd)
 
-
     @property
     def dhw_min_temperature(self) -> int:
         return self._dhw_min_temperature
