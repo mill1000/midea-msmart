@@ -108,7 +108,7 @@ class Command(Frame):
 
 class GetCapabilitiesCommand(Command):
     def __init__(self, additional: bool = False) -> None:
-        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.REQUEST)
+        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.QUERY)
 
         self._additional = additional
 
@@ -120,7 +120,7 @@ class GetCapabilitiesCommand(Command):
 
 class GetStateCommand(Command):
     def __init__(self) -> None:
-        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.REQUEST)
+        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.QUERY)
 
         self.temperature_type = TemperatureType.INDOOR
 
@@ -143,7 +143,7 @@ class GetStateCommand(Command):
 
 class SetStateCommand(Command):
     def __init__(self) -> None:
-        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.SET)
+        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.CONTROL)
 
         self.beep_on = True
         self.power_on = False
@@ -236,7 +236,7 @@ class SetStateCommand(Command):
 class ToggleDisplayCommand(Command):
     def __init__(self) -> None:
         # For whatever reason, toggle display uses a request type...
-        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.REQUEST)
+        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.QUERY)
 
         self.beep_on = True
 

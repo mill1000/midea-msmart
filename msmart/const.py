@@ -34,7 +34,7 @@ class DeviceType(IntEnum):
 
 class FrameType(IntEnum):
     UNKNOWN = 0
-    SET = 0x02
-    REQUEST = 0x03
+    CONTROL = 0x02
+    QUERY = 0x03
     REPORT = 0x04
     ABNORMAL_REPORT = 0x06
