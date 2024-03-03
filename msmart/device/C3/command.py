@@ -44,7 +44,7 @@ class QueryCommand(Frame):
     """Base class for query commands."""
 
     def __init__(self, type: QueryType) -> None:
-        super().__init__(DeviceType.HEAT_PUMP, frame_type=FrameType.REQUEST)
+        super().__init__(DeviceType.HEAT_PUMP, frame_type=FrameType.QUERY)
 
         self._type = type
 
@@ -79,7 +79,7 @@ class ControlCommand(Frame):
     """Base class for control commands."""
 
     def __init__(self, type: ControlType) -> None:
-        super().__init__(DeviceType.HEAT_PUMP, frame_type=FrameType.REQUEST)
+        super().__init__(DeviceType.HEAT_PUMP, frame_type=FrameType.QUERY)
 
         self._type = type
 
