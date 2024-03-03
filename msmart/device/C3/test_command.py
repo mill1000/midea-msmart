@@ -28,12 +28,32 @@ class _TestResponseBase(unittest.TestCase):
 class TestQueryBasicResponse(_TestResponseBase):
     """Test basic query response messages."""
 
-    # Attributes expected in state response objects
-    EXPECTED_ATTRS = []
+    # Attributes expected in query response objects
+    EXPECTED_ATTRS = ["zone1_power_state", "zone2_power_state",
+                      "dhw_power_state",
+                      "zone1_curve_state", "zone2_curve_state",
+                      "tbh_state", "fastdhw_state",
+                      "heat_enable", "cool_enable", "dhw_enable",
+                      "zone2_enable",
+                      "zone1_temp_type", "zone2_temp_type",
+                      "room_thermostat_power_state", "room_thermostat_enable",
+                      "time_set_state", "silence_on_state", "holiday_on_state", "eco_on_state",
+                      "zone1_terminal_type", "zone2_terminal_type",
+                      "run_mode", "run_mode_under_auto",
+                      "zone1_target_temperature", "zone2_target_temperature",
+                      "dhw_target_temperature", "room_target_temperature",
+                      "zone1_heat_max_temperature", "zone1_heat_min_temperature",
+                      "zone1_cool_max_temperature", "zone1_cool_min_temperature",
+                      "zone2_heat_max_temperature", "zone2_heat_min_temperature",
+                      "zone2_cool_max_temperature", "zone2_cool_min_temperature",
+                      "room_max_temperature", "room_min_temperature",
+                      "dhw_max_temperature", "dhw_min_temperature",
+                      "tank_temperature", "error_code", "tbh_enable"
+                      ]
 
     def _test_response(self, msg) -> QueryBasicResponse:
         resp = self._test_build_response(msg)
-        # self._test_check_attributes(resp, self.EXPECTED_ATTRS)
+        self._test_check_attributes(resp, self.EXPECTED_ATTRS)
         return cast(QueryBasicResponse, resp)
 
     def test_message(self) -> None:
@@ -51,11 +71,18 @@ class TestPower4Response(_TestResponseBase):
     """Test POWER4 report messages."""
 
     # Attributes expected in state response objects
-    EXPECTED_ATTRS = []
+    EXPECTED_ATTRS = ["heat_active", "cool_active",
+                      "dhw_active", "tbh_active",
+                      "electric_power", "thermal_power",
+                      "outdoor_air_temperature",
+                      "zone1_target_temperature", "zone2_target_temperature",
+                      "water_tank_temperature",
+                      "online", "voltage"
+                      ]
 
     def _test_response(self, msg) -> ReportPower4Response:
         resp = self._test_build_response(msg)
-        # self._test_check_attributes(resp, self.EXPECTED_ATTRS)
+        self._test_check_attributes(resp, self.EXPECTED_ATTRS)
         return cast(ReportPower4Response, resp)
 
     def test_message(self) -> None:

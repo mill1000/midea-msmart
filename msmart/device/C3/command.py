@@ -205,11 +205,6 @@ class QueryBasicResponse(Response):
 
     def _parse(self, payload: memoryview) -> None:
 
-        # TODO names are mostly direct from reference, better names might be in order
-        # Useful acronyms
-        # DHW - Domestic hot water
-        # TBH - Tank booster heater
-
         self.zone1_power_state = bool(payload[1] & 0x01)
         self.zone2_power_state = bool(payload[1] & 0x02)
         self.dhw_power_state = bool(payload[1] & 0x04)
