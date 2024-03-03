@@ -35,7 +35,7 @@ class TestQueryBasicResponse(_TestResponseBase):
                       "tbh_state", "fastdhw_state",
                       "heat_enable", "cool_enable", "dhw_enable",
                       "zone2_enable",
-                      "zone1_temp_type", "zone2_temp_type",
+                      "zone1_temperature_type", "zone2_temperature_type",
                       "room_thermostat_power_state", "room_thermostat_enable",
                       "time_set_state", "silence_on_state", "holiday_on_state", "eco_on_state",
                       "zone1_terminal_type", "zone2_terminal_type",
