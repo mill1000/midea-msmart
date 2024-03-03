@@ -220,8 +220,8 @@ class QueryBasicResponse(Response):
         self.zone2_enable = bool(payload[2] & 0x08)  # Ref: double_zone_enable
 
         # 0 - Air, 1 - Water
-        self.zone1_temp_type = int(bool(payload[2] & 0x10))
-        self.zone2_temp_type = int(bool(payload[2] & 0x20))
+        self.zone1_temperature_type = int(bool(payload[2] & 0x10))
+        self.zone2_temperature_type = int(bool(payload[2] & 0x20))
 
         # Ref: room_thermalen_state, room_thermalmode_state
         self.room_thermostat_power_state = bool(payload[2] & 0x40)
