@@ -1,5 +1,6 @@
 import unittest
 
+from .command import PropertiesResponse, Response, StateResponse
 from .device import AirConditioner as AC
 
 
@@ -97,6 +98,89 @@ class TestDeviceEnums(unittest.TestCase):
         enum = AC.SwingAngle.get_from_name("")
         self.assertEqual(enum, AC.SwingAngle.OFF)
         self.assertIsInstance(enum, AC.SwingAngle)
+
+
+class TestUpdateStateFromResponse(unittest.TestCase):
+    """Test updating device state from responses."""
+
+    def test_state_response(self) -> None:
+        """Test parsing of StateResponses into device state."""
+
+        # V3 state response
+        TEST_RESPONSE = bytes.fromhex(
+            "aa23ac00000000000303c00145660000003c0010045c6b20000000000000000000020d79")
+
+        resp = Response.construct(TEST_RESPONSE)
+        self.assertIsNotNone(resp)
+
+        # Assert response is a state response
+        self.assertEqual(type(resp), StateResponse)
+
+        # Create a dummy device and process the response
+        device = AC(0, 0, 0)
+        device._process_state_response(resp)
+
+        # Assert state is expected
+        self.assertEqual(device.target_temperature, 21.0)
+        self.assertEqual(device.indoor_temperature, 21.0)
+        self.assertEqual(device.outdoor_temperature, 28.5)
+
+        self.assertEqual(device.eco_mode, True)
+        self.assertEqual(device.turbo_mode, False)
+        self.assertEqual(device.freeze_protection_mode, False)
+        self.assertEqual(device.sleep_mode, False)
+
+        self.assertEqual(device.operational_mode, AC.OperationalMode.COOL)
+        self.assertEqual(device.fan_speed, AC.FanSpeed.AUTO)
+        self.assertEqual(device.swing_mode, AC.SwingMode.VERTICAL)
+        self.assertEqual(device.turbo_mode, False)
+        self.assertEqual(device.freeze_protection_mode, False)
+        self.assertEqual(device.sleep_mode, False)
+
+        self.assertEqual(device.operational_mode, AC.OperationalMode.COOL)
+        self.assertEqual(device.fan_speed, AC.FanSpeed.AUTO)
+        self.assertEqual(device.swing_mode, AC.SwingMode.VERTICAL)
+
+    def test_properties_response(self) -> None:
+        """Test parsing of PropertiesResponse into device state."""
+        # https://github.com/mill1000/midea-ac-py/issues/60#issuecomment-1936976587
+        TEST_RESPONSE = bytes.fromhex(
+            "aa21ac00000000000303b10409000001000a00000100150000012b1e020000005fa3")
+
+        resp = Response.construct(TEST_RESPONSE)
+        self.assertIsNotNone(resp)
+
+        # Assert response is a state response
+        self.assertEqual(type(resp), PropertiesResponse)
+
+        # Create a dummy device and process the response
+        device = AC(0, 0, 0)
+        device._process_state_response(resp)
+
+        # Assert state is expected
+        # TODO Test cases doesn't test values that differ from defaults
+        self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.OFF)
+        self.assertEqual(device.vertical_swing_angle, AC.SwingAngle.OFF)
+
+    def test_properties_ack_response(self) -> None:
+        """Test parsing of PropertiesResponse from SetProperties command into device state."""
+        # https://github.com/mill1000/midea-msmart/issues/97#issuecomment-1949495900
+        TEST_RESPONSE = bytes.fromhex(
+            "aa18ac00000000000302b0020a0000013209001101000089a4")
+
+        resp = Response.construct(TEST_RESPONSE)
+        self.assertIsNotNone(resp)
+
+        # Assert response is a state response
+        self.assertEqual(type(resp), PropertiesResponse)
+
+        # Create a dummy device and process the response
+        device = AC(0, 0, 0)
+        device._process_state_response(resp)
+
+        # Assert state is expected
+        self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.POS_3)
+        self.assertEqual(device.vertical_swing_angle, AC.SwingAngle.OFF)
 
 
 if __name__ == "__main__":
