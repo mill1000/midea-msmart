@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import logging
-from enum import IntEnum
 from typing import Any, List, Optional, Union, cast
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
+from msmart.utils import MideaIntEnum
 
 from .command import (CapabilitiesResponse, GetCapabilitiesCommand,
                       GetPropertiesCommand, GetStateCommand,
@@ -16,37 +16,9 @@ from .command import (CapabilitiesResponse, GetCapabilitiesCommand,
 _LOGGER = logging.getLogger(__name__)
 
 
-class IntEnumHelper(IntEnum):
-    """Helper class to convert IntEnums to/from strings."""
-
-    @classmethod
-    def list(cls) -> List[IntEnumHelper]:
-        return list(cls)
-
-    @classmethod
-    def get_from_value(cls, value: Optional[int], default: Optional[IntEnumHelper] = None) -> IntEnumHelper:
-        try:
-            return cls(cast(int, value))
-        except ValueError:
-            _LOGGER.debug("Unknown %s: %s", cls, value)
-            if default is None:
-                default = cls.DEFAULT  # pyright: ignore[reportAttributeAccessIssue] # nopep8
-            return cls(default)
-
-    @classmethod
-    def get_from_name(cls, name: Optional[str], default: Optional[IntEnumHelper] = None) -> IntEnumHelper:
-        try:
-            return cls[cast(str, name)]
-        except KeyError:
-            _LOGGER.debug("Unknown %s: %s", cls, name)
-            if default is None:
-                default = cls.DEFAULT  # pyright: ignore[reportAttributeAccessIssue] # nopep8
-            return cls(default)
-
-
 class AirConditioner(Device):
 
-    class FanSpeed(IntEnumHelper):
+    class FanSpeed(MideaIntEnum):
         AUTO = 102
         HIGH = 80
         MEDIUM = 60
@@ -55,7 +27,7 @@ class AirConditioner(Device):
 
         DEFAULT = AUTO
 
-    class OperationalMode(IntEnumHelper):
+    class OperationalMode(MideaIntEnum):
         AUTO = 1
         COOL = 2
         DRY = 3
@@ -64,7 +36,7 @@ class AirConditioner(Device):
 
         DEFAULT = FAN_ONLY
 
-    class SwingMode(IntEnumHelper):
+    class SwingMode(MideaIntEnum):
         OFF = 0x0
         VERTICAL = 0xC
         HORIZONTAL = 0x3
@@ -72,7 +44,7 @@ class AirConditioner(Device):
 
         DEFAULT = OFF
 
-    class SwingAngle(IntEnumHelper):
+    class SwingAngle(MideaIntEnum):
         OFF = 0
         POS_1 = 1
         POS_2 = 25
