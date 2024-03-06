@@ -286,14 +286,13 @@ class HeatPump(Device):
         return self._zone_2
 
     @property
-    def dhw_min_temperature(self) -> int:
-        """Minimum target domestic hot water temperature."""
-        return self._dhw_min_temperature
+    def dhw_power_state(self) -> int:
+        """Power state of domestic hot water."""
+        return self._dhw_power_state
 
-    @property
-    def dhw_max_temperature(self) -> int:
-        """Maximum target domestic hot water temperature."""
-        return self._dhw_max_temperature
+    @dhw_power_state.setter
+    def dhw_power_state(self, state: bool) -> None:
+        self._dhw_power_state = state
 
     @property
     def dhw_target_temperature(self) -> int:
@@ -303,6 +302,16 @@ class HeatPump(Device):
     @dhw_target_temperature.setter
     def dhw_target_temperature(self, temperature_celsius: int) -> None:
         self._dhw_target_temperature = temperature_celsius
+
+    @property
+    def dhw_min_temperature(self) -> int:
+        """Minimum target domestic hot water temperature."""
+        return self._dhw_min_temperature
+
+    @property
+    def dhw_max_temperature(self) -> int:
+        """Maximum target domestic hot water temperature."""
+        return self._dhw_max_temperature
 
     @property
     def water_temperature(self) -> Optional[int]:
