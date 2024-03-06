@@ -2,8 +2,8 @@ import logging
 import time
 from typing import List, Optional
 
-from msmart.base_command import Command
 from msmart.const import DeviceType
+from msmart.frame import Frame
 from msmart.lan import LAN, AuthenticationError, Key, ProtocolError, Token
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class Device():
         self._supported = False
         self._online = False
 
-    async def _send_command(self, command: Command) -> Optional[List[bytes]]:
+    async def _send_command(self, command: Frame) -> Optional[List[bytes]]:
         """Send a command to the device and return any responses."""
 
         data = command.tobytes()

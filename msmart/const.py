@@ -29,11 +29,12 @@ OPEN_MIDEA_APP_PASSWORD = "this_is_a_password1"
 
 class DeviceType(IntEnum):
     AIR_CONDITIONER = 0xAC
+    HEAT_PUMP = 0xC3
 
 
 class FrameType(IntEnum):
     UNKNOWN = 0
-    SET = 0x02
-    REQUEST = 0x03
+    CONTROL = 0x02
+    QUERY = 0x03
     REPORT = 0x04
     ABNORMAL_REPORT = 0x06
