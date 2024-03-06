@@ -9,8 +9,8 @@ from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum
 
-from .command import (QueryBasicCommand, QueryBasicResponse,
-                      ReportPower4Response, Response)
+from .command import (ControlBasicCommand, QueryBasicCommand,
+                      QueryBasicResponse, ReportPower4Response, Response)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ class HeatPump(Device):
         super().__init__(ip=ip, port=port, device_id=device_id,
                          device_type=DeviceType.HEAT_PUMP, **kwargs)
 
-        self._run_mode = None
+        self._run_mode = HeatPump.RunMode.DEFAULT
         self._heat_enable = False
         self._cool_enable = False
 
@@ -228,6 +228,31 @@ class HeatPump(Device):
 
         # Query basic state
         cmd = QueryBasicCommand()
+        await self._send_command_parse_responses(cmd)
+
+    async def apply(self) -> None:
+        """Apply the local state to the device."""
+
+        cmd = ControlBasicCommand()
+        cmd.run_mode = self._run_mode
+
+        cmd.zone1_power_state = self._zone_1.power_state
+        cmd.zone1_target_temperature = self._zone_1.target_temperature
+        cmd.zone1_curve_state = self._zone_1.curve_state
+
+        if self._zone_2:
+            cmd.zone2_power_state = self._zone_2.power_state
+            cmd.zone2_target_temperature = self._zone_2.target_temperature
+            cmd.zone2_curve_state = self._zone_2.curve_state
+
+        cmd.dhw_power_state = self._dhw_power_state
+        cmd.dhw_target_temperature = self._dhw_target_temperature
+        cmd.fastdhw_state = self._fastdhw_state
+
+        cmd.room_target_temperature = self._room_target_temperature
+
+        cmd.tbh_state = self._tbh_state
+
         await self._send_command_parse_responses(cmd)
 
     @property
