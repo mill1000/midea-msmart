@@ -69,11 +69,11 @@ class HeatPump(Device):
             self._curve_state = state
 
         @property
-        def target_temperature(self) -> float:
+        def target_temperature(self) -> int:
             return self._target_temperature
 
         @target_temperature.setter
-        def target_temperature(self, temperature_celsius: float) -> None:
+        def target_temperature(self, temperature_celsius: int) -> None:
             self._target_temperature = temperature_celsius
 
         @property
@@ -272,11 +272,11 @@ class HeatPump(Device):
         return self._dhw_max_temperature
 
     @property
-    def dhw_target_temperature(self) -> float:
+    def dhw_target_temperature(self) -> int:
         return self._dhw_target_temperature
 
     @dhw_target_temperature.setter
-    def dhw_target_temperature(self, temperature_celsius: float) -> None:
+    def dhw_target_temperature(self, temperature_celsius: int) -> None:
         self._dhw_target_temperature = temperature_celsius
 
     @property
