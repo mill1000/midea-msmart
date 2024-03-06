@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from enum import IntEnum
-from typing import Union
+from typing import Optional, Union
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
@@ -39,11 +39,10 @@ class HeatPump(Device):
         """A zone within the heat pump system."""
 
         def __init__(self) -> None:
-            # TODO properties?
             self._power_state = False
             self._curve_state = False
-            self._temperature_type = None
-            self._terminal_type = None
+            self._temperature_type = HeatPump.TemperatureType.AIR
+            self._terminal_type = HeatPump.TerminalType.FAN_COIL
 
             self._target_temperature = 25
 
@@ -52,6 +51,38 @@ class HeatPump(Device):
 
             self._min_cool_temperature = 5
             self._max_cool_temperature = 25
+
+        @property
+        def power_state(self) -> bool:
+            return self._power_state
+
+        @power_state.setter
+        def power_state(self, state: bool) -> None:
+            self._power_state = state
+
+        @property
+        def curve_state(self) -> bool:
+            return self._curve_state
+
+        @curve_state.setter
+        def curve_state(self, state: bool) -> None:
+            self._curve_state = state
+
+        @property
+        def target_temperature(self) -> float:
+            return self._target_temperature
+
+        @target_temperature.setter
+        def target_temperature(self, temperature_celsius: float) -> None:
+            self._target_temperature = temperature_celsius
+
+        @property
+        def temperature_type(self) -> HeatPump.TemperatureType:
+            return self._temperature_type
+
+        @property
+        def terminal_type(self) -> HeatPump.TerminalType:
+            return self._terminal_type
 
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
         # Remove possible duplicate device_type kwarg
@@ -200,6 +231,14 @@ class HeatPump(Device):
         await self._send_command_parse_responses(cmd)
 
     @property
+    def zone1(self) -> HeatPump.Zone:
+        return self._zone_1
+
+    @property
+    def zone2(self) -> Optional[HeatPump.Zone]:
+        return self._zone_2
+
+    @property
     def dhw_min_temperature(self) -> int:
         return self._dhw_min_temperature
 
@@ -212,5 +251,25 @@ class HeatPump(Device):
         return self._dhw_target_temperature
 
     @dhw_target_temperature.setter
-    def target_temperature(self, temperature_celsius: float) -> None:
+    def dhw_target_temperature(self, temperature_celsius: float) -> None:
         self._dhw_target_temperature = temperature_celsius
+
+    @property
+    def water_temperature(self) -> Optional[int]:
+        return self._tank_temperature
+
+    @property
+    def outdoor_temperature(self) -> Optional[int]:
+        return self._outdoor_temperature
+
+    @property
+    def electric_power(self) -> Optional[int]:
+        return self._electric_power
+
+    @property
+    def thermal_power(self) -> Optional[int]:
+        return self._thermal_power
+
+    @property
+    def voltage(self) -> Optional[int]:
+        return self._voltage
