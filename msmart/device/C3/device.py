@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from enum import IntEnum
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
@@ -25,7 +25,7 @@ class HeatPump(Device):
         AUTO = 1
         COOL = 2
         HEAT = 3
-        DHW = 5
+        DHW = 5  # TODO not in Lua?
 
         DEFAULT = AUTO
 
@@ -137,7 +137,8 @@ class HeatPump(Device):
         """Update local device state from device responses."""
 
         if isinstance(res, QueryBasicResponse):
-            self._run_mode = HeatPump.RunMode.get_from_value(res.run_mode)
+            self._run_mode = cast(
+                HeatPump.RunMode, HeatPump.RunMode.get_from_value(res.run_mode))
             # TODO Run mode in auto?
             self._heat_enable = res.heat_enable
             self._cool_enable = res.cool_enable
@@ -264,6 +265,15 @@ class HeatPump(Device):
         cmd.tbh_state = self._tbh_state
 
         await self._send_command_parse_responses(cmd)
+
+    @property
+    def run_mode(self) -> HeatPump.RunMode:
+        """Current run mode."""
+        return self._run_mode
+
+    @run_mode.setter
+    def run_mode(self, mode: HeatPump.RunMode) -> None:
+        self._run_mode = mode
 
     @property
     def zone1(self) -> HeatPump.Zone:
