@@ -106,13 +106,12 @@ class ControlBasicCommand(ControlCommand):
         self.zone2_power_state = False
         self.dhw_power_state = False
 
-        self.run_mode = 0  # TODO??
+        self.run_mode = 0
 
-        # TODO default values?
-        self.zone1_target_temperature = 0
-        self.zone2_target_temperature = 0
-        self.dhw_target_temperature = 0
-        self.room_target_temperature = 0
+        self.zone1_target_temperature = 25
+        self.zone2_target_temperature = 25
+        self.dhw_target_temperature = 25
+        self.room_target_temperature = 25
 
         self.zone1_curve_state = False
         self.zone2_curve_state = False
@@ -121,7 +120,7 @@ class ControlBasicCommand(ControlCommand):
         self.fastdhw_state = False
 
         # TODO "newfunction_en"
-        self.zone1_curve_type = 0  # TODO??
+        self.zone1_curve_type = 0
         self.zone2_curve_type = 0
 
     def tobytes(self) -> bytes:
