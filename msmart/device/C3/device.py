@@ -2,27 +2,29 @@ from __future__ import annotations
 
 import logging
 from enum import IntEnum
-from typing import Optional, Union, cast
+from typing import Union
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
+from msmart.utils import MideaIntEnum
 
-from .command import (QueryBasicCommand, QueryBasicResponse, QueryType,
-                      QueryUnitParametersCommand, QueryUnitParametersResponse,
-                      Response)
+from .command import (QueryBasicCommand, QueryBasicResponse,
+                      ReportPower4Response, Response)
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class HeatPump(Device):
 
-    class RunMode(IntEnum):
+    class RunMode(MideaIntEnum):
         # TODO is 0 off?
         AUTO = 1
         COOL = 2
         HEAT = 3
         DHW = 5
+
+        DEFAULT = AUTO
 
     class TerminalType(IntEnum):
         FAN_COIL = 0
@@ -84,17 +86,17 @@ class HeatPump(Device):
         self._fastdhw_state = False
 
         self._tank_temperature = None
-
         self._outdoor_temperature = None
-        self._room_temperature = None
-        self._water_temperature_2 = None
 
-    def _update_state(self, res: Union[QueryBasicResponse, QueryUnitParametersResponse, Response]) -> None:
+        self._electric_power = None
+        self._thermal_power = None
+        self._voltage = None
+
+    def _update_state(self, res: Union[QueryBasicResponse, ReportPower4Response]) -> None:
         """Update local device state from device responses."""
 
-        if res.type == QueryType.QUERY_BASIC:
-            res = cast(QueryBasicResponse, res)
-            self._run_mode = HeatPump.RunMode(res.run_mode)
+        if isinstance(res, QueryBasicResponse):
+            self._run_mode = HeatPump.RunMode.get_from_value(res.run_mode)
             # TODO Run mode in auto?
             self._heat_enable = res.heat_enable
             self._cool_enable = res.cool_enable
@@ -149,11 +151,15 @@ class HeatPump(Device):
 
             self._tank_temperature = res.tank_temperature
 
-        elif res.type == QueryType.QUERY_UNIT_PARAMETERS:
-            res = cast(QueryUnitParametersResponse, res)
-            self._outdoor_temperature = res.outdoor_temperature
-            self._room_temperature = res.room_temperature
-            self._water_temperature_2 = res.water_temperature_2  # TODO _2?
+        elif isinstance(res, ReportPower4Response):
+
+            self._electric_power = res.electric_power
+            self._thermal_power = res.thermal_power
+            self._outdoor_temperature = res.outdoor_air_temperature
+            self._voltage = res.voltage
+
+            # TODO Duplicate water tank temperature reading
+            # self._water_temperature_2 = res.water_tank_temperature
 
     async def _send_command_parse_responses(self, command) -> None:
         """Send a command and parse any responses."""
@@ -180,7 +186,7 @@ class HeatPump(Device):
             self._supported = True
 
             # Parse responses as needed
-            if response.type in [QueryType.QUERY_BASIC, QueryType.QUERY_UNIT_PARAMETERS]:
+            if isinstance(response, (QueryBasicResponse, ReportPower4Response)):
                 self._update_state(response)
             else:
                 _LOGGER.debug("Ignored unknown response from %s:%d: %s",
@@ -192,10 +198,6 @@ class HeatPump(Device):
         # Query basic state
         cmd = QueryBasicCommand()
         await self._send_command_parse_responses(cmd)
-
-        # # Query unit parameters
-        # cmd = QueryUnitParametersCommand()
-        # await self._send_command_parse_responses(cmd)
 
     @property
     def dhw_min_temperature(self) -> int:
