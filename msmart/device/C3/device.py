@@ -1,3 +1,4 @@
+"""Module for Midea 0xC3 devices."""
 from __future__ import annotations
 
 import logging
@@ -16,8 +17,10 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class HeatPump(Device):
+    """Device class for heat pump (0xC3) devices."""
 
     class RunMode(MideaIntEnum):
+        """Heat pump run/operation modes."""
         # TODO is 0 off?
         AUTO = 1
         COOL = 2
@@ -27,11 +30,13 @@ class HeatPump(Device):
         DEFAULT = AUTO
 
     class TerminalType(IntEnum):
+        """Zone "terminal" type."""
         FAN_COIL = 0
         FLOOR_HEAT = 1
         RADIATOR = 2
 
     class TemperatureType(IntEnum):
+        """Zone temperature type."""
         AIR = 0
         WATER = 1
 
@@ -54,6 +59,7 @@ class HeatPump(Device):
 
         @property
         def power_state(self) -> bool:
+            """Power state of the zone."""
             return self._power_state
 
         @power_state.setter
@@ -62,6 +68,7 @@ class HeatPump(Device):
 
         @property
         def curve_state(self) -> bool:
+            """Curve state of the zone."""
             return self._curve_state
 
         @curve_state.setter
@@ -70,6 +77,7 @@ class HeatPump(Device):
 
         @property
         def target_temperature(self) -> int:
+            """Target temperature of the zone."""
             return self._target_temperature
 
         @target_temperature.setter
@@ -78,10 +86,12 @@ class HeatPump(Device):
 
         @property
         def temperature_type(self) -> HeatPump.TemperatureType:
+            """Temperature type of the zone."""
             return self._temperature_type
 
         @property
         def terminal_type(self) -> HeatPump.TerminalType:
+            """Terminal type of the zone."""
             return self._terminal_type
 
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
@@ -107,10 +117,10 @@ class HeatPump(Device):
 
         # Room thermostat
         self._room_thermostat_enable = False
-        self._room_termostate_power_state = False
-        self._room_target_temperature = 25
-        self._room_min_temperature = 17
-        self._room_max_temperature = 30
+        self._room_thermostat_power_state = False
+        self._room_target_temperature = 25.0
+        self._room_min_temperature = 17.0
+        self._room_max_temperature = 30.0
 
         # Misc
         self._tbh_state = False
@@ -170,9 +180,9 @@ class HeatPump(Device):
 
             self._room_thermostat_enable = res.room_thermostat_enable
             self._room_thermostat_power_state = res.room_thermostat_power_state
-            self._room_thermostat_target_temperature = res.room_target_temperature
-            self._room_thermostat_min_temperature = res.room_min_temperature
-            self._room_thermostat_max_temperature = res.room_max_temperature
+            self._room_target_temperature = res.room_target_temperature
+            self._room_min_temperature = res.room_min_temperature
+            self._room_max_temperature = res.room_max_temperature
 
             self._tbh_state = res.tbh_state
             self._fastdhw_state = res.fastdhw_state
@@ -257,22 +267,27 @@ class HeatPump(Device):
 
     @property
     def zone1(self) -> HeatPump.Zone:
+        """Zone 1"""
         return self._zone_1
 
     @property
     def zone2(self) -> Optional[HeatPump.Zone]:
+        """Zone 2 if supported"""
         return self._zone_2
 
     @property
     def dhw_min_temperature(self) -> int:
+        """Minimum target domestic hot water temperature."""
         return self._dhw_min_temperature
 
     @property
     def dhw_max_temperature(self) -> int:
+        """Maximum target domestic hot water temperature."""
         return self._dhw_max_temperature
 
     @property
     def dhw_target_temperature(self) -> int:
+        """Target domestic hot water temperature."""
         return self._dhw_target_temperature
 
     @dhw_target_temperature.setter
@@ -281,20 +296,25 @@ class HeatPump(Device):
 
     @property
     def water_temperature(self) -> Optional[int]:
+        """Current water tank temperature."""
         return self._tank_temperature
 
     @property
     def outdoor_temperature(self) -> Optional[int]:
+        """Current outdoor temperature."""
         return self._outdoor_temperature
 
     @property
     def electric_power(self) -> Optional[int]:
+        """Consumed electric power."""
         return self._electric_power
 
     @property
     def thermal_power(self) -> Optional[int]:
+        """Generated thermal power."""
         return self._thermal_power
 
     @property
     def voltage(self) -> Optional[int]:
+        """Current voltage of the mains."""
         return self._voltage
