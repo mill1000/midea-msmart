@@ -328,3 +328,19 @@ class HeatPump(Device):
     def voltage(self) -> Optional[int]:
         """Current voltage of the mains."""
         return self._voltage
+
+    def to_dict(self) -> dict:
+        return {**super().to_dict(), **{
+            "mode": self._run_mode,
+            "zone1_power": self.zone1.power_state,
+            "zone1_target_temperature": self.zone1.target_temperature,
+            "zone2_power": self.zone2.power_state if self.zone2 else None,
+            "zone2_target_temperature": self.zone2.target_temperature if self.zone2 else None,
+            "dhw_power": self._dhw_power_state,
+            "dhw_target_temperature": self.dhw_target_temperature,
+            "water_temperature": self.water_temperature,
+            "outdoor_temperature": self.outdoor_temperature,
+            "electric_power": self.electric_power,
+            "thermal_power": self.thermal_power,
+            "voltage": self.voltage,
+        }}
