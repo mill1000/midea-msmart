@@ -1,13 +1,11 @@
+"""Command and repsonse messages for 0xC3 devices."""
 from __future__ import annotations
 
 import logging
-import math
 import struct
-from collections import namedtuple
 from enum import IntEnum
-from typing import Callable, Optional, Union
+from typing import Union
 
-import msmart.crc8 as crc8
 from msmart.const import DeviceType, FrameType
 from msmart.frame import Frame
 
@@ -20,6 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class ControlType(IntEnum):
+    """Control message types."""
     CONTROL_BASIC = 0x1
     CONTROL_DAY_TIMER = 0x2
     CONTROL_WEEKS_TIMER = 0x3
@@ -32,6 +31,7 @@ class ControlType(IntEnum):
 
 
 class QueryType(IntEnum):
+    """Query message types."""
     QUERY_BASIC = 0x1
     QUERY_DAY_TIMER = 0x2
     QUERY_WEEKS_TIMER = 0x3
@@ -46,6 +46,7 @@ class QueryType(IntEnum):
 
 
 class ReportType(IntEnum):  # Ref: MSG_TYPE_UP
+    """Report message types."""
     REPORT_BASIC = 0x1
     REPORT_POWER3 = 0x3
     REPORT_POWER4 = 0x4
@@ -111,7 +112,7 @@ class ControlBasicCommand(ControlCommand):
         self.zone1_target_temperature = 25
         self.zone2_target_temperature = 25
         self.dhw_target_temperature = 25
-        self.room_target_temperature = 25
+        self.room_target_temperature = 25.0
 
         self.zone1_curve_state = False
         self.zone2_curve_state = False
@@ -136,7 +137,7 @@ class ControlBasicCommand(ControlCommand):
         payload[3] = self.zone1_target_temperature
         payload[4] = self.zone2_target_temperature
         payload[5] = self.dhw_target_temperature
-        payload[6] = self.room_target_temperature * 2  # Convert ℃ to .5 ℃
+        payload[6] = int(self.room_target_temperature * 2)  # Convert ℃ to .5 ℃
 
         payload[7] |= 1 << 0 if self.zone1_curve_state else 0
         payload[7] |= 1 << 1 if self.zone2_curve_state else 0
@@ -160,19 +161,24 @@ class Response():
 
     @property
     def type(self) -> int:
+        """Type of the response."""
         return self._type
 
     @property
     def payload(self) -> bytes:
+        """Payload portion of the response."""
         return self._payload
 
     @classmethod
     def validate(cls, frame: memoryview) -> None:
+        """Validate the response."""
         # Responses only have frame checksum
         Frame.validate(frame)
 
     @classmethod
     def construct(cls, frame: bytes) -> Union[QueryBasicResponse, QueryUnitParametersResponse, ReportPower4Response, Response]:
+        """Build a response object from the frame and response type."""
+
         # Build a memoryview of the frame for zero-copy slicing
         with memoryview(frame) as frame_mv:
             # Ensure frame is valid before parsing
@@ -351,5 +357,5 @@ class QueryUnitParametersResponse(Response):
         self.outdoor_temperature = signed_int(payload[8:9])  # Ref: tempT4
         self.water_temperature_2 = signed_int(payload[11:12])  # Ref: tempTwout
         # Referenced in JS w/o friendly name
-        self.tempT5 = signed_int(payload[38:39])
+        self.temp_t5 = signed_int(payload[38:39])
         self.room_temperature = signed_int(payload[39:40])  # Ref: tempTa
