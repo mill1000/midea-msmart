@@ -379,7 +379,7 @@ class AirConditioner(Device):
 
         # Warn if attempting to update a property that isn't supported
         for prop in (self._updated_properties - self._supported_properties):
-            _LOGGER.warning("Device is not capable of %s.", prop)
+            _LOGGER.warning("Device is not capable of property %s.", prop)
 
         # Build command with current state of updated properties
         cmd = SetPropertiesCommand({
