@@ -262,7 +262,7 @@ class GetPropertiesCommand(Command):
     """Command to query specific properties from the device."""
 
     def __init__(self, props: Collection[PropertyId]) -> None:
-        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.REQUEST)
+        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.QUERY)
 
         self._properties = props
 
@@ -283,7 +283,7 @@ class SetPropertiesCommand(Command):
     """Command to set specific properties of the device."""
 
     def __init__(self, props: Mapping[PropertyId, Union[bytes, int]]) -> None:
-        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.SET)
+        super().__init__(DeviceType.AIR_CONDITIONER, frame_type=FrameType.CONTROL)
 
         self._properties = props
 
