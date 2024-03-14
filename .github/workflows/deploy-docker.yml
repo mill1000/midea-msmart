@@ -27,7 +27,7 @@ jobs:
       packages: write
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # History/tags required to generate version info
           fetch-depth: 0
