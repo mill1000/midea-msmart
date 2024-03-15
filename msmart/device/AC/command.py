@@ -9,7 +9,7 @@ from typing import Callable, Collection, Mapping, Optional, Union
 
 import msmart.crc8 as crc8
 from msmart.const import DeviceType, FrameType
-from msmart.frame import Frame
+from msmart.frame import Frame, InvalidFrameException
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -335,15 +335,11 @@ class Response():
         return self._payload
 
     @classmethod
-    def validate(cls, frame: memoryview, skip_crc: bool = False) -> None:
-        """Validate a response by checking the frame checksum and payload CRC."""
-
-        # Attempt to validate the frame
-        Frame.validate(frame)
-
-        # Exit early if not checking CRC
-        if skip_crc:
-            return
+    def validate(cls, frame: memoryview) -> None:
+        try:
+            Frame.validate(frame)
+        except InvalidFrameException as e:
+            raise InvalidResponseException(e) from e
 
         # Extract frame payload to validate CRC/checksum
         payload = frame[10:-1]
@@ -357,13 +353,11 @@ class Response():
                 f"Payload '{payload.hex()}' failed CRC and checksum. Received: 0x{payload[-1]:X}, Expected: 0x{payload_crc:X} or 0x{payload_checksum:X}.")
 
     @classmethod
-    def construct(cls, frame: bytes, skip_crc: bool = False) -> Response:
-        """Construct a response object from raw data."""
-
+    def construct(cls, frame: bytes) -> Union[StateResponse, CapabilitiesResponse, Response]:
         # Build a memoryview of the frame for zero-copy slicing
         with memoryview(frame) as frame_mv:
             # Ensure frame is valid before parsing
-            Response.validate(frame_mv, skip_crc)
+            Response.validate(frame_mv)
 
             # Parse frame depending on id
             response_id = frame_mv[10]

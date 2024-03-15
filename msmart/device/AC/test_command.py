@@ -6,8 +6,8 @@ from msmart.frame import Frame
 
 from .command import (CapabilitiesResponse, CapabilityId, Command,
                       GetPropertiesCommand, GetStateCommand,
-                      InvalidResponseException, PropertiesResponse, PropertyId,
-                      Response, SetPropertiesCommand, StateResponse)
+                      PropertiesResponse, PropertyId, Response,
+                      SetPropertiesCommand, StateResponse)
 
 
 class _TestResponseBase(unittest.TestCase):
@@ -656,33 +656,6 @@ class TestPropertiesResponse(_TestResponseBase):
 
         # Check state
         self.assertEqual(resp.swing_horizontal_angle, 50)
-
-    def test_properties_response_invalid_crc(self) -> None:
-        """Test we decode a properties response sent with an invalid CRC correctly."""
-        # https://github.com/mill1000/midea-ac-py/issues/101#issuecomment-1994824924
-        TEST_RESPONSE = bytes.fromhex(
-            "aa14ac00000000000303b10109000001003c000042")
-
-        # Assert that constructing with CRC checks results in an exception
-        with self.assertRaises(InvalidResponseException):
-            resp = Response.construct(TEST_RESPONSE, skip_crc=False)
-
-        # Create response without checking CRC and assert it's expected type
-        resp = Response.construct(TEST_RESPONSE, skip_crc=True)
-
-        self.assertIsNotNone(resp)
-        self.assertEqual(type(resp), PropertiesResponse)
-        resp = cast(PropertiesResponse, resp)
-
-        EXPECTED_RAW_PROPERTIES = {
-            PropertyId.SWING_UD_ANGLE: 0,
-        }
-        # Ensure raw decoded properties match
-        self.assertEqual(resp._properties, EXPECTED_RAW_PROPERTIES)
-
-        # Check state
-        self.assertEqual(resp.swing_vertical_angle, 0)
-        self.assertIsNone(resp.swing_horizontal_angle)
 
 
 if __name__ == "__main__":
