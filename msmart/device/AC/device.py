@@ -5,6 +5,7 @@ from typing import Any, List, Optional, Union, cast
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
+from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum
 
 from .command import (CapabilitiesResponse, GetCapabilitiesCommand,
@@ -229,7 +230,7 @@ class AirConditioner(Device):
                           self.ip, self.port, response.payload.hex())
 
     async def _send_command_get_responses(self, command) -> List[Response]:
-        """Send a command and yield an iterator of valid response."""
+        """Send a command and return all valid responses."""
 
         responses = await super()._send_command(command)
 
@@ -246,7 +247,7 @@ class AirConditioner(Device):
             try:
                 # Construct response from data
                 response = Response.construct(data)
-            except InvalidResponseException as e:
+            except (InvalidFrameException, InvalidResponseException) as e:
                 _LOGGER.error(e)
                 continue
 
