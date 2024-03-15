@@ -636,6 +636,22 @@ class AirConditioner(Device):
     def supports_filter_reminder(self) -> Optional[bool]:
         return self._supports_filter_reminder
 
+    @property
+    def power_usage(self) -> Optional[float]:
+        return self._power_usage
+
+    @property
+    def indoor_humidity(self) -> Optional[int]:
+        return self._indoor_humidity
+
+    @property
+    def target_humidity(self) -> Optional[int]:
+        return self._target_humidity
+
+    @target_humidity.setter
+    def target_humidity(self, humidity: int) -> None:
+        self._target_humidity = humidity
+
     def to_dict(self) -> dict:
         return {**super().to_dict(), **{
             "power": self.power_state,
