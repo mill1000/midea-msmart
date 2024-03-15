@@ -184,6 +184,33 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.POS_3)
         self.assertEqual(device.vertical_swing_angle, AC.SwingAngle.OFF)
 
+    def test_properties_missing_field(self) -> None:
+        """Test parsing of PropertiesResponse that only contains some properties."""
+        # https://github.com/mill1000/midea-msmart/issues/97#issuecomment-1949495900
+        TEST_RESPONSE = bytes.fromhex(
+            "aa13ac00000000000303b1010a0000013200c884")
+
+        # Create a dummy device
+        device = AC(0, 0, 0)
+
+        # Set some properties
+        device.horizontal_swing_angle = AC.SwingAngle.POS_5
+        device.vertical_swing_angle = AC.SwingAngle.POS_5
+
+        # Construct and assert response
+        resp = Response.construct(TEST_RESPONSE)
+        self.assertIsNotNone(resp)
+        self.assertEqual(type(resp), PropertiesResponse)
+
+        # Process response
+        device._process_state_response(resp)
+
+        # Assert that only the properties in the response are updated
+        self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.POS_3)
+
+        # Assert other properties are untouched
+        self.assertEqual(device.vertical_swing_angle, AC.SwingAngle.POS_5)
+
 
 class TestSendCommand(unittest.IsolatedAsyncioTestCase):
 

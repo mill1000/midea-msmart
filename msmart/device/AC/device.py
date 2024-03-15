@@ -153,14 +153,15 @@ class AirConditioner(Device):
 
         elif isinstance(res, PropertiesResponse):
 
-            self._horizontal_swing_angle = cast(
-                AirConditioner.SwingAngle,
-                AirConditioner.SwingAngle.get_from_value(
-                    res.swing_horizontal_angle))
-            self._vertical_swing_angle = cast(
-                AirConditioner.SwingAngle,
-                AirConditioner.SwingAngle.get_from_value(
-                    res.swing_vertical_angle))
+            if res.swing_horizontal_angle:
+                self._horizontal_swing_angle = cast(
+                    AirConditioner.SwingAngle,
+                    AirConditioner.SwingAngle.get_from_value(res.swing_horizontal_angle))
+
+            if res.swing_vertical_angle:
+                self._vertical_swing_angle = cast(
+                    AirConditioner.SwingAngle,
+                    AirConditioner.SwingAngle.get_from_value(res.swing_vertical_angle))
 
     def _update_capabilities(self, res: CapabilitiesResponse) -> None:
         # Build list of supported operation modes

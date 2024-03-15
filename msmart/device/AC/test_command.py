@@ -682,6 +682,7 @@ class TestPropertiesResponse(_TestResponseBase):
 
         # Check state
         self.assertEqual(resp.swing_vertical_angle, 0)
+        self.assertIsNone(resp.swing_horizontal_angle)
 
 
 if __name__ == "__main__":
