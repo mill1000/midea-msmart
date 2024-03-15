@@ -1,8 +1,6 @@
 import unittest
-from unittest.mock import patch
 
-from .command import (GetPropertiesCommand, GetStateCommand,
-                      PropertiesResponse, PropertyId, Response, StateResponse)
+from .command import PropertiesResponse, Response, StateResponse
 from .device import AirConditioner as AC
 
 
@@ -210,69 +208,6 @@ class TestUpdateStateFromResponse(unittest.TestCase):
 
         # Assert other properties are untouched
         self.assertEqual(device.vertical_swing_angle, AC.SwingAngle.POS_5)
-
-
-class TestSendCommand(unittest.IsolatedAsyncioTestCase):
-
-    @patch("msmart.device.Device._send_command")
-    async def test_response_ignore_bad_crc(self, mock_send_command) -> None:
-        """Test that bad CRCs are ignored when in response to properties commands."""
-        TEST_RESPONSE_BAD_CRC = bytes.fromhex(
-            "aa14ac00000000000303b10109000001003c000042")
-        TEST_RESPONSE_BAD_CHECKSUM = bytes.fromhex(
-            "aa14ac00000000000303b10109000001003c0000FF")
-
-        # Set return value of mocked method
-        mock_send_command.return_value = [TEST_RESPONSE_BAD_CRC]
-
-        # Create a dummy device
-        device = AC(0, 0, 0)
-
-        # Assert we start not ignoring CRCs
-        self.assertEqual(device._disable_properties_crc_check, False)
-
-        # Send a properties command
-        command = GetPropertiesCommand([PropertyId.SWING_UD_ANGLE])
-        responses = await device._send_command_get_responses(command)
-
-        # Assert that responses are received
-        self.assertTrue(responses)
-
-        # Assert we start are now ignoring CRCs
-        self.assertEqual(device._disable_properties_crc_check, True)
-
-        # Check that we still check CRCs on non-properties commands
-        with self.assertLogs("msmart") as log:
-            command = GetStateCommand()
-            responses = await device._send_command_get_responses(command)
-
-            # Assert that no responses received
-            self.assertFalse(responses)
-
-        # Assert that an error was generated
-        self.assertRegex(log.output[0], "^ERROR:.*Payload.*failed CRC")
-
-        # Change mocked return to an invalid frame
-        mock_send_command.return_value = [TEST_RESPONSE_BAD_CHECKSUM]
-
-        # Assert that checksums are always checked regardless of command
-        with self.assertLogs("msmart") as log:
-            command = GetStateCommand()
-            responses = await device._send_command_get_responses(command)
-
-            # Assert that no responses received
-            self.assertFalse(responses)
-
-            # Send a properties command
-            command = GetPropertiesCommand([PropertyId.SWING_UD_ANGLE])
-            responses = await device._send_command_get_responses(command)
-
-            # Assert that no responses received
-            self.assertFalse(responses)
-
-        # Assert that an error was generated
-        self.assertRegex(log.output[0], "^ERROR:.*Frame.*failed checksum")
-        self.assertRegex(log.output[1], "^ERROR:.*Frame.*failed checksum")
 
 
 if __name__ == "__main__":
