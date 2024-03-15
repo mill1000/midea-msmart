@@ -164,6 +164,8 @@ class AirConditioner(Device):
             self._follow_me = res.follow_me
             self._purifier = res.purifier
 
+            self._target_humidity = res.target_humidity
+
         elif isinstance(res, PropertiesResponse):
 
             if (angle := res.get_property(PropertyId.SWING_LR_ANGLE)) is not None:
@@ -393,8 +395,7 @@ class AirConditioner(Device):
         cmd = SetStateCommand()
         cmd.beep_on = self._beep_on
         cmd.power_on = or_default(self._power_state, False)
-        cmd.target_temperature = or_default(
-            self._target_temperature, 25)  # TODO?
+        cmd.target_temperature = or_default(self._target_temperature, 25)
         cmd.operational_mode = self._operational_mode
         cmd.fan_speed = self._fan_speed
         cmd.swing_mode = self._swing_mode
@@ -406,6 +407,7 @@ class AirConditioner(Device):
         cmd.fahrenheit = or_default(self._fahrenheit_unit, False)
         cmd.follow_me = or_default(self._follow_me, False)
         cmd.purifier = or_default(self._purifier, False)
+        cmd.target_humidity = or_default(self._target_humidity, 40)
 
         # Process any state responses from the device
         for response in await self._send_command_get_responses(cmd):

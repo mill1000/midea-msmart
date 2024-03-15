@@ -740,6 +740,7 @@ class StateResponse(Response):
         self.freeze_protection_mode = None
         self.follow_me = None
         self.purifier = None
+        self.target_humidity = None
 
         _LOGGER.debug("State response payload: %s", payload.hex())
 
