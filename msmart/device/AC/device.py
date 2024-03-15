@@ -5,7 +5,6 @@ from typing import Any, List, Optional, Union, cast
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
-from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum
 
 from .command import (CapabilitiesResponse, GetCapabilitiesCommand,
@@ -67,8 +66,6 @@ class AirConditioner(Device):
 
         super().__init__(ip=ip, port=port, device_id=device_id,
                          device_type=DeviceType.AIR_CONDITIONER, **kwargs)
-
-        self._disable_properties_crc_check = False
 
         self._beep_on = False
         self._power_state = False
@@ -232,7 +229,7 @@ class AirConditioner(Device):
                           self.ip, self.port, response.payload.hex())
 
     async def _send_command_get_responses(self, command) -> List[Response]:
-        """Send a command and return all valid responses."""
+        """Send a command and yield an iterator of valid response."""
 
         responses = await super()._send_command(command)
 
@@ -244,32 +241,12 @@ class AirConditioner(Device):
         # Device is online if we received any response
         self._online = True
 
-        # Determine if CRCs will be checked
-        properties_command = isinstance(command,
-                                        (GetPropertiesCommand, SetPropertiesCommand))
-        skip_crc = self._disable_properties_crc_check and properties_command
-
         valid_responses = []
         for data in responses:
             try:
-                try:
-                    # Construct response from data
-                    response = Response.construct(data, skip_crc=skip_crc)
-                except InvalidResponseException as e:
-                    if not properties_command:
-                        _LOGGER.error(e)
-                        continue
-
-                    # Some devices return invalid CRCs on properties responses
-                    # Detect and disable CRC checks on these responses
-                    _LOGGER.info(
-                        "Disabling CRC check for properties commands.")
-                    self._disable_properties_crc_check = True
-
-                    # Construct the failing response again without CRC check
-                    response = Response.construct(data, skip_crc=True)
-
-            except InvalidFrameException as e:
+                # Construct response from data
+                response = Response.construct(data)
+            except InvalidResponseException as e:
                 _LOGGER.error(e)
                 continue
 
