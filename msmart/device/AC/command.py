@@ -672,11 +672,13 @@ class CapabilitiesResponse(Response):
 
     @property
     def eco_mode(self) -> bool:
-        return self._capabilities.get("eco_mode", False) or self._capabilities.get("eco_mode_2", False)
+        return (self._capabilities.get("eco_mode", False)
+                or self._capabilities.get("eco_mode_2", False))
 
     @property
     def turbo_mode(self) -> bool:
-        return self._capabilities.get("turbo_heat", False) or self._capabilities.get("turbo_cool", False)
+        return (self._capabilities.get("turbo_heat", False)
+                or self._capabilities.get("turbo_cool", False))
 
     @property
     def freeze_protection_mode(self) -> bool:
@@ -700,6 +702,20 @@ class CapabilitiesResponse(Response):
     def max_temperature(self) -> int:
         mode = ["cool", "auto", "heat"]
         return max([self._capabilities.get(f"{m}_max_temperature", 30) for m in mode])
+
+    @property
+    def power_stats(self) -> bool:
+        return self._capabilities.get("power_stats", False)
+
+    @property
+    def power_bcd(self) -> bool:
+        return self._capabilities.get("power_bcd", False)
+
+    @property
+    def humidity(self) -> bool:
+        # TODO Unsure the difference between these two
+        return (self._capabilities.get("humidity_auto_set", False)
+                or self._capabilities.get("humidity_manual_set", False))
 
 
 class StateResponse(Response):

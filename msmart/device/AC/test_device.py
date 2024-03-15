@@ -118,7 +118,7 @@ class TestUpdateStateFromResponse(unittest.TestCase):
 
         # Create a dummy device and process the response
         device = AC(0, 0, 0)
-        device._process_state_response(resp)
+        device._update_state(resp)
 
         # Assert state is expected
         self.assertEqual(device.target_temperature, 21.0)
@@ -154,7 +154,7 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(type(resp), PropertiesResponse)
 
         # Process the response
-        device._process_state_response(resp)
+        device._update_state(resp)
 
         # Assert state is expected
         self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.OFF)
@@ -180,7 +180,7 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(type(resp), PropertiesResponse)
 
         # Process the response
-        device._process_state_response(resp)
+        device._update_state(resp)
 
         # Assert state is expected
         self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.POS_3)
@@ -207,7 +207,7 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(type(resp), PropertiesResponse)
 
         # Process response
-        device._process_state_response(resp)
+        device._update_state(resp)
 
         # Assert that only the properties in the response are updated
         self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.POS_3)
