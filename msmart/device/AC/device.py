@@ -9,10 +9,12 @@ from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum
 
 from .command import (CapabilitiesResponse, GetCapabilitiesCommand,
-                      GetPropertiesCommand, GetStateCommand,
-                      InvalidResponseException, PropertiesResponse, PropertyId,
-                      Response, ResponseId, SetPropertiesCommand,
-                      SetStateCommand, StateResponse, ToggleDisplayCommand)
+                      GetHumidityCommand, GetPowerUsageCommand,
+                      GetPropertiesCommand, GetStateCommand, HumidityResponse,
+                      InvalidResponseException, PowerUsageResponse,
+                      PropertiesResponse, PropertyId, Response, ResponseId,
+                      SetPropertiesCommand, SetStateCommand, StateResponse,
+                      ToggleDisplayCommand)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -105,7 +107,13 @@ class AirConditioner(Device):
 
         self._indoor_temperature = None
         self._outdoor_temperature = None
+
+        self._supports_humidity = False
         self._indoor_humidity = None
+
+        self._supports_power_usage = False
+        self._power_usage_bcd = False
+        self._power_usage = None
 
         # Default to assuming device can't handle any properties
         self._supported_properties = set()
@@ -114,9 +122,10 @@ class AirConditioner(Device):
         self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
 
-    def _update_state(self, res: Union[StateResponse, PropertiesResponse]) -> None:
-        if isinstance(res, StateResponse):
+    def _update_state(self, res: Response) -> None:
+        """Update the local state from a device state response."""
 
+        if isinstance(res, StateResponse):
             self._power_state = res.power_on
 
             self._target_temperature = res.target_temperature
@@ -166,6 +175,16 @@ class AirConditioner(Device):
                 self._vertical_swing_angle = cast(
                     AirConditioner.SwingAngle,
                     AirConditioner.SwingAngle.get_from_value(angle))
+
+        elif isinstance(res, PowerUsageResponse):
+            self._power_usage = res.power_bcd if self._power_usage_bcd else res.power
+
+        elif isinstance(res, HumidityResponse):
+            self._indoor_humidity = res.humidity
+
+        else:
+            _LOGGER.debug("Ignored unknown response from %s:%d: %s",
+                          self.ip, self.port, res.payload.hex())
 
     def _update_capabilities(self, res: CapabilitiesResponse) -> None:
         # Build list of supported operation modes
@@ -219,22 +238,19 @@ class AirConditioner(Device):
         self._min_target_temperature = res.min_temperature
         self._max_target_temperature = res.max_temperature
 
-        self._supported_properties.clear()
+        self._supports_power_usage = res.power_stats
+        self._power_usage_bcd = res.power_bcd
+
+        self._supports_humidity = res.humidity
+
         # Add supported properties based on capabilities
+        self._supported_properties.clear()
+
         if res.swing_vertical_angle:
             self._supported_properties.add(PropertyId.SWING_UD_ANGLE)
 
         if res.swing_horizontal_angle:
             self._supported_properties.add(PropertyId.SWING_LR_ANGLE)
-
-    def _process_state_response(self, response: Response) -> None:
-        """Update the local state from a device state response."""
-
-        if isinstance(response, (StateResponse, PropertiesResponse)):
-            self._update_state(response)
-        else:
-            _LOGGER.debug("Ignored unknown response from %s:%d: %s",
-                          self.ip, self.port, response.payload.hex())
 
     async def _send_command_get_responses(self, command) -> List[Response]:
         """Send a command and return all valid responses."""
@@ -322,16 +338,28 @@ class AirConditioner(Device):
     async def refresh(self) -> None:
         """Refresh the local copy of the device state by sending a GetState command."""
 
-        cmd = GetStateCommand()
-        # Process any state responses from the device
-        for response in await self._send_command_get_responses(cmd):
-            self._process_state_response(response)
+        commands = []
+
+        # Always request state updates
+        commands.append(GetStateCommand())
+
+        # Fetch power stats if supported
+        # TODO rate limit this?
+        if self._supports_power_usage:
+            commands.append(GetPowerUsageCommand())
+
+        # Fetch humidity if supported
+        if self._supports_humidity:
+            commands.append(GetHumidityCommand())
 
         # Update supported properties
         if len(self._supported_properties):
-            cmd = GetPropertiesCommand(self._supported_properties)
+            commands.append(GetPropertiesCommand(self._supported_properties))
+
+        # Send commands and process any responses
+        for cmd in commands:
             for response in await self._send_command_get_responses(cmd):
-                self._process_state_response(response)
+                self._update_state(response)
 
     async def apply(self) -> None:
         """Apply the local state to the device."""
@@ -381,7 +409,7 @@ class AirConditioner(Device):
 
         # Process any state responses from the device
         for response in await self._send_command_get_responses(cmd):
-            self._process_state_response(response)
+            self._update_state(response)
 
         # Done if no properties need updating
         if not len(self._updated_properties):
@@ -403,7 +431,7 @@ class AirConditioner(Device):
         # Build command with properties
         cmd = SetPropertiesCommand(props)
         for response in await self._send_command_get_responses(cmd):
-            self._process_state_response(response)
+            self._update_state(response)
 
         # Reset updated properties set
         self._updated_properties.clear()
