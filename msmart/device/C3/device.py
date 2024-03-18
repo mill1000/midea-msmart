@@ -279,6 +279,15 @@ class HeatPump(Device):
         self._run_mode = mode
 
     @property
+    def tbh_power_state(self) -> int:
+        """Power state of internal backup heater."""
+        return self._tbh_power_state
+
+    @tbh_power_state.setter
+    def tbh_power_state(self, state: bool) -> None:
+        self._tbh_power_state = state
+
+    @property
     def zone1(self) -> HeatPump.Zone:
         """Zone 1"""
         return self._zone1
@@ -296,6 +305,15 @@ class HeatPump(Device):
     @dhw_power_state.setter
     def dhw_power_state(self, state: bool) -> None:
         self._dhw_power_state = state
+
+    @property
+    def fast_dhw_mode(self) -> int:
+        """State of fast DHW mode."""
+        return self._fast_dhw_state
+
+    @fast_dhw_mode.setter
+    def fast_dhw_mode(self, state: bool) -> None:
+        self._fast_dhw_state = state
 
     @property
     def dhw_target_temperature(self) -> int:
