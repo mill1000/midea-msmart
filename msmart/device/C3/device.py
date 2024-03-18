@@ -105,8 +105,8 @@ class HeatPump(Device):
         self._heat_enable = False
         self._cool_enable = False
 
-        self._zone_1 = HeatPump.Zone()
-        self._zone_2 = None
+        self._zone1 = HeatPump.Zone()
+        self._zone2 = None
 
         # Domestic hot water
         self._dhw_enable = False
@@ -146,10 +146,10 @@ class HeatPump(Device):
             self._cool_enable = res.cool_enable
 
             # Create zone 2 if supported
-            if res.zone2_enable and self._zone_2 is None:
-                self._zone_2 = HeatPump.Zone()
+            if res.zone2_enable and self._zone2 is None:
+                self._zone2 = HeatPump.Zone()
 
-            for i, zone in enumerate([self._zone_1, self._zone_2], start=1):
+            for i, zone in enumerate([self._zone1, self._zone2], start=1):
 
                 # Skip nonexistent zones
                 if zone is None:
@@ -250,14 +250,14 @@ class HeatPump(Device):
         cmd = ControlBasicCommand()
         cmd.run_mode = self._run_mode
 
-        cmd.zone1_power_state = self._zone_1.power_state
-        cmd.zone1_target_temperature = self._zone_1.target_temperature
-        cmd.zone1_curve_state = self._zone_1.curve_state
+        cmd.zone1_power_state = self._zone1.power_state
+        cmd.zone1_target_temperature = self._zone1.target_temperature
+        cmd.zone1_curve_state = self._zone1.curve_state
 
-        if self._zone_2:
-            cmd.zone2_power_state = self._zone_2.power_state
-            cmd.zone2_target_temperature = self._zone_2.target_temperature
-            cmd.zone2_curve_state = self._zone_2.curve_state
+        if self._zone2:
+            cmd.zone2_power_state = self._zone2.power_state
+            cmd.zone2_target_temperature = self._zone2.target_temperature
+            cmd.zone2_curve_state = self._zone2.curve_state
 
         cmd.dhw_power_state = self._dhw_power_state
         cmd.dhw_target_temperature = self._dhw_target_temperature
@@ -281,12 +281,12 @@ class HeatPump(Device):
     @property
     def zone1(self) -> HeatPump.Zone:
         """Zone 1"""
-        return self._zone_1
+        return self._zone1
 
     @property
     def zone2(self) -> Optional[HeatPump.Zone]:
         """Zone 2 if supported"""
-        return self._zone_2
+        return self._zone2
 
     @property
     def dhw_power_state(self) -> int:
