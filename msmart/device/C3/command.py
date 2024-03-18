@@ -238,7 +238,7 @@ class QueryBasicResponse(Response):
         self.eco_on_state = bool(payload[3] & 0x08)
 
         self.zone1_terminal_type = (payload[3] & 0x30) >> 4
-        self.zone2_terminal_type = (payload[3] & 0xC0) >> 4
+        self.zone2_terminal_type = (payload[3] & 0xC0) >> 6
 
         self.run_mode = payload[4]  # Ref: run_mode_set
         self.run_mode_under_auto = payload[5]  # Ref: runmode_under_auto
