@@ -114,6 +114,7 @@ class HeatPump(Device):
         self._dhw_target_temperature = 25
         self._dhw_min_temperature = 20
         self._dhw_max_temperature = 60
+        self._fastdhw_state = False
 
         # Room thermostat
         self._room_thermostat_enable = False
@@ -122,10 +123,11 @@ class HeatPump(Device):
         self._room_min_temperature = 17.0
         self._room_max_temperature = 30.0
 
-        # Misc
+        # Tank booster heater
+        self._tbh_enable = False
         self._tbh_state = False
-        self._fastdhw_state = False
-
+        
+        # Sensors
         self._tank_temperature = None
         self._outdoor_temperature = None
 
@@ -178,6 +180,7 @@ class HeatPump(Device):
             self._dhw_target_temperature = res.dhw_target_temperature
             self._dhw_min_temperature = res.dhw_min_temperature
             self._dhw_max_temperature = res.dhw_max_temperature
+            self._fastdhw_state = res.fastdhw_state
 
             self._room_thermostat_enable = res.room_thermostat_enable
             self._room_thermostat_power_state = res.room_thermostat_power_state
@@ -185,8 +188,8 @@ class HeatPump(Device):
             self._room_min_temperature = res.room_min_temperature
             self._room_max_temperature = res.room_max_temperature
 
+            self._tbh_enable = res.tbh_enable
             self._tbh_state = res.tbh_state
-            self._fastdhw_state = res.fastdhw_state
 
             # TODO time set state, silence state, holiday state, eco state
             # TODO error code
