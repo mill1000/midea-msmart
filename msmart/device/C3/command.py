@@ -187,7 +187,8 @@ class Response():
             # Parse frame depending on id
             frame_type = frame_mv[9]
             type = frame_mv[10]
-            if frame_type == FrameType.QUERY and type == QueryType.QUERY_BASIC:
+            if ((frame_type == FrameType.QUERY and type == QueryType.QUERY_BASIC) or
+                (frame_type == FrameType.CONTROL and type == ControlType.CONTROL_BASIC)):
                 return QueryBasicResponse(frame_mv)
             elif frame_type == FrameType.QUERY and type == QueryType.QUERY_UNIT_PARAMETERS:
                 return QueryUnitParametersResponse(frame_mv)
