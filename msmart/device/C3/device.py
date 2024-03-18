@@ -368,6 +368,8 @@ class HeatPump(Device):
             "zone2_target_temperature": self.zone2.target_temperature if self.zone2 else None,
             "dhw_power": self._dhw_power_state,
             "dhw_target_temperature": self.dhw_target_temperature,
+            "dhw_fast_mode": self.dhw_fast_mode,
+            "tbh_power": self.tbh_power_state,
             "water_temperature": self.water_temperature,
             "outdoor_temperature": self.outdoor_temperature,
             "electric_power": self.electric_power,
