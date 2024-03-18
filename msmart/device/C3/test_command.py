@@ -35,7 +35,7 @@ class TestQueryBasicResponse(_TestResponseBase):
     EXPECTED_ATTRS = ["zone1_power_state", "zone2_power_state",
                       "dhw_power_state",
                       "zone1_curve_state", "zone2_curve_state",
-                      "tbh_state", "fastdhw_state",
+                      "tbh_state", "dhw_fast_mode",
                       "heat_enable", "cool_enable", "dhw_enable",
                       "zone2_enable",
                       "zone1_temperature_type", "zone2_temperature_type",
