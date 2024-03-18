@@ -1,8 +1,11 @@
-import logging
 import unittest
 from typing import Union, cast
 
-from .command import QueryBasicResponse, ReportPower4Response, Response
+from msmart.const import FrameType
+
+from .command import (ControlBasicCommand, ControlType, QueryBasicCommand,
+                      QueryBasicResponse, QueryType, ReportPower4Response,
+                      Response)
 
 
 class _TestResponseBase(unittest.TestCase):
@@ -102,6 +105,46 @@ class TestPower4Response(_TestResponseBase):
         self.assertEqual(resp.water_tank_temperature, 41)
 
         self.assertEqual(resp.voltage, 225)
+
+
+class TestCommands(unittest.TestCase):
+    """Test basic command messages."""
+
+    def test_control_basic(self) -> None:
+        """Test that basic control fields are correct."""
+
+        # Build command
+        command = ControlBasicCommand()
+
+        # Fetch frame
+        frame = command.tobytes()
+
+        # Check length
+        self.assertEqual(frame[1], 0x14)
+
+        # Check frame type
+        self.assertEqual(frame[9], FrameType.CONTROL)
+
+        # Check control type
+        self.assertEqual(frame[10], ControlType.CONTROL_BASIC)
+
+    def test_query_basic(self) -> None:
+        """Test that basic query fields are correct."""
+
+        # Build command
+        command = QueryBasicCommand()
+
+        # Fetch frame
+        frame = command.tobytes()
+
+        # Check length
+        self.assertEqual(frame[1], 0x0B)
+
+        # Check frame type
+        self.assertEqual(frame[9], FrameType.QUERY)
+
+        # Check control type
+        self.assertEqual(frame[10], QueryType.QUERY_BASIC)
 
 
 if __name__ == "__main__":
