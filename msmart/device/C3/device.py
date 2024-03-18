@@ -114,7 +114,7 @@ class HeatPump(Device):
         self._dhw_target_temperature = 25
         self._dhw_min_temperature = 20
         self._dhw_max_temperature = 60
-        self._fastdhw_state = False
+        self._fast_dhw_state = False
 
         # Room thermostat
         self._room_thermostat_enable = False
@@ -180,7 +180,7 @@ class HeatPump(Device):
             self._dhw_target_temperature = res.dhw_target_temperature
             self._dhw_min_temperature = res.dhw_min_temperature
             self._dhw_max_temperature = res.dhw_max_temperature
-            self._fastdhw_state = res.fastdhw_state
+            self._fast_dhw_state = res.dhw_fast_mode
 
             self._room_thermostat_enable = res.room_thermostat_enable
             self._room_thermostat_power_state = res.room_thermostat_power_state
@@ -261,7 +261,7 @@ class HeatPump(Device):
 
         cmd.dhw_power_state = self._dhw_power_state
         cmd.dhw_target_temperature = self._dhw_target_temperature
-        cmd.fastdhw_state = self._fastdhw_state
+        cmd.dhw_fast_mode = self._fast_dhw_state
 
         cmd.room_target_temperature = self._room_target_temperature
 

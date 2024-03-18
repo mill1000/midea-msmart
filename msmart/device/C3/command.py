@@ -118,7 +118,7 @@ class ControlBasicCommand(ControlCommand):
         self.zone2_curve_state = False
 
         self.tbh_state = False
-        self.fastdhw_state = False
+        self.dhw_fast_mode = False
 
         # TODO "newfunction_en"
         self.zone1_curve_type = 0
@@ -142,7 +142,7 @@ class ControlBasicCommand(ControlCommand):
         payload[7] |= 1 << 0 if self.zone1_curve_state else 0
         payload[7] |= 1 << 1 if self.zone2_curve_state else 0
         payload[7] |= 1 << 2 if self.tbh_state else 0
-        payload[7] |= 1 << 3 if self.fastdhw_state else 0
+        payload[7] |= 1 << 3 if self.dhw_fast_mode else 0
 
         # TODO newfunction_en
         # payload[8] = self.zone1_curve_type
@@ -217,7 +217,7 @@ class QueryBasicResponse(Response):
         self.zone1_curve_state = bool(payload[1] & 0x08)
         self.zone2_curve_state = bool(payload[1] & 0x10)
         self.tbh_state = bool(payload[1] & 0x40)  # Ref: forcetbh_state
-        self.fastdhw_state = bool(payload[1] & 0x40)
+        self.dhw_fast_mode = bool(payload[1] & 0x40) # Ref: fastdhw_state
         # self.remote_onoff = bool(payload[1] & 0x80) # TODO never referenced in ref
 
         self.heat_enable = bool(payload[2] & 0x01)
