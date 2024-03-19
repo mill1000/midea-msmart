@@ -114,7 +114,7 @@ class HeatPump(Device):
         self._dhw_target_temperature = 25
         self._dhw_min_temperature = 20
         self._dhw_max_temperature = 60
-        self._fast_dhw_state = False
+        self._dhw_fast_mode = False
 
         # Room thermostat
         self._room_thermostat_enable = False
@@ -125,7 +125,7 @@ class HeatPump(Device):
 
         # Tank booster heater
         self._tbh_enable = False
-        self._tbh_state = False
+        self._tbh_power_state = False
         
         # Sensors
         self._tank_temperature = None
@@ -180,7 +180,7 @@ class HeatPump(Device):
             self._dhw_target_temperature = res.dhw_target_temperature
             self._dhw_min_temperature = res.dhw_min_temperature
             self._dhw_max_temperature = res.dhw_max_temperature
-            self._fast_dhw_state = res.dhw_fast_mode
+            self._dhw_fast_mode = res.dhw_fast_mode
 
             self._room_thermostat_enable = res.room_thermostat_enable
             self._room_thermostat_power_state = res.room_thermostat_power_state
@@ -189,7 +189,7 @@ class HeatPump(Device):
             self._room_max_temperature = res.room_max_temperature
 
             self._tbh_enable = res.tbh_enable
-            self._tbh_state = res.tbh_state
+            self._tbh_power_state = res.tbh_state
 
             # TODO time set state, silence state, holiday state, eco state
             # TODO error code
@@ -261,11 +261,11 @@ class HeatPump(Device):
 
         cmd.dhw_power_state = self._dhw_power_state
         cmd.dhw_target_temperature = self._dhw_target_temperature
-        cmd.dhw_fast_mode = self._fast_dhw_state
+        cmd.dhw_fast_mode = self._dhw_fast_mode
 
         cmd.room_target_temperature = self._room_target_temperature
 
-        cmd.tbh_state = self._tbh_state
+        cmd.tbh_state = self._tbh_power_state
 
         await self._send_command_parse_responses(cmd)
 
@@ -307,13 +307,13 @@ class HeatPump(Device):
         self._dhw_power_state = state
 
     @property
-    def fast_dhw_mode(self) -> int:
+    def dhw_fast_mode(self) -> int:
         """State of fast DHW mode."""
-        return self._fast_dhw_state
+        return self._dhw_fast_mode
 
-    @fast_dhw_mode.setter
-    def fast_dhw_mode(self, state: bool) -> None:
-        self._fast_dhw_state = state
+    @dhw_fast_mode.setter
+    def dhw_fast_mode(self, state: bool) -> None:
+        self._dhw_fast_mode = state
 
     @property
     def dhw_target_temperature(self) -> int:
