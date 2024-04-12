@@ -61,7 +61,7 @@ class CapabilityId(IntEnum):
     FAHRENHEIT = 0x0222
     DISPLAY_CONTROL = 0x0224
     TEMPERATURES = 0x0225
-    BUZZER = 0x022C
+    BUZZER = 0x022C  # TODO Reference refers to this as "sound". Is this different then buzzer?
     MAIN_HORIZONTAL_GUIDE_STRIP = 0x0230  # ??
     SUP_HORIZONTAL_GUIDE_STRIP = 0x0231  # ??
     TWINS_MACHINE = 0x0232  # ??
@@ -72,6 +72,7 @@ class CapabilityId(IntEnum):
 class PropertyId(IntEnum):
     SWING_UD_ANGLE = 0x0009
     SWING_LR_ANGLE = 0x000A
+    BUZZER = 0x001A
     INDOOR_HUMIDITY = 0x0015  # TODO Reference refers to a potential bug with this
     SELF_CLEAN = 0x0039
     RATE_SELECT = 0x0048
