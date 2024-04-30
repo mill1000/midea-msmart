@@ -542,6 +542,10 @@ class CapabilitiesResponse(Response):
     def additional_capabilities(self) -> bool:
         return self._additional_capabilities
 
+    @property
+    def anion(self) -> bool:
+        return self._capabilities.get("anion", False)
+
     def _get_fan_speed(self, speed) -> bool:
         # If any fan_ capability was received, check against them
         if any(k.startswith("fan_") for k in self._capabilities):

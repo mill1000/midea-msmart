@@ -57,6 +57,7 @@ class AirConditioner(Device):
 
     # Create a dict to map properties to attribute names
     _PROPERTY_MAP = {
+        PropertyId.ANION: "_anion",
         PropertyId.SWING_LR_ANGLE: "_horizontal_swing_angle",
         PropertyId.SWING_UD_ANGLE: "_vertical_swing_angle"
     }
@@ -108,6 +109,7 @@ class AirConditioner(Device):
 
         self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
+        self._anion = False
 
     def _update_state(self, res: Union[StateResponse, PropertiesResponse]) -> None:
         if isinstance(res, StateResponse):
@@ -219,6 +221,9 @@ class AirConditioner(Device):
 
         if res.swing_horizontal_angle:
             self._supported_properties.add(PropertyId.SWING_LR_ANGLE)
+
+        if res.anion:
+            self._supported_properties.add(PropertyId.ANION)
 
     def _process_state_response(self, response: Response) -> None:
         """Update the local state from a device state response."""
@@ -481,10 +486,6 @@ class AirConditioner(Device):
         return PropertyId.SWING_LR_ANGLE in self._supported_properties
 
     @property
-    def supports_vertical_swing_angle(self) -> bool:
-        return PropertyId.SWING_UD_ANGLE in self._supported_properties
-
-    @property
     def horizontal_swing_angle(self) -> SwingAngle:
         return self._horizontal_swing_angle
 
@@ -494,6 +495,10 @@ class AirConditioner(Device):
         self._updated_properties.add(PropertyId.SWING_LR_ANGLE)
 
     @property
+    def supports_vertical_swing_angle(self) -> bool:
+        return PropertyId.SWING_UD_ANGLE in self._supported_properties
+
+    @property
     def vertical_swing_angle(self) -> SwingAngle:
         return self._vertical_swing_angle
 
@@ -501,6 +506,19 @@ class AirConditioner(Device):
     def vertical_swing_angle(self, angle: SwingAngle) -> None:
         self._vertical_swing_angle = angle
         self._updated_properties.add(PropertyId.SWING_UD_ANGLE)
+
+    @property
+    def supports_anion(self) -> bool:
+        return PropertyId.ANION in self._supported_properties
+
+    @property
+    def anion(self) -> bool:
+        return self._anion
+
+    @anion.setter
+    def anion(self, enabled: bool) -> None:
+        self._anion = enabled
+        self._updated_properties.add(PropertyId.ANION)
 
     @property
     def supports_eco_mode(self) -> Optional[bool]:
