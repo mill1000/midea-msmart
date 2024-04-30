@@ -19,7 +19,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install build
       - run: python -m build
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist
@@ -28,7 +28,7 @@ jobs:
     needs: build-package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist
