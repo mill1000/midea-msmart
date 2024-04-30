@@ -383,11 +383,17 @@ class AirConditioner(Device):
         for prop in (self._updated_properties - self._supported_properties):
             _LOGGER.warning("Device is not capable of property %s.", prop)
 
-        # Build command with current state of updated properties
-        cmd = SetPropertiesCommand({
+        # Get current state of updated properties
+        props = {
             k: getattr(self, self._PROPERTY_MAP[k])
             for k in self._updated_properties & self._PROPERTY_MAP.keys()
-        })
+        }
+
+        # Always add buzzer property
+        props[PropertyId.BUZZER] = self._beep_on
+
+        # Build command with properties
+        cmd = SetPropertiesCommand(props)
         for response in await self._send_command_get_responses(cmd):
             self._process_state_response(response)
 
