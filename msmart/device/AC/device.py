@@ -153,15 +153,18 @@ class AirConditioner(Device):
 
         elif isinstance(res, PropertiesResponse):
 
-            if res.swing_horizontal_angle:
+            if angle := res.get_property(PropertyId.SWING_LR_ANGLE):
                 self._horizontal_swing_angle = cast(
                     AirConditioner.SwingAngle,
-                    AirConditioner.SwingAngle.get_from_value(res.swing_horizontal_angle))
+                    AirConditioner.SwingAngle.get_from_value(angle))
 
-            if res.swing_vertical_angle:
+            if angle := res.get_property(PropertyId.SWING_UD_ANGLE):
                 self._vertical_swing_angle = cast(
                     AirConditioner.SwingAngle,
-                    AirConditioner.SwingAngle.get_from_value(res.swing_vertical_angle))
+                    AirConditioner.SwingAngle.get_from_value(angle))
+
+            if anion := res.get_property(PropertyId.ANION):
+                self._anion = anion
 
     def _update_capabilities(self, res: CapabilitiesResponse) -> None:
         # Build list of supported operation modes

@@ -5,7 +5,7 @@ import math
 import struct
 from collections import namedtuple
 from enum import IntEnum
-from typing import Callable, Collection, Mapping, Optional, Union
+from typing import Any, Callable, Collection, Mapping, Optional, Union
 
 import msmart.crc8 as crc8
 from msmart.const import DeviceType, FrameType
@@ -841,18 +841,5 @@ class PropertiesResponse(Response):
             # Advanced to next property
             props = props[4+size:]
 
-    @property
-    def indoor_humidity(self) -> Optional[int]:
-        return self._properties.get(PropertyId.INDOOR_HUMIDITY, None)
-
-    @property
-    def rate_select(self) -> Optional[int]:
-        return self._properties.get(PropertyId.RATE_SELECT, None)
-
-    @property
-    def swing_horizontal_angle(self) -> Optional[int]:
-        return self._properties.get(PropertyId.SWING_LR_ANGLE, None)
-
-    @property
-    def swing_vertical_angle(self) -> Optional[int]:
-        return self._properties.get(PropertyId.SWING_UD_ANGLE, None)
+    def get_property(self, id: PropertyId) -> Optional[Any]:
+        return self._properties.get(id, None)
