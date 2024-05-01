@@ -626,14 +626,17 @@ class TestPropertiesResponse(_TestResponseBase):
 
         EXPECTED_RAW_PROPERTIES = {
             PropertyId.INDOOR_HUMIDITY: 43,
-            PropertyId.SWING_UD_ANGLE: 0,
             PropertyId.SWING_LR_ANGLE: 0,
+            PropertyId.SWING_UD_ANGLE: 0,
         }
         # Ensure raw decoded properties match
         self.assertEqual(resp._properties, EXPECTED_RAW_PROPERTIES)
 
         # Check state
-        self.assertEqual(resp.indoor_humidity, 43)
+        self.assertIsNone(resp.get_property(PropertyId.ANION))
+        self.assertEqual(resp.get_property(PropertyId.INDOOR_HUMIDITY), 43)
+        self.assertEqual(resp.get_property(PropertyId.SWING_LR_ANGLE), 0)
+        self.assertEqual(resp.get_property(PropertyId.SWING_UD_ANGLE), 0)
 
     def test_properties_ack(self) -> None:
         """Test we decode an acknowledgement from a set properties command correctly."""
@@ -648,14 +651,16 @@ class TestPropertiesResponse(_TestResponseBase):
         self.assertEqual(type(resp), PropertiesResponse)
 
         EXPECTED_RAW_PROPERTIES = {
-            PropertyId.SWING_UD_ANGLE: 0,
             PropertyId.SWING_LR_ANGLE: 50,
+            PropertyId.SWING_UD_ANGLE: 0,
         }
         # Ensure raw decoded properties match
         self.assertEqual(resp._properties, EXPECTED_RAW_PROPERTIES)
 
         # Check state
-        self.assertEqual(resp.swing_horizontal_angle, 50)
+        self.assertIsNone(resp.get_property(PropertyId.ANION))
+        self.assertEqual(resp.get_property(PropertyId.SWING_LR_ANGLE), 50)
+        self.assertEqual(resp.get_property(PropertyId.SWING_UD_ANGLE), 0)
 
 
 class TestResponseConstruct(_TestResponseBase):
