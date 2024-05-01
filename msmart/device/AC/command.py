@@ -532,6 +532,15 @@ class CapabilitiesResponse(Response):
         if len(caps) > 1:
             self._additional_capabilities = bool(caps[-2])
 
+    def _get_fan_speed(self, speed) -> bool:
+        # If any fan_ capability was received, check against them
+        if any(k.startswith("fan_") for k in self._capabilities):
+            # Assume that a fan capable of custom speeds is capable of any speed
+            return self._capabilities.get(f"fan_{speed}", False) or self._capabilities.get("fan_custom", False)
+
+        # Otherwise return a default set for devices that don't send the capability
+        return speed in ["low", "medium", "high", "auto"]
+
     def merge(self, other: CapabilitiesResponse) -> None:
         # Add other's capabilities to ours
         self._capabilities.update(other._capabilities)
@@ -545,15 +554,6 @@ class CapabilitiesResponse(Response):
     @property
     def anion(self) -> bool:
         return self._capabilities.get("anion", False)
-
-    def _get_fan_speed(self, speed) -> bool:
-        # If any fan_ capability was received, check against them
-        if any(k.startswith("fan_") for k in self._capabilities):
-            # Assume that a fan capable of custom speeds is capable of any speed
-            return self._capabilities.get(f"fan_{speed}", False) or self._capabilities.get("fan_custom", False)
-
-        # Otherwise return a default set for devices that don't send the capability
-        return speed in ["low", "medium", "high", "auto"]
 
     # TODO rethink these properties for fan speed, operation mode and swing mode
     # Surely there's a better way than define props for each possible cap
