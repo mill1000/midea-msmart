@@ -356,10 +356,12 @@ class Response():
             Frame.validate(frame_mv)
 
             # Fetch the appropriate response class from the ID
+            frame_type = frame_mv[9]
             response_id = frame_mv[10]
             if response_id == ResponseId.STATE:
                 response_class = StateResponse
-            elif response_id == ResponseId.CAPABILITIES:
+            elif response_id == ResponseId.CAPABILITIES and frame_type == FrameType.QUERY:
+                # Some devices have unsolicited "capabilities" responses with a frame type of 0x5
                 response_class = CapabilitiesResponse
             elif response_id in [ResponseId.PROPERTIES, ResponseId.PROPERTIES_ACK]:
                 response_class = PropertiesResponse
