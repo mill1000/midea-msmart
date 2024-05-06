@@ -662,6 +662,17 @@ class TestPropertiesResponse(_TestResponseBase):
         self.assertEqual(resp.get_property(PropertyId.SWING_LR_ANGLE), 50)
         self.assertEqual(resp.get_property(PropertyId.SWING_UD_ANGLE), 0)
 
+    def test_properties_notify(self) -> None:
+        """Test ignore property notifications."""
+        # https://github.com/mill1000/midea-msmart/issues/122
+        TEST_RESPONSE = bytes.fromhex(
+            "aa1aac00000000000205b50310060101090001010a000101dcbcb4")
+
+        resp = self._test_build_response(TEST_RESPONSE)
+
+        # Assert response is generic
+        self.assertEqual(type(resp), Response)
+
 
 class TestResponseConstruct(_TestResponseBase):
     """Test construction of responses from raw data."""
