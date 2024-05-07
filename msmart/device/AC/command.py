@@ -792,6 +792,7 @@ class PropertiesResponse(Response):
         # keys for each. e.g. capabilities
         parsers = {
             PropertyId.ANION: lambda v: v[0],
+            PropertyId.BUZZER: lambda v: None,  # Don't bother parsing buzzer state
             PropertyId.FRESH_AIR: lambda v: (v[0], v[1], v[2]),
             PropertyId.INDOOR_HUMIDITY: lambda v: v[0],
             PropertyId.RATE_SELECT: lambda v: v[0],
@@ -834,7 +835,8 @@ class PropertiesResponse(Response):
             # Apply parser if it exists
             if parser is not None:
                 # Parse the property
-                self._properties.update({property: parser(props[4:])})
+                if (value := parser(props[4:])) is not None:
+                    self._properties.update({property: value})
 
             else:
                 _LOGGER.warning(
