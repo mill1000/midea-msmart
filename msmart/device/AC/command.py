@@ -485,7 +485,7 @@ class CapabilitiesResponse(Response):
                 capability_id = CapabilityId(raw_id)
             except ValueError:
                 _LOGGER.warning(
-                    "Unknown capability. ID: 0x%4X, Size: %d.", raw_id, size)
+                    "Unknown capability. ID: 0x%04X, Size: %d.", raw_id, size)
                 # Advanced to next capability
                 caps = caps[3+size:]
                 continue
@@ -823,7 +823,7 @@ class PropertiesResponse(Response):
                 property = PropertyId(raw_id)
             except ValueError:
                 _LOGGER.warning(
-                    "Unknown property. ID: 0x%4X, Size: %d.", raw_id, size)
+                    "Unknown property. ID: 0x%04X, Size: %d.", raw_id, size)
                 # Advanced to next property
                 props = props[4+size:]
                 continue
