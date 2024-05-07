@@ -82,6 +82,7 @@ class AirConditioner(Device):
         self._display_on = False
         self._filter_alert = False
         self._follow_me = False
+        self._purifier = False
 
         # Support all known modes initially
         self._supported_op_modes = cast(
@@ -96,6 +97,7 @@ class AirConditioner(Device):
         self._supports_freeze_protection_mode = True
         self._supports_display_control = True
         self._supports_filter_reminder = True
+        self._supports_purifier = True
         self._min_target_temperature = 16
         self._max_target_temperature = 30
 
@@ -208,6 +210,7 @@ class AirConditioner(Device):
 
         self._supports_display_control = res.display_control
         self._supports_filter_reminder = res.filter_reminder
+        self._supports_purifier = res.anion
 
         self._min_target_temperature = res.min_temperature
         self._max_target_temperature = res.max_temperature
@@ -370,6 +373,7 @@ class AirConditioner(Device):
         cmd.sleep_mode = or_default(self._sleep_mode, False)
         cmd.fahrenheit = or_default(self._fahrenheit_unit, False)
         cmd.follow_me = or_default(self._follow_me, False)
+        cmd.purifier = or_default(self._purifier, False)
 
         # Process any state responses from the device
         for response in await self._send_command_get_responses(cmd):
@@ -501,6 +505,18 @@ class AirConditioner(Device):
     def vertical_swing_angle(self, angle: SwingAngle) -> None:
         self._vertical_swing_angle = angle
         self._updated_properties.add(PropertyId.SWING_UD_ANGLE)
+
+    @property
+    def supports_purifier(self) -> bool:
+        return self._supports_purifier
+
+    @property
+    def purifier(self) -> bool:
+        return self._purifier
+
+    @purifier.setter
+    def purifier(self, enabled: bool) -> None:
+        self._purifier = enabled
 
     @property
     def supports_eco_mode(self) -> Optional[bool]:

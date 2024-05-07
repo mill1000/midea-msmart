@@ -557,7 +557,8 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_custom": True, "fan_silent": True, "fan_low": True,
             "fan_medium": True,  "fan_high": True, "fan_auto": True,
             "min_temperature": 16, "max_temperature": 30,
-            "display_control": False, "filter_reminder": False
+            "display_control": False, "filter_reminder": False,
+            "anion": True
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_PROPERTIES:

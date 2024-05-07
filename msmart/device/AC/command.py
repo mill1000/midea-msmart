@@ -170,6 +170,7 @@ class SetStateCommand(Command):
         self.sleep_mode = False
         self.freeze_protection_mode = False
         self.follow_me = False
+        self.purifier = False
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
         # Build beep and power status bytes
@@ -198,8 +199,9 @@ class SetStateCommand(Command):
         # Build swing mode byte
         swing_mode = 0x30 | (self.swing_mode & 0x3F)
 
-        # Build eco mode byte
+        # Build eco mode and purifier byte
         eco_mode = 0x80 if self.eco_mode else 0
+        purifier = 0x20 if self.purifier else 0
 
         # Build sleep, turbo and fahrenheit byte
         sleep = 0x01 if self.sleep_mode else 0
@@ -222,14 +224,14 @@ class SetStateCommand(Command):
             temperature | mode,
             # Fan speed
             self.fan_speed,
-            # Unknown
+            # Timer
             0x7F, 0x7F, 0x00,
             # Swing mode
             swing_mode,
-            # Follow me amd alternate turbo mode
+            # Follow me and alternate turbo mode
             follow_me | turbo_alt,
-            # ECO mode
-            eco_mode,
+            # ECO mode and purifier/anion
+            eco_mode | purifier,
             # Sleep mode, turbo mode and fahrenheit
             sleep | turbo | fahrenheit,
             # Unknown
@@ -553,6 +555,10 @@ class CapabilitiesResponse(Response):
     def additional_capabilities(self) -> bool:
         return self._additional_capabilities
 
+    @property
+    def anion(self) -> bool:
+        return self._capabilities.get("anion", False)
+
     # TODO rethink these properties for fan speed, operation mode and swing mode
     # Surely there's a better way than define props for each possible cap
     @property
@@ -668,6 +674,7 @@ class StateResponse(Response):
         self.display_on = None
         self.freeze_protection_mode = None
         self.follow_me = None
+        self.purifier = None
 
         _LOGGER.debug("State response payload: %s", payload.hex())
 
@@ -716,11 +723,11 @@ class StateResponse(Response):
         self.follow_me = bool(payload[8] & 0x80)
 
         self.eco_mode = bool(payload[9] & 0x10)
+        self.purifier = bool(payload[9] & 0x20)
         # self.child_sleep_mode = (payload[9] & 0x01) > 0
         # self.exchange_air = (payload[9] & 0x02) > 0
         # self.dry_clean = (payload[9] & 0x04) > 0
         # self.aux_heat = (payload[9] & 0x08) > 0
-        # self.clean_up = (payload[9] & 0x20) > 0
         # self.temp_unit = (payload[9] & 0x80) > 0
 
         self.sleep_mode = bool(payload[10] & 0x1)
