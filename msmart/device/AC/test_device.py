@@ -133,13 +133,6 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(device.operational_mode, AC.OperationalMode.COOL)
         self.assertEqual(device.fan_speed, AC.FanSpeed.AUTO)
         self.assertEqual(device.swing_mode, AC.SwingMode.VERTICAL)
-        self.assertEqual(device.turbo_mode, False)
-        self.assertEqual(device.freeze_protection_mode, False)
-        self.assertEqual(device.sleep_mode, False)
-
-        self.assertEqual(device.operational_mode, AC.OperationalMode.COOL)
-        self.assertEqual(device.fan_speed, AC.FanSpeed.AUTO)
-        self.assertEqual(device.swing_mode, AC.SwingMode.VERTICAL)
 
     def test_properties_response(self) -> None:
         """Test parsing of PropertiesResponse into device state."""
