@@ -1,3 +1,4 @@
+import logging
 import unittest
 from typing import Union, cast
 
@@ -353,6 +354,9 @@ class TestCapabilitiesResponse(_TestResponseBase):
             resp = self._test_build_response(TEST_CAPABILITIES_RESPONSE)
             resp = cast(CapabilitiesResponse, resp)
 
+            # Check warning is generated for ID 0x0040
+            self.assertRegex(log.output[0], "Unknown capability. ID: 0x0040")
+
         EXPECTED_RAW_CAPABILITIES = {
             "eco_mode": True, "eco_mode_2": False, "silky_cool": False,
             "heat_mode": True, "cool_mode": True, "dry_mode": True,
@@ -476,6 +480,9 @@ class TestCapabilitiesResponse(_TestResponseBase):
         with self.assertLogs("msmart") as log:
             resp = self._test_build_response(TEST_CAPABILITIES_RESPONSE)
             resp = cast(CapabilitiesResponse, resp)
+
+            # Check warning is generated for ID 0x0040
+            self.assertRegex(log.output[0], "Unknown capability. ID: 0x0040")
 
         EXPECTED_RAW_CAPABILITIES = {
             "eco_mode": True, "eco_mode_2": False,
@@ -663,7 +670,7 @@ class TestPropertiesResponse(_TestResponseBase):
         self.assertEqual(resp.get_property(PropertyId.SWING_UD_ANGLE), 0)
 
     def test_properties_notify(self) -> None:
-        """Test ignore property notifications."""
+        """Test we ignore property notifications."""
         # https://github.com/mill1000/midea-msmart/issues/122
         TEST_RESPONSE = bytes.fromhex(
             "aa1aac00000000000205b50310060101090001010a000101dcbcb4")
@@ -672,6 +679,25 @@ class TestPropertiesResponse(_TestResponseBase):
 
         # Assert response is generic
         self.assertEqual(type(resp), Response)
+
+    def test_properties_unknown_and_invalid(self) -> None:
+        """Test we warn when decoding unknown properties and that invalid properties are not stored."""
+        # https://github.com/mill1000/midea-ac-py/issues/128#issuecomment-2098342003
+        TEST_RESPONSE = bytes.fromhex(
+            "aa1bac00000000000202b0021e001004001000001a00000100000e18")
+
+        with self.assertLogs("msmart", logging.WARNING) as log:
+            resp = self._test_build_response(TEST_RESPONSE)
+            resp = cast(PropertiesResponse, resp)
+
+            # Check warning is generated for ID 0x001E
+            self.assertRegex(log.output[0], "Unknown property. ID: 0x001E")
+
+        # Assert response is a correct type
+        self.assertEqual(type(resp), PropertiesResponse)
+
+        # Assert that the buzzer property is not decoded
+        self.assertIsNone(resp.get_property(PropertyId.BUZZER))
 
 
 class TestResponseConstruct(_TestResponseBase):
