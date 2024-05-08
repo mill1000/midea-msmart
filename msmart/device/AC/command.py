@@ -485,7 +485,7 @@ class CapabilitiesResponse(Response):
                 capability_id = CapabilityId(raw_id)
             except ValueError:
                 _LOGGER.warning(
-                    "Unknown capability. ID: 0x%4X, Size: %d.", raw_id, size)
+                    "Unknown capability. ID: 0x%04X, Size: %d.", raw_id, size)
                 # Advanced to next capability
                 caps = caps[3+size:]
                 continue
@@ -792,6 +792,7 @@ class PropertiesResponse(Response):
         # keys for each. e.g. capabilities
         parsers = {
             PropertyId.ANION: lambda v: v[0],
+            PropertyId.BUZZER: lambda v: None,  # Don't bother parsing buzzer state
             PropertyId.FRESH_AIR: lambda v: (v[0], v[1], v[2]),
             PropertyId.INDOOR_HUMIDITY: lambda v: v[0],
             PropertyId.RATE_SELECT: lambda v: v[0],
@@ -823,7 +824,7 @@ class PropertiesResponse(Response):
                 property = PropertyId(raw_id)
             except ValueError:
                 _LOGGER.warning(
-                    "Unknown property. ID: 0x%4X, Size: %d.", raw_id, size)
+                    "Unknown property. ID: 0x%04X, Size: %d.", raw_id, size)
                 # Advanced to next property
                 props = props[4+size:]
                 continue
@@ -834,7 +835,8 @@ class PropertiesResponse(Response):
             # Apply parser if it exists
             if parser is not None:
                 # Parse the property
-                self._properties.update({property: parser(props[4:])})
+                if (value := parser(props[4:])) is not None:
+                    self._properties.update({property: value})
 
             else:
                 _LOGGER.warning(
