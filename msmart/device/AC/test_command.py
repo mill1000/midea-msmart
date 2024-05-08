@@ -633,7 +633,6 @@ class TestPropertiesResponse(_TestResponseBase):
         self.assertEqual(resp._properties, EXPECTED_RAW_PROPERTIES)
 
         # Check state
-        self.assertIsNone(resp.get_property(PropertyId.ANION))
         self.assertEqual(resp.get_property(PropertyId.INDOOR_HUMIDITY), 43)
         self.assertEqual(resp.get_property(PropertyId.SWING_LR_ANGLE), 0)
         self.assertEqual(resp.get_property(PropertyId.SWING_UD_ANGLE), 0)
@@ -658,7 +657,6 @@ class TestPropertiesResponse(_TestResponseBase):
         self.assertEqual(resp._properties, EXPECTED_RAW_PROPERTIES)
 
         # Check state
-        self.assertIsNone(resp.get_property(PropertyId.ANION))
         self.assertEqual(resp.get_property(PropertyId.SWING_LR_ANGLE), 50)
         self.assertEqual(resp.get_property(PropertyId.SWING_UD_ANGLE), 0)
 

@@ -553,10 +553,6 @@ class CapabilitiesResponse(Response):
     def additional_capabilities(self) -> bool:
         return self._additional_capabilities
 
-    @property
-    def anion(self) -> bool:
-        return self._capabilities.get("anion", False)
-
     # TODO rethink these properties for fan speed, operation mode and swing mode
     # Surely there's a better way than define props for each possible cap
     @property

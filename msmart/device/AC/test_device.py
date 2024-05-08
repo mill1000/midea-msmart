@@ -152,7 +152,6 @@ class TestUpdateStateFromResponse(unittest.TestCase):
 
         # Assert state is expected
         # TODO Test cases doesn't test values that differ from defaults
-        self.assertEqual(device.anion, False)
         self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.OFF)
         self.assertEqual(device.vertical_swing_angle, AC.SwingAngle.OFF)
 
@@ -173,7 +172,6 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         device._process_state_response(resp)
 
         # Assert state is expected
-        self.assertEqual(device.anion, False)
         self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.POS_3)
         self.assertEqual(device.vertical_swing_angle, AC.SwingAngle.OFF)
 
@@ -187,7 +185,6 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         device = AC(0, 0, 0)
 
         # Set some properties
-        device.anion = True
         device.horizontal_swing_angle = AC.SwingAngle.POS_5
         device.vertical_swing_angle = AC.SwingAngle.POS_5
 
@@ -203,7 +200,6 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.POS_3)
 
         # Assert other properties are untouched
-        self.assertEqual(device.anion, True)
         self.assertEqual(device.vertical_swing_angle, AC.SwingAngle.POS_5)
 
 
