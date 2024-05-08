@@ -150,6 +150,7 @@ class AirConditioner(Device):
             self._filter_alert = res.filter_alert
 
             self._follow_me = res.follow_me
+            self._purifier = res.purifier
 
         elif isinstance(res, PropertiesResponse):
 
