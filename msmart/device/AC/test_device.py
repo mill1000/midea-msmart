@@ -140,18 +140,23 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         TEST_RESPONSE = bytes.fromhex(
             "aa21ac00000000000303b10409000001000a00000100150000012b1e020000005fa3")
 
+        # Create a dummy device
+        device = AC(0, 0, 0)
+
+        # Set some properties
+        device.horizontal_swing_angle = AC.SwingAngle.POS_5
+        device.vertical_swing_angle = AC.SwingAngle.POS_5
+
         resp = Response.construct(TEST_RESPONSE)
         self.assertIsNotNone(resp)
 
         # Assert response is a state response
         self.assertEqual(type(resp), PropertiesResponse)
 
-        # Create a dummy device and process the response
-        device = AC(0, 0, 0)
+        # Process the response
         device._process_state_response(resp)
 
         # Assert state is expected
-        # TODO Test cases doesn't test values that differ from defaults
         self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.OFF)
         self.assertEqual(device.vertical_swing_angle, AC.SwingAngle.OFF)
 
@@ -161,14 +166,20 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         TEST_RESPONSE = bytes.fromhex(
             "aa18ac00000000000302b0020a0000013209001101000089a4")
 
+        # Create a dummy device
+        device = AC(0, 0, 0)
+
+        # Set some properties
+        device.horizontal_swing_angle = AC.SwingAngle.OFF
+        device.vertical_swing_angle = AC.SwingAngle.OFF
+
         resp = Response.construct(TEST_RESPONSE)
         self.assertIsNotNone(resp)
 
         # Assert response is a state response
         self.assertEqual(type(resp), PropertiesResponse)
 
-        # Create a dummy device and process the response
-        device = AC(0, 0, 0)
+        # Process the response
         device._process_state_response(resp)
 
         # Assert state is expected
@@ -191,6 +202,8 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         # Construct and assert response
         resp = Response.construct(TEST_RESPONSE)
         self.assertIsNotNone(resp)
+
+        # Assert response is a state response
         self.assertEqual(type(resp), PropertiesResponse)
 
         # Process response

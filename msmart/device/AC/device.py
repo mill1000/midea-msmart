@@ -154,12 +154,12 @@ class AirConditioner(Device):
 
         elif isinstance(res, PropertiesResponse):
 
-            if angle := res.get_property(PropertyId.SWING_LR_ANGLE):
+            if (angle := res.get_property(PropertyId.SWING_LR_ANGLE)) is not None:
                 self._horizontal_swing_angle = cast(
                     AirConditioner.SwingAngle,
                     AirConditioner.SwingAngle.get_from_value(angle))
 
-            if angle := res.get_property(PropertyId.SWING_UD_ANGLE):
+            if (angle := res.get_property(PropertyId.SWING_UD_ANGLE)) is not None:
                 self._vertical_swing_angle = cast(
                     AirConditioner.SwingAngle,
                     AirConditioner.SwingAngle.get_from_value(angle))
