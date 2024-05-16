@@ -450,6 +450,20 @@ class CapabilitiesResponse(Response):
                 reader("turbo_heat", lambda v: v == 1 or v == 3),
                 reader("turbo_cool", lambda v: v < 2),
             ],
+            CapabilityId.RATE_SELECT:  [
+                # TODO better parsing and names
+                # Ref gear on if 50 || 75
+                # Ref genMode = rate_select
+                # enno status related to b5_rate_select =2 and rate_select != 100
+                # L1  = 1 , L2 = 20, L3 = 40, L4 = 6, L5 = 80, Off = 100
+                # ref genmode.selected = != 100
+                # Genmode, gear5 both have levels?
+                # Only in cool and heat
+                # Some toggle between 40 and 100
+                reader("gear", get_value(1)),
+                reader("gen_mode", get_value(2)), # Gen mode is slider w/ 1, 20, 40, 60, 80, 100/off
+                reader("gear_5", get_value(3)),
+            ],
             CapabilityId.SELF_CLEAN:  reader("self_clean", get_value(1)),
             CapabilityId.SILKY_COOL: reader("silky_cool", get_value(1)),
             CapabilityId.SMART_EYE:  reader("smart_eye", get_value(1)),

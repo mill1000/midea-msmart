@@ -163,6 +163,11 @@ class AirConditioner(Device):
                 self._vertical_swing_angle = cast(
                     AirConditioner.SwingAngle,
                     AirConditioner.SwingAngle.get_from_value(angle))
+                
+            if (rate := res.get_property(PropertyId.RATE_SELECT)) is not None:
+                self._rate_select = cast(
+                    AirConditioner.RateSelect,
+                    AirConditioner.RateSelect.get_from_value(rate))
 
     def _update_capabilities(self, res: CapabilitiesResponse) -> None:
         # Build list of supported operation modes
@@ -223,6 +228,9 @@ class AirConditioner(Device):
 
         if res.swing_horizontal_angle:
             self._supported_properties.add(PropertyId.SWING_LR_ANGLE)
+
+        if res.rate_select:
+            self._supported_properties.add(PropertyId.RATE_SELECT)
 
     def _process_state_response(self, response: Response) -> None:
         """Update the local state from a device state response."""
