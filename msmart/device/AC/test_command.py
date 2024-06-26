@@ -7,8 +7,9 @@ from msmart.frame import Frame, InvalidFrameException
 
 from .command import (CapabilitiesResponse, CapabilityId, Command,
                       GetPropertiesCommand, GetStateCommand,
-                      InvalidResponseException, PropertiesResponse, PropertyId,
-                      Response, SetPropertiesCommand, StateResponse, PowerUsageResponse)
+                      InvalidResponseException, PowerUsageResponse,
+                      PropertiesResponse, PropertyId, Response,
+                      SetPropertiesCommand, StateResponse)
 
 
 class _TestResponseBase(unittest.TestCase):
