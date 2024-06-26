@@ -928,10 +928,8 @@ class PowerUsageResponse(Response):
         super().__init__(payload)
 
         self.total_energy = None
-        self.total_energy_bcd = None
-
+        self.current_energy = None
         self.real_time_power = None
-        self.real_time_power_bcd = None
 
         _LOGGER.debug("Power response payload: %s", payload.hex())
 
@@ -947,28 +945,25 @@ class PowerUsageResponse(Response):
         # Lua reference decodes real time power field in BCD and binary form
         # JS reference decodes multiple energy/power fields in BCD only.
 
-        self.total_energy_bcd = (10000 * decode_bcd(payload[4]) +
-                                 100 * decode_bcd(payload[5]) +
-                                 1 * decode_bcd(payload[6]) +
-                                 0.01 * decode_bcd(payload[7]))
+        # Total energy in bytes 4 - 8
+        self.total_energy = (10000 * decode_bcd(payload[4]) +
+                             100 * decode_bcd(payload[5]) +
+                             1 * decode_bcd(payload[6]) +
+                             0.01 * decode_bcd(payload[7]))
 
-        # TODO there is no reference to backup this interpretation
-        self.total_energy = 0.1 * (payload[4] << 24 |
-                                   payload[5] << 16 |
-                                   payload[6] << 8 |
-                                   payload[7])
+        # JS references decodes bytes 8 - 11 as "total running energy"
+        # Older JS does not decode these bytes, and sample payloads contain bogus data
 
-        # Total running energy consumption bytes 8 - 11
-        # Current running energy consumption bytes 12 - 15
+        # Current run energy consumption bytes 12 - 16
+        self.current_energy = (10000 * decode_bcd(payload[12]) +
+                               100 * decode_bcd(payload[13]) +
+                               1 * decode_bcd(payload[14]) +
+                               0.01 * decode_bcd(payload[15]))
 
-        # Either interpretation may be valid depending on device
-        self.real_time_power = 0.1 * (payload[16] << 16 |
-                                      payload[17] << 8 |
-                                      payload[18])
-
-        self.real_time_power_bcd = (1000 * decode_bcd(payload[16]) +
-                                    10 * decode_bcd(payload[17]) +
-                                    0.1 * decode_bcd(payload[18]))
+        # Real time power usage bytes 16 - 18
+        self.real_time_power = (1000 * decode_bcd(payload[16]) +
+                                10 * decode_bcd(payload[17]) +
+                                0.1 * decode_bcd(payload[18]))
 
 
 class HumidityResponse(Response):
