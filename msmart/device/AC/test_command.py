@@ -8,7 +8,7 @@ from msmart.frame import Frame, InvalidFrameException
 from .command import (CapabilitiesResponse, CapabilityId, Command,
                       GetPropertiesCommand, GetStateCommand,
                       InvalidResponseException, PropertiesResponse, PropertyId,
-                      Response, SetPropertiesCommand, StateResponse)
+                      Response, SetPropertiesCommand, StateResponse, PowerUsageResponse)
 
 
 class _TestResponseBase(unittest.TestCase):
@@ -729,6 +729,33 @@ class TestResponseConstruct(_TestResponseBase):
 
         self.assertIsNotNone(resp)
         self.assertEqual(type(resp), PropertiesResponse)
+
+
+class TestGroupDataResponse(_TestResponseBase):
+    """Test group data response messages."""
+
+    def test_power_usage(self) -> None:
+        """Test we decode power usage responses correctly."""
+        TEST_RESPONSES = {
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2181633174
+            (679.2, 0, 0): bytes.fromhex("aa1fac00000000000303c121014400067920000000000000000000000000aabf"),
+
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2191412432
+            (5650.02, 1514.0, 0): bytes.fromhex("aa20ac00000000000203c121014400564a02640000000014ae0000000000041a22"),
+        }
+
+        for power, response in TEST_RESPONSES.items():
+            resp = self._test_build_response(response)
+
+            # Assert response is a correct type
+            self.assertEqual(type(resp), PowerUsageResponse)
+            resp = cast(PowerUsageResponse, resp)
+
+            total, current, real_time = power
+
+            self.assertEqual(resp.total_energy, total)
+            self.assertEqual(resp.current_energy, current)
+            self.assertEqual(resp.real_time_power, real_time)
 
 
 if __name__ == "__main__":
