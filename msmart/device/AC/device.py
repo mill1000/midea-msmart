@@ -112,8 +112,9 @@ class AirConditioner(Device):
         self._indoor_humidity = None
 
         self._supports_power_usage = False
-        self._power_usage_bcd = False
-        self._power_usage = None
+        self._total_energy_usage = None
+        self._total_current_usage = None
+        self._real_time_power_usage = None
 
         # Default to assuming device can't handle any properties
         self._supported_properties = set()
@@ -179,7 +180,9 @@ class AirConditioner(Device):
                     AirConditioner.SwingAngle.get_from_value(angle))
 
         elif isinstance(res, PowerUsageResponse):
-            self._power_usage = res.power_bcd if self._power_usage_bcd else res.power
+            self._total_energy_usage = res.total_energy
+            self._current_energy_usage = res.current_energy
+            self._real_time_power_usage = res.real_time_power
 
         elif isinstance(res, HumidityResponse):
             self._indoor_humidity = res.humidity
@@ -241,7 +244,6 @@ class AirConditioner(Device):
         self._max_target_temperature = res.max_temperature
 
         self._supports_power_usage = res.power_stats
-        self._power_usage_bcd = res.power_bcd
 
         self._supports_humidity = res.humidity
 
@@ -637,8 +639,16 @@ class AirConditioner(Device):
         return self._supports_filter_reminder
 
     @property
-    def power_usage(self) -> Optional[float]:
-        return self._power_usage
+    def total_energy_usage(self) -> Optional[float]:
+        return self._total_energy_usage
+
+    @property
+    def current_energy_usage(self) -> Optional[float]:
+        return self._current_energy_usage
+
+    @property
+    def real_time_power_usage(self) -> Optional[float]:
+        return self._real_time_power_usage
 
     @property
     def indoor_humidity(self) -> Optional[int]:
