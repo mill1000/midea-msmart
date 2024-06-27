@@ -8,13 +8,13 @@ from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum
 
-from .command import (CapabilitiesResponse, GetCapabilitiesCommand,
-                      GetHumidityCommand, GetPowerUsageCommand,
-                      GetPropertiesCommand, GetStateCommand, HumidityResponse,
-                      InvalidResponseException, PowerUsageResponse,
-                      PropertiesResponse, PropertyId, Response, ResponseId,
-                      SetPropertiesCommand, SetStateCommand, StateResponse,
-                      ToggleDisplayCommand)
+from .command import (CapabilitiesResponse, EnergyUsageResponse,
+                      GetCapabilitiesCommand, GetEnergyUsageCommand,
+                      GetHumidityCommand, GetPropertiesCommand,
+                      GetStateCommand, HumidityResponse,
+                      InvalidResponseException, PropertiesResponse, PropertyId,
+                      Response, ResponseId, SetPropertiesCommand,
+                      SetStateCommand, StateResponse, ToggleDisplayCommand)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -179,7 +179,7 @@ class AirConditioner(Device):
                     AirConditioner.SwingAngle,
                     AirConditioner.SwingAngle.get_from_value(angle))
 
-        elif isinstance(res, PowerUsageResponse):
+        elif isinstance(res, EnergyUsageResponse):
             self._total_energy_usage = res.total_energy
             self._current_energy_usage = res.current_energy
             self._real_time_power_usage = res.real_time_power
@@ -348,9 +348,8 @@ class AirConditioner(Device):
         commands.append(GetStateCommand())
 
         # Fetch power stats if supported
-        # TODO rate limit this?
         if self._supports_power_usage:
-            commands.append(GetPowerUsageCommand())
+            commands.append(GetEnergyUsageCommand())
 
         # Fetch humidity if supported
         if self._supports_humidity:

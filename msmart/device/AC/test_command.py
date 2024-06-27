@@ -6,8 +6,8 @@ from msmart.const import DeviceType, FrameType
 from msmart.frame import Frame, InvalidFrameException
 
 from .command import (CapabilitiesResponse, CapabilityId, Command,
-                      GetPropertiesCommand, GetStateCommand,
-                      InvalidResponseException, PowerUsageResponse,
+                      EnergyUsageResponse, GetPropertiesCommand,
+                      GetStateCommand, InvalidResponseException,
                       PropertiesResponse, PropertyId, Response,
                       SetPropertiesCommand, StateResponse)
 
@@ -749,8 +749,8 @@ class TestGroupDataResponse(_TestResponseBase):
             resp = self._test_build_response(response)
 
             # Assert response is a correct type
-            self.assertEqual(type(resp), PowerUsageResponse)
-            resp = cast(PowerUsageResponse, resp)
+            self.assertEqual(type(resp), EnergyUsageResponse)
+            resp = cast(EnergyUsageResponse, resp)
 
             total, current, real_time = power
 
