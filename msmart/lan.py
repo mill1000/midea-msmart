@@ -2,7 +2,7 @@
 import asyncio
 import logging
 import struct
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 from hashlib import md5, sha256
 from typing import AsyncGenerator, List, Optional, Tuple, Union, cast
@@ -182,7 +182,7 @@ class _LanProtocolV3(_LanProtocol):
         if self._local_key is None or self._local_key_expiration is None:
             return False
 
-        if datetime.utcnow() > self._local_key_expiration:
+        if datetime.now(timezone.utc) > self._local_key_expiration:
             _LOGGER.debug("Authentication with %s has expired.", self.peer)
             return False
 
@@ -410,7 +410,8 @@ class _LanProtocolV3(_LanProtocol):
             self._local_key = self._get_local_key(key, response_mv)
 
         # Set expiration time
-        self._local_key_expiration = datetime.utcnow() + self.AUTHENTICATION_EXPIRATION
+        self._local_key_expiration = datetime.now(
+            timezone.utc) + self.AUTHENTICATION_EXPIRATION
 
         _LOGGER.info("Authentication successful. Expiration: %s, Local key: %s",
                      self._local_key_expiration.isoformat(timespec="seconds"), self._local_key.hex())
@@ -461,7 +462,7 @@ class LAN:
             return False
 
         # Use connection expiration if set
-        if self._connection_expiration and datetime.utcnow() > self._connection_expiration:
+        if self._connection_expiration and datetime.now(timezone.utc) > self._connection_expiration:
             _LOGGER.debug("Connection to %s has expired.", self._protocol.peer)
             return False
 
@@ -485,7 +486,8 @@ class LAN:
         self._protocol = protocol
 
         if self._max_connection_lifetime:
-            self._connection_expiration = datetime.utcnow() + self._max_connection_lifetime
+            self._connection_expiration = datetime.now(
+                timezone.utc) + self._max_connection_lifetime
 
     def _disconnect(self) -> None:
         if self._protocol:
@@ -721,7 +723,7 @@ class _Packet:
 
     @classmethod
     def _timestamp(cls) -> bytes:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Each byte is a 2 digit component of the timestamp
         # YYYYMMDDHHMMSSmm
