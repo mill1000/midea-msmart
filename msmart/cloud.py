@@ -5,7 +5,7 @@ import json
 import logging
 import os
 from asyncio import Lock
-from datetime import datetime
+from datetime import datetime, timezone
 from secrets import token_hex, token_urlsafe
 from typing import Any, Dict, Optional, Tuple
 
@@ -78,7 +78,7 @@ class Cloud:
 
     def _timestamp(self) -> str:
         """Format a timestamp for the API."""
-        return datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        return datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
 
     def _parse_response(self, response) -> Any:
         """Parse a response from the API."""
