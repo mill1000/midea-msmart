@@ -111,7 +111,7 @@ class AirConditioner(Device):
         self._supports_humidity = False
         self._indoor_humidity = None
 
-        self._supports_power_usage = False
+        self._request_energy_usage = False
         self._total_energy_usage = None
         self._total_current_usage = None
         self._real_time_power_usage = None
@@ -243,7 +243,9 @@ class AirConditioner(Device):
         self._min_target_temperature = res.min_temperature
         self._max_target_temperature = res.max_temperature
 
-        self._supports_power_usage = res.power_stats
+        # Allow capabilities to enable energy usage requests, but not disable them
+        # We've seen devices that claim no capability but return energy data
+        self._request_energy_usage |= res.power_stats
 
         self._supports_humidity = res.humidity
 
@@ -348,7 +350,7 @@ class AirConditioner(Device):
         commands.append(GetStateCommand())
 
         # Fetch power stats if supported
-        if self._supports_power_usage:
+        if self._request_energy_usage :
             commands.append(GetEnergyUsageCommand())
 
         # Fetch humidity if supported
@@ -636,6 +638,14 @@ class AirConditioner(Device):
     @property
     def supports_filter_reminder(self) -> Optional[bool]:
         return self._supports_filter_reminder
+
+    @property
+    def enable_energy_usage_requests(self) -> bool:
+        return self._request_energy_usage
+
+    @enable_energy_usage_requests.setter
+    def enable_energy_usage_requests(self, enable: bool) -> None:
+        self._request_energy_usage = enable
 
     @property
     def total_energy_usage(self) -> Optional[float]:
