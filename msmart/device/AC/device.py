@@ -512,7 +512,7 @@ class AirConditioner(Device):
         return self._supports_purifier
 
     @property
-    def purifier(self) -> bool:
+    def purifier(self) -> Optional[bool]:
         return self._purifier
 
     @purifier.setter
