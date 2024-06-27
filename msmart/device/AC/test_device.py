@@ -1,6 +1,6 @@
 import unittest
 
-from .command import (PowerUsageResponse, PropertiesResponse, Response,
+from .command import (EnergyUsageResponse, PropertiesResponse, Response,
                       StateResponse)
 from .device import AirConditioner as AC
 
@@ -227,7 +227,7 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertIsNotNone(resp)
 
         # Assert response is a state response
-        self.assertEqual(type(resp), PowerUsageResponse)
+        self.assertEqual(type(resp), EnergyUsageResponse)
 
         # Create a dummy device and process the response
         device = AC(0, 0, 0)

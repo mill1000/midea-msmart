@@ -153,8 +153,8 @@ class GetStateCommand(Command):
         ]))
 
 
-class GetPowerUsageCommand(Command):
-    """Command to query power usage from device."""
+class GetEnergyUsageCommand(Command):
+    """Command to query energy usage from device."""
 
     def __init__(self) -> None:
         super().__init__(frame_type=FrameType.QUERY)
@@ -415,7 +415,7 @@ class Response():
                 # Response type depends on an additional "group" byte
                 group = frame_mv[13] & 0xF
                 if group == 4:
-                    response_class = PowerUsageResponse
+                    response_class = EnergyUsageResponse
                 elif group == 5:
                     response_class = HumidityResponse
 
@@ -921,7 +921,7 @@ class PropertiesResponse(Response):
         return self._properties.get(id, None)
 
 
-class PowerUsageResponse(Response):
+class EnergyUsageResponse(Response):
     """Response to a GetPowerUsageCommand."""
 
     def __init__(self, payload: memoryview) -> None:
