@@ -682,6 +682,8 @@ class AirConditioner(Device):
             "target_temperature": self.target_temperature,
             "indoor_temperature": self.indoor_temperature,
             "outdoor_temperature": self.outdoor_temperature,
+            "target_humidity": self.target_humidity,
+            "indoor_humidity": self.indoor_humidity,
             "eco": self.eco_mode,
             "turbo": self.turbo_mode,
             "freeze_protection": self.freeze_protection_mode,
@@ -692,4 +694,7 @@ class AirConditioner(Device):
             "filter_alert": self.filter_alert,
             "follow_me": self.follow_me,
             "purifier": self.purifier,
+            "total_energy_usage": self.total_energy_usage,
+            "current_energy_usage": self.current_energy_usage,
+            "real_time_power_usage": self.real_time_power_usage,
         }}
