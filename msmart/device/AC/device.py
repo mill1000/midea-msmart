@@ -113,7 +113,7 @@ class AirConditioner(Device):
 
         self._request_energy_usage = False
         self._total_energy_usage = None
-        self._total_current_usage = None
+        self._current_energy_usage = None
         self._real_time_power_usage = None
 
         # Default to assuming device can't handle any properties
