@@ -978,4 +978,4 @@ class HumidityResponse(Response):
         # Response is technically a "group data 5" response
         # and may contain other interesting data
 
-        self.humidity = payload[4]
+        self.humidity = payload[4] if payload[4] != 0 else None
