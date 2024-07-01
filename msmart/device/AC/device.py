@@ -350,7 +350,7 @@ class AirConditioner(Device):
         commands.append(GetStateCommand())
 
         # Fetch power stats if supported
-        if self._request_energy_usage :
+        if self._request_energy_usage:
             commands.append(GetEnergyUsageCommand())
 
         # Fetch humidity if supported
