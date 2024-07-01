@@ -320,7 +320,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "cool_mode": True, "dry_mode": True,
             "auto_mode": True,
             "swing_horizontal": True, "swing_vertical": True,
-            "power_stats": False, "power_setting": False, "power_bcd": False,
+            "energy_stats": False, "energy_setting": False, "energy_bcd": False,
             "filter_notice": False, "filter_clean": False,
             "turbo_heat": True, "turbo_cool": True
         }
@@ -362,7 +362,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "eco_mode": True, "eco_mode_2": False, "silky_cool": False,
             "heat_mode": True, "cool_mode": True, "dry_mode": True,
             "auto_mode": True, "swing_horizontal": True, "swing_vertical": True,
-            "power_stats": False, "power_setting": False, "power_bcd": False,
+            "energy_stats": False, "energy_setting": False, "energy_bcd": False,
             "turbo_heat": True, "turbo_cool": True,
             "fan_custom": True, "fan_silent": False, "fan_low": False,
             "fan_medium": False,  "fan_high": False, "fan_auto": False,
@@ -490,7 +490,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "breeze_control": True,
             "heat_mode": True, "cool_mode": True, "dry_mode": True, "auto_mode": True,
             "swing_horizontal": True, "swing_vertical": True,
-            "power_stats": False, "power_setting": False, "power_bcd": False,
+            "energy_stats": False, "energy_setting": False, "energy_bcd": False,
             "turbo_heat": True, "turbo_cool": True,
             "fan_silent": False, "fan_low": False, "fan_medium": False, "fan_high": False, "fan_auto": False, "fan_custom": True,
             "humidity_auto_set": False, "humidity_manual_set": True,
@@ -534,7 +534,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "breeze_control": True,
             "heat_mode": True, "cool_mode": True, "dry_mode": True, "auto_mode": True,
             "swing_horizontal": True, "swing_vertical": True,
-            "power_stats": False, "power_setting": False, "power_bcd": False,
+            "energy_stats": False, "energy_setting": False, "energy_bcd": False,
             "turbo_heat": True, "turbo_cool": True,
             "fan_silent": False, "fan_low": False, "fan_medium": False, "fan_high": False, "fan_auto": False, "fan_custom": True,
             "humidity_auto_set": False, "humidity_manual_set": True,
@@ -735,7 +735,7 @@ class TestResponseConstruct(_TestResponseBase):
 class TestGroupDataResponse(_TestResponseBase):
     """Test group data response messages."""
 
-    def test_power_usage(self) -> None:
+    def test_energy_usage(self) -> None:
         """Test we decode power usage responses correctly."""
         TEST_RESPONSES = {
             # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2181633174

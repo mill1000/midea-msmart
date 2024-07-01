@@ -245,7 +245,7 @@ class AirConditioner(Device):
 
         # Allow capabilities to enable energy usage requests, but not disable them
         # We've seen devices that claim no capability but return energy data
-        self._request_energy_usage |= res.power_stats
+        self._request_energy_usage |= res.energy_stats
 
         self._supports_humidity = res.humidity
 

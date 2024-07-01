@@ -217,7 +217,7 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(device.vertical_swing_angle, AC.SwingAngle.POS_5)
 
     def test_power_usage_response(self) -> None:
-        """Test parsing of PowerUsageResponses into device state."""
+        """Test parsing of EnergyUsageResponses into device state."""
 
         # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2191412432
         TEST_RESPONSE = bytes.fromhex(
