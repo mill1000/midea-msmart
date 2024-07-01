@@ -52,7 +52,7 @@ class CapabilityId(IntEnum):
     PRESET_FREEZE_PROTECTION = 0x0213
     MODES = 0x0214
     SWING_MODES = 0x0215
-    POWER = 0x0216
+    ENERGY = 0x0216  # AKA electricity
     FILTER_REMIND = 0x0217
     AUX_ELECTRIC_HEAT = 0x0219  # AKA PTC
     PRESET_TURBO = 0x021A
@@ -485,10 +485,10 @@ class CapabilitiesResponse(Response):
                 reader("auto_mode", lambda v: v in [0, 1, 2, 7, 8, 9]),
             ],
             CapabilityId.ONE_KEY_NO_WIND_ON_ME: reader("one_key_no_wind_on_me", get_value(1)),
-            CapabilityId.POWER: [
-                reader("power_stats", lambda v: v in [2, 3, 4, 5]),
-                reader("power_setting", lambda v: v in [3, 5]),
-                reader("power_bcd", lambda v: v in [4, 5]),
+            CapabilityId.ENERGY: [
+                reader("energy_stats", lambda v: v in [2, 3, 4, 5]),
+                reader("energy_setting", lambda v: v in [3, 5]),
+                reader("energy_bcd", lambda v: v in [2, 3]),
             ],
             CapabilityId.PRESET_ECO: [
                 reader("eco_mode", get_value(1)),
@@ -704,12 +704,8 @@ class CapabilitiesResponse(Response):
         return max([self._capabilities.get(f"{m}_max_temperature", 30) for m in mode])
 
     @property
-    def power_stats(self) -> bool:
-        return self._capabilities.get("power_stats", False)
-
-    @property
-    def power_bcd(self) -> bool:
-        return self._capabilities.get("power_bcd", False)
+    def energy_stats(self) -> bool:
+        return self._capabilities.get("energy_stats", False)
 
     @property
     def humidity(self) -> bool:
@@ -922,7 +918,7 @@ class PropertiesResponse(Response):
 
 
 class EnergyUsageResponse(Response):
-    """Response to a GetPowerUsageCommand."""
+    """Response to a GetEnergyUsageCommand."""
 
     def __init__(self, payload: memoryview) -> None:
         super().__init__(payload)
@@ -931,7 +927,7 @@ class EnergyUsageResponse(Response):
         self.current_energy = None
         self.real_time_power = None
 
-        _LOGGER.debug("Power response payload: %s", payload.hex())
+        _LOGGER.debug("Energy response payload: %s", payload.hex())
 
         self._parse(payload)
 
