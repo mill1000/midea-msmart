@@ -1,6 +1,7 @@
 import unittest
 
-from .command import PropertiesResponse, Response, StateResponse
+from .command import (EnergyUsageResponse, PropertiesResponse, Response,
+                      StateResponse)
 from .device import AirConditioner as AC
 
 
@@ -118,7 +119,7 @@ class TestUpdateStateFromResponse(unittest.TestCase):
 
         # Create a dummy device and process the response
         device = AC(0, 0, 0)
-        device._process_state_response(resp)
+        device._update_state(resp)
 
         # Assert state is expected
         self.assertEqual(device.target_temperature, 21.0)
@@ -154,7 +155,7 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(type(resp), PropertiesResponse)
 
         # Process the response
-        device._process_state_response(resp)
+        device._update_state(resp)
 
         # Assert state is expected
         self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.OFF)
@@ -180,7 +181,7 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(type(resp), PropertiesResponse)
 
         # Process the response
-        device._process_state_response(resp)
+        device._update_state(resp)
 
         # Assert state is expected
         self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.POS_3)
@@ -207,13 +208,36 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(type(resp), PropertiesResponse)
 
         # Process response
-        device._process_state_response(resp)
+        device._update_state(resp)
 
         # Assert that only the properties in the response are updated
         self.assertEqual(device.horizontal_swing_angle, AC.SwingAngle.POS_3)
 
         # Assert other properties are untouched
         self.assertEqual(device.vertical_swing_angle, AC.SwingAngle.POS_5)
+
+    def test_power_usage_response(self) -> None:
+        """Test parsing of EnergyUsageResponses into device state."""
+
+        # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2191412432
+        TEST_RESPONSE = bytes.fromhex(
+            "aa20ac00000000000203c121014400564a02640000000014ae0000000000041a22")
+
+        resp = Response.construct(TEST_RESPONSE)
+        self.assertIsNotNone(resp)
+
+        # Assert response is a state response
+        self.assertEqual(type(resp), EnergyUsageResponse)
+
+        # Create a dummy device and process the response
+        device = AC(0, 0, 0)
+        device._update_state(resp)
+
+        # Assert state is expected
+        # TODO Values are unverified
+        self.assertEqual(device.total_energy_usage, 5650.02)
+        self.assertEqual(device.current_energy_usage, 1514.0)
+        self.assertEqual(device.real_time_power_usage, 0)
 
 
 if __name__ == "__main__":
