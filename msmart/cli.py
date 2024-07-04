@@ -116,10 +116,19 @@ async def _query(args) -> None:
 async def _control(args) -> None:
     """Control device state."""
 
-    DISPLAY_ON = "display_on"
+    KEY_DISPLAY_ON = "display_on"
 
-    new_properties = {}
+    # Local function to attempt to parse and covert the value to the supplied type
+    def convert(v, t):
+        try:
+            return t(ast.literal_eval(v))
+        except (ValueError, SyntaxError):
+            _LOGGER.error("Value '%s' is not a valid %s",
+                          v, t.__qualname__)
+            exit(1)
+
     # Parse each setting, checking if the property exists and the supplied value is valid
+    new_properties = {}
     for name, value in (s.split("=") for s in args.settings):
         # Check if property exists
         prop = getattr(AC, name, None)
@@ -127,9 +136,8 @@ async def _control(args) -> None:
             _LOGGER.error("'%s' is not a valid device property.", name)
             raise ValueError
 
-        # Check if property is writable
-        # Display needs special handling
-        if name != DISPLAY_ON and prop.fset is None:
+        # Check if property has a setter, with special handling for the display
+        if name != KEY_DISPLAY_ON and prop.fset is None:
             _LOGGER.error("'%s' property is not writable.", name)
             raise ValueError
 
@@ -165,15 +173,9 @@ async def _control(args) -> None:
                                   value, attr_type.__qualname__)
                     exit(1)
         elif isinstance(attr_value, bool):
-            new_properties[name] = ast.literal_eval(value.capitalize())
+            new_properties[name] = convert(value.capitalize(), bool)
         else:
-            try:
-                new_properties[name] = attr_type(
-                    ast.literal_eval(value))
-            except (SyntaxError, ValueError):
-                _LOGGER.error("Value '%s' cannot be cast to %s",
-                              value, attr_type.__qualname__)
-                exit(1)
+            new_properties[name] = convert(value, attr_type)
 
     # Connect to the device
     device = await _connect(args)
@@ -183,10 +185,14 @@ async def _control(args) -> None:
     await device.refresh()
 
     # Handle display which is unique
-    if (display := new_properties.pop(DISPLAY_ON, None)) is not None:
+    if (display := new_properties.pop(KEY_DISPLAY_ON, None)) is not None:
         if display != device.display_on:
-            _LOGGER.info("Setting '%s' to %s.", DISPLAY_ON, display)
+            _LOGGER.info("Setting '%s' to %s.", KEY_DISPLAY_ON, display)
             await device.toggle_display()
+
+    # Don't apply if there's not new settings
+    if not new_properties:
+        return
 
     # Set remaining properties
     for prop, value in new_properties.items():
