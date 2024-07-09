@@ -36,8 +36,6 @@ jobs:
         with:
           container: ${{ env.CONTAINER_NAME }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          # Prune all untagged
-          prune-untagged: true
           # Keep PRs, releases, latest and edge
           keep-tags-regexes: |
             ^pr-
