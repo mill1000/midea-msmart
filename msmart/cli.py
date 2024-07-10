@@ -134,12 +134,12 @@ async def _control(args) -> None:
         prop = getattr(AC, name, None)
         if prop is None or not isinstance(prop, property):
             _LOGGER.error("'%s' is not a valid device property.", name)
-            raise ValueError
+            exit(1)
 
         # Check if property has a setter, with special handling for the display
         if name != KEY_DISPLAY_ON and prop.fset is None:
             _LOGGER.error("'%s' property is not writable.", name)
-            raise ValueError
+            exit(1)
 
         # Get the default value of the property and its type
         attr_value = getattr(AC("0.0.0.0", 0, 0), name)
