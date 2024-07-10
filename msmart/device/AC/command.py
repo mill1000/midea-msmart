@@ -582,7 +582,7 @@ class CapabilitiesResponse(Response):
                     "Ignored unknown capability. ID: 0x%04X, Size: %d.", capability_id, size)
 
             else:
-                _LOGGER.warning(
+                _LOGGER.info(
                     "Unsupported capability. ID: 0x%04X, Size: %d.", capability_id, size)
 
             # Advanced to next capability
