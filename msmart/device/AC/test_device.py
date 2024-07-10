@@ -1,7 +1,7 @@
 import unittest
 
-from .command import (EnergyUsageResponse, PropertiesResponse, Response,
-                      StateResponse)
+from .command import (EnergyUsageResponse, HumidityResponse,
+                      PropertiesResponse, Response, StateResponse)
 from .device import AirConditioner as AC
 
 
@@ -216,28 +216,59 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         # Assert other properties are untouched
         self.assertEqual(device.vertical_swing_angle, AC.SwingAngle.POS_5)
 
-    def test_power_usage_response(self) -> None:
+    def test_energy_usage_response(self) -> None:
         """Test parsing of EnergyUsageResponses into device state."""
+        TEST_RESPONSES = {
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2191412432
+            (5650.02, 1514.0, 0): bytes.fromhex("aa20ac00000000000203c121014400564a02640000000014ae0000000000041a22"),
 
-        # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2191412432
-        TEST_RESPONSE = bytes.fromhex(
-            "aa20ac00000000000203c121014400564a02640000000014ae0000000000041a22")
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2218753545
+            (None, None, None): bytes.fromhex("aa20ac00000000000303c1210144000000000000000000000000000000000843bc"),
+        }
 
-        resp = Response.construct(TEST_RESPONSE)
-        self.assertIsNotNone(resp)
+        for power, response in TEST_RESPONSES.items():
+            resp = Response.construct(response)
+            self.assertIsNotNone(resp)
 
-        # Assert response is a state response
-        self.assertEqual(type(resp), EnergyUsageResponse)
+            # Assert response is a state response
+            self.assertEqual(type(resp), EnergyUsageResponse)
 
-        # Create a dummy device and process the response
-        device = AC(0, 0, 0)
-        device._update_state(resp)
+            # Create a dummy device and process the response
+            device = AC(0, 0, 0)
+            device._update_state(resp)
 
-        # Assert state is expected
-        # TODO Values are unverified
-        self.assertEqual(device.total_energy_usage, 5650.02)
-        self.assertEqual(device.current_energy_usage, 1514.0)
-        self.assertEqual(device.real_time_power_usage, 0)
+            total, current, real_time = power
+
+            # Assert state is expected
+            self.assertEqual(device.total_energy_usage, total)
+            self.assertEqual(device.current_energy_usage, current)
+            self.assertEqual(device.real_time_power_usage, real_time)
+
+    def test_humidity_response(self) -> None:
+        """Test parsing of HumidityResponses into device state."""
+        TEST_RESPONSES = {
+            # Device supports humidity
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2218019069
+            63: bytes.fromhex("aa20ac00000000000303c12101453f546c005d0a000000de1f0000ba9a0004af9c"),
+
+            # Device does not support humidity
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2192724566
+            None: bytes.fromhex("aa1fac00000000000303c1210145000000000000000000000000000000001aed"),
+        }
+
+        for humidity, response in TEST_RESPONSES.items():
+            resp = Response.construct(response)
+            self.assertIsNotNone(resp)
+
+            # Assert response is a state response
+            self.assertEqual(type(resp), HumidityResponse)
+
+            # Create a dummy device and process the response
+            device = AC(0, 0, 0)
+            device._update_state(resp)
+
+            # Assert state is expected
+            self.assertEqual(device.indoor_humidity, humidity)
 
 
 if __name__ == "__main__":

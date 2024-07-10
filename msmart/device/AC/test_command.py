@@ -5,11 +5,7 @@ from typing import cast
 from msmart.const import DeviceType, FrameType
 from msmart.frame import Frame, InvalidFrameException
 
-from .command import (CapabilitiesResponse, CapabilityId, Command,
-                      EnergyUsageResponse, GetPropertiesCommand,
-                      GetStateCommand, InvalidResponseException,
-                      PropertiesResponse, PropertyId, Response,
-                      SetPropertiesCommand, StateResponse)
+from .command import *
 
 
 class _TestResponseBase(unittest.TestCase):
@@ -736,13 +732,16 @@ class TestGroupDataResponse(_TestResponseBase):
     """Test group data response messages."""
 
     def test_energy_usage(self) -> None:
-        """Test we decode power usage responses correctly."""
+        """Test we decode energy usage responses correctly."""
         TEST_RESPONSES = {
             # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2181633174
             (679.2, 0, 0): bytes.fromhex("aa1fac00000000000303c121014400067920000000000000000000000000aabf"),
 
             # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2191412432
             (5650.02, 1514.0, 0): bytes.fromhex("aa20ac00000000000203c121014400564a02640000000014ae0000000000041a22"),
+
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2218753545
+            (None, None, None): bytes.fromhex("aa20ac00000000000303c1210144000000000000000000000000000000000843bc"),
         }
 
         for power, response in TEST_RESPONSES.items():
@@ -757,6 +756,27 @@ class TestGroupDataResponse(_TestResponseBase):
             self.assertEqual(resp.total_energy, total)
             self.assertEqual(resp.current_energy, current)
             self.assertEqual(resp.real_time_power, real_time)
+
+    def test_humidity(self) -> None:
+        """Test we decode humidity responses correctly."""
+        TEST_RESPONSES = {
+            # Device supports humidity
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2218019069
+            63: bytes.fromhex("aa20ac00000000000303c12101453f546c005d0a000000de1f0000ba9a0004af9c"),
+
+            # Device does not support humidity
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2192724566
+            None: bytes.fromhex("aa1fac00000000000303c1210145000000000000000000000000000000001aed"),
+        }
+
+        for humidity, response in TEST_RESPONSES.items():
+            resp = self._test_build_response(response)
+
+            # Assert response is a correct type
+            self.assertEqual(type(resp), HumidityResponse)
+            resp = cast(HumidityResponse, resp)
+
+            self.assertEqual(resp.humidity, humidity)
 
 
 if __name__ == "__main__":
