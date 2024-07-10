@@ -185,8 +185,8 @@ async def _control(args) -> None:
     await device.refresh()
 
     if not device.online:
-            _LOGGER.error("Device is not online.")
-            exit(1)
+        _LOGGER.error("Device is not online.")
+        exit(1)
 
     if args.capabilities:
         _LOGGER.info("Querying device capabilities.")
@@ -351,8 +351,8 @@ def main() -> NoReturn:
     control_parser.add_argument("host",
                                 help="Hostname or IP address of device.")
     control_parser.add_argument("--capabilities",
-                              help="Query device capabilities before sending commands.",
-                              action="store_true")
+                                help="Query device capabilities before sending commands.",
+                                action="store_true")
     control_parser.add_argument("--auto",
                                 help="Automatically authenticate V3 devices.",
                                 action="store_true")
