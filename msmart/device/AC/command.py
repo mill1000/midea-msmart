@@ -942,24 +942,31 @@ class EnergyUsageResponse(Response):
         # JS reference decodes multiple energy/power fields in BCD only.
 
         # Total energy in bytes 4 - 8
-        self.total_energy = (10000 * decode_bcd(payload[4]) +
-                             100 * decode_bcd(payload[5]) +
-                             1 * decode_bcd(payload[6]) +
-                             0.01 * decode_bcd(payload[7]))
+        total_energy = (10000 * decode_bcd(payload[4]) +
+                        100 * decode_bcd(payload[5]) +
+                        1 * decode_bcd(payload[6]) +
+                        0.01 * decode_bcd(payload[7]))
 
         # JS references decodes bytes 8 - 11 as "total running energy"
         # Older JS does not decode these bytes, and sample payloads contain bogus data
 
         # Current run energy consumption bytes 12 - 16
-        self.current_energy = (10000 * decode_bcd(payload[12]) +
-                               100 * decode_bcd(payload[13]) +
-                               1 * decode_bcd(payload[14]) +
-                               0.01 * decode_bcd(payload[15]))
+        current_energy = (10000 * decode_bcd(payload[12]) +
+                          100 * decode_bcd(payload[13]) +
+                          1 * decode_bcd(payload[14]) +
+                          0.01 * decode_bcd(payload[15]))
 
         # Real time power usage bytes 16 - 18
-        self.real_time_power = (1000 * decode_bcd(payload[16]) +
-                                10 * decode_bcd(payload[17]) +
-                                0.1 * decode_bcd(payload[18]))
+        real_time_power = (1000 * decode_bcd(payload[16]) +
+                           10 * decode_bcd(payload[17]) +
+                           0.1 * decode_bcd(payload[18]))
+
+        # Assume energy monitory is valid if at least one stats is non zero
+        valid = total_energy or current_energy or real_time_power
+
+        self.total_energy = total_energy if valid else None
+        self.current_energy = current_energy if valid else None
+        self.real_time_power = real_time_power if valid else None
 
 
 class HumidityResponse(Response):
