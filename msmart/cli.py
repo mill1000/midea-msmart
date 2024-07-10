@@ -184,6 +184,14 @@ async def _control(args) -> None:
     _LOGGER.info("Querying device state.")
     await device.refresh()
 
+    if not device.online:
+            _LOGGER.error("Device is not online.")
+            exit(1)
+
+    if args.capabilities:
+        _LOGGER.info("Querying device capabilities.")
+        await device.get_capabilities()
+
     # Handle display which is unique
     if (display := new_properties.pop(KEY_DISPLAY_ON, None)) is not None:
         if display != device.display_on:
@@ -342,6 +350,9 @@ def main() -> NoReturn:
                                            parents=[common_parser])
     control_parser.add_argument("host",
                                 help="Hostname or IP address of device.")
+    control_parser.add_argument("--capabilities",
+                              help="Query device capabilities before sending commands.",
+                              action="store_true")
     control_parser.add_argument("--auto",
                                 help="Automatically authenticate V3 devices.",
                                 action="store_true")
