@@ -1,4 +1,5 @@
 import argparse
+import ast
 import asyncio
 import logging
 from typing import NoReturn
@@ -9,6 +10,7 @@ from msmart.const import OPEN_MIDEA_APP_ACCOUNT, OPEN_MIDEA_APP_PASSWORD
 from msmart.device import AirConditioner as AC
 from msmart.discover import Discover
 from msmart.lan import AuthenticationError
+from msmart.utils import MideaIntEnum
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,8 +42,8 @@ async def _discover(args) -> None:
         _LOGGER.info("Found device:\n%s", device.to_dict())
 
 
-async def _query(args) -> None:
-    """Query device state or capabilities."""
+async def _connect(args) -> AC:
+    """Connect to a device directly or via discovery."""
 
     if args.auto and (args.token or args.key or args.device_id):
         _LOGGER.warning(
@@ -68,6 +70,15 @@ async def _query(args) -> None:
     if not isinstance(device, AC):
         _LOGGER.error("Device is not supported.")
         exit(1)
+
+    return device
+
+
+async def _query(args) -> None:
+    """Query device state or capabilities."""
+
+    # Connect to the device
+    device = await _connect(args)
 
     if args.capabilities:
         _LOGGER.info("Querying device capabilities.")
@@ -100,6 +111,104 @@ async def _query(args) -> None:
             exit(1)
 
         _LOGGER.info("%s", device)
+
+
+async def _control(args) -> None:
+    """Control device state."""
+
+    KEY_DISPLAY_ON = "display_on"
+
+    # Local function to attempt to parse and covert the value to the supplied type
+    def convert(v, t):
+        try:
+            return t(ast.literal_eval(v))
+        except (ValueError, SyntaxError):
+            _LOGGER.error("Value '%s' is not a valid %s",
+                          v, t.__qualname__)
+            exit(1)
+
+    # Parse each setting, checking if the property exists and the supplied value is valid
+    new_properties = {}
+    for name, value in (s.split("=") for s in args.settings):
+        # Check if property exists
+        prop = getattr(AC, name, None)
+        if prop is None or not isinstance(prop, property):
+            _LOGGER.error("'%s' is not a valid device property.", name)
+            exit(1)
+
+        # Check if property has a setter, with special handling for the display
+        if name != KEY_DISPLAY_ON and prop.fset is None:
+            _LOGGER.error("'%s' property is not writable.", name)
+            exit(1)
+
+        # Get the default value of the property and its type
+        attr_value = getattr(AC("0.0.0.0", 0, 0), name)
+        attr_type = type(attr_value)
+
+        if isinstance(attr_value, MideaIntEnum):
+            # Attempt to parse input as a number
+            try:
+                value = ast.literal_eval(value)
+            except ValueError:
+                pass
+
+            if isinstance(value, (int, float)):
+                # Try to convert number to enum
+                try:
+                    new_properties[name] = attr_type(value)
+                except ValueError:
+                    # Allow raw integers for AC.FanSpeed
+                    if attr_type == AC.FanSpeed:
+                        new_properties[name] = int(value)
+                    else:
+                        _LOGGER.error("Value '%d' is not a valid %s",
+                                      value, attr_type.__qualname__)
+                        exit(1)
+            else:
+                # Try to convert string to enum
+                try:
+                    new_properties[name] = attr_type[value.upper()]
+                except KeyError:
+                    _LOGGER.error("Value '%s' is not a valid %s",
+                                  value, attr_type.__qualname__)
+                    exit(1)
+        elif isinstance(attr_value, bool):
+            new_properties[name] = convert(value.capitalize(), bool)
+        else:
+            new_properties[name] = convert(value, attr_type)
+
+    # Connect to the device
+    device = await _connect(args)
+
+    # Get current state
+    _LOGGER.info("Querying device state.")
+    await device.refresh()
+
+    if not device.online:
+        _LOGGER.error("Device is not online.")
+        exit(1)
+
+    if args.capabilities:
+        _LOGGER.info("Querying device capabilities.")
+        await device.get_capabilities()
+
+    # Handle display which is unique
+    if (display := new_properties.pop(KEY_DISPLAY_ON, None)) is not None:
+        if display != device.display_on:
+            _LOGGER.info("Setting '%s' to %s.", KEY_DISPLAY_ON, display)
+            await device.toggle_display()
+
+    # Don't apply if there's not new settings
+    if not new_properties:
+        return
+
+    # Set remaining properties
+    for prop, value in new_properties.items():
+        _LOGGER.info("Setting '%s' to %s.", prop, repr(value))
+        setattr(device, prop, value)
+
+    # Apply to device
+    await device.apply()
 
 
 async def _download(args) -> None:
@@ -234,6 +343,33 @@ def main() -> NoReturn:
                               help="Authentication key for V3 devices.",
                               type=bytes.fromhex)
     query_parser.set_defaults(func=_query)
+
+    # Setup control parser
+    control_parser = subparsers.add_parser("control",
+                                           description="Control a device on the local network.",
+                                           parents=[common_parser])
+    control_parser.add_argument("host",
+                                help="Hostname or IP address of device.")
+    control_parser.add_argument("--capabilities",
+                                help="Query device capabilities before sending commands.",
+                                action="store_true")
+    control_parser.add_argument("--auto",
+                                help="Automatically authenticate V3 devices.",
+                                action="store_true")
+    control_parser.add_argument("--id",
+                                help="Device ID for V3 devices.",
+                                dest="device_id", type=int, default=0)
+    control_parser.add_argument("--token",
+                                help="Authentication token for V3 devices.",
+                                type=bytes.fromhex)
+    control_parser.add_argument("--key",
+                                help="Authentication key for V3 devices.",
+                                type=bytes.fromhex)
+    control_parser.add_argument("settings",
+                                nargs="+",
+                                metavar="setting=value",
+                                help="Space separated key-value pairs of settings to control.")
+    control_parser.set_defaults(func=_control)
 
     # Setup download parser
     download = subparsers.add_parser("download",
