@@ -347,12 +347,13 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "aa3dac00000000000203b50a12020101180001001402010115020101160201001a020101100201011f020100250207203c203c203c00400001000100c83a")
 
         # Test case includes an unknown capability 0x40 that generates a warning
-        with self.assertLogs("msmart") as log:
+        with self.assertLogs("msmart", logging.DEBUG) as log:
             resp = self._test_build_response(TEST_CAPABILITIES_RESPONSE)
             resp = cast(CapabilitiesResponse, resp)
 
-            # Check warning is generated for ID 0x0040
-            self.assertRegex(log.output[0], "Unknown capability. ID: 0x0040")
+            # Check debug message is generated for ID 0x0040
+            self.assertRegex("\n".join(log.output),
+                             "Ignored unknown capability. ID: 0x0040")
 
         EXPECTED_RAW_CAPABILITIES = {
             "eco_mode": True, "eco_mode_2": False, "silky_cool": False,
@@ -473,13 +474,14 @@ class TestCapabilitiesResponse(_TestResponseBase):
         TEST_CAPABILITIES_RESPONSE = bytes.fromhex(
             "aa3dac00000000000303b50a12020101430001011402010115020101160201001a020101100201011f020103250207203c203c203c05400001000100c805")
 
-        # Test case includes an unknown capability 0x40 that generates a warning
-        with self.assertLogs("msmart") as log:
+        # Test case includes an unknown capability 0x40 that generates a log
+        with self.assertLogs("msmart", logging.DEBUG) as log:
             resp = self._test_build_response(TEST_CAPABILITIES_RESPONSE)
             resp = cast(CapabilitiesResponse, resp)
 
-            # Check warning is generated for ID 0x0040
-            self.assertRegex(log.output[0], "Unknown capability. ID: 0x0040")
+            # Check debug message is generated for ID 0x0040
+            self.assertRegex("\n".join(log.output),
+                             "Ignored unknown capability. ID: 0x0040")
 
         EXPECTED_RAW_CAPABILITIES = {
             "eco_mode": True, "eco_mode_2": False,

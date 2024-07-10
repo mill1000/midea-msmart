@@ -34,6 +34,7 @@ class CapabilityId(IntEnum):
     WIND_ON_ME = 0x0032
     WIND_OFF_ME = 0x0033
     SELF_CLEAN = 0x0039  # AKA Active Clean
+    _UNKNOWN = 0x0040  # Unknown ID from various logs
     ONE_KEY_NO_WIND_ON_ME = 0x0042
     BREEZE_CONTROL = 0x0043  # AKA "FA No Wind Sense"
     RATE_SELECT = 0x0048
@@ -511,6 +512,7 @@ class CapabilitiesResponse(Response):
             # CapabilityId.TEMPERATURES too complex to be handled here
             CapabilityId.WIND_OFF_ME:  reader("wind_off_me", get_value(1)),
             CapabilityId.WIND_ON_ME:  reader("wind_on_me", get_value(1)),
+            # CapabilityId._UNKNOWN is a special case
         }
 
         count = payload[1]
@@ -573,6 +575,11 @@ class CapabilitiesResponse(Response):
                 # TODO The else of this condition is commented out in reference code
                 self._capabilities["decimals"] = (
                     caps[9] if size > 6 else caps[2]) != 0
+
+            elif capability_id == CapabilityId._UNKNOWN:
+                # Supress warnings from unknown capability
+                _LOGGER.debug(
+                    "Ignored unknown capability. ID: 0x%04X, Size: %d.", capability_id, size)
 
             else:
                 _LOGGER.warning(
