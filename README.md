@@ -68,20 +68,20 @@ pip install msmart-ng
 
 ## Usage
 ### CLI
-A simple command line interface is provided to discover and query devices. 
+A simple command line interface is provided to discover, query and contorl devices. 
 
 ```shell
 $ msmart-ng --help
-usage: msmart-ng [-h] [-v] {discover,query} ...
+usage: msmart-ng [-h] [-v] {discover,query,control,download} ...
 
 Command line utility for msmart-ng.
 
 options:
-  -h, --help        show this help message and exit
-  -v, --version     show program's version number and exit
+  -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
 
 Command:
-  {discover,query}
+  {discover,query,control,download}
 ```
 
 Each subcommand has additional help available. e.g. `msmart-ng discover --help`
@@ -124,6 +124,21 @@ $ msmart-ng query <HOST>
 ```
 
 Device capabilities can be queried with the `--capabilities` argument.
+
+#### Control
+Control device state with the `msmart-ng control` subcommand. The command takes a space seperated list of key-value pairs of settings to control.
+
+Enumerated settings like `operational_mode`, `fan_speed`, and `swing_mode` can accept integer or string values. e.g. `operational_mode=cool`, `fan_speed=100` or `swing_mode=both`.
+
+Number settings like `target_temperature` can accept floating point or integer values. e.g. `target_temperature=20.5`.
+
+Boolean settings like `display_on` and `beep` can accept integer or string values. e.g. `display_on=True` or `beep=0`.
+
+**Note:** Version 3 devices need to specify either the `--auto` argument or the `--token`, `--key` and `--id` arguments to make a connection.
+
+```shell
+$ msmart-ng control <HOST> operational_mode=cool target_temperature=20.5 fan_speed=100 display_on=True beep=0
+```
 
 ### Home Assistant
 Use [this fork](https://github.com/mill1000/midea-ac-py) of midea-ac-py to control devices from Home Assistant.
