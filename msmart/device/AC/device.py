@@ -458,6 +458,14 @@ class AirConditioner(Device):
         self._power_state = state
 
     @property
+    def fahrenheit(self) -> Optional[bool]:
+        return self._fahrenheit_unit
+
+    @fahrenheit.setter
+    def fahrenheit(self, enabled: bool) -> None:
+        self._fahrenheit_unit = enabled
+
+    @property
     def min_target_temperature(self) -> Optional[int]:
         return self._min_target_temperature
 
@@ -472,6 +480,14 @@ class AirConditioner(Device):
     @target_temperature.setter
     def target_temperature(self, temperature_celsius: float) -> None:
         self._target_temperature = temperature_celsius
+
+    @property
+    def indoor_temperature(self) -> Optional[float]:
+        return self._indoor_temperature
+
+    @property
+    def outdoor_temperature(self) -> Optional[float]:
+        return self._outdoor_temperature
 
     @property
     def supported_operation_modes(self) -> List[OperationalMode]:
@@ -544,18 +560,6 @@ class AirConditioner(Device):
         self._updated_properties.add(PropertyId.SWING_UD_ANGLE)
 
     @property
-    def supports_purifier(self) -> bool:
-        return self._supports_purifier
-
-    @property
-    def purifier(self) -> Optional[bool]:
-        return self._purifier
-
-    @purifier.setter
-    def purifier(self, enabled: bool) -> None:
-        self._purifier = enabled
-
-    @property
     def supports_eco_mode(self) -> Optional[bool]:
         return self._supports_eco_mode
 
@@ -600,14 +604,6 @@ class AirConditioner(Device):
         self._sleep_mode = enabled
 
     @property
-    def fahrenheit(self) -> Optional[bool]:
-        return self._fahrenheit_unit
-
-    @fahrenheit.setter
-    def fahrenheit(self, enabled: bool) -> None:
-        self._fahrenheit_unit = enabled
-
-    @property
     def follow_me(self) -> Optional[bool]:
         return self._follow_me
 
@@ -616,28 +612,32 @@ class AirConditioner(Device):
         self._follow_me = enabled
 
     @property
-    def display_on(self) -> Optional[bool]:
-        return self._display_on
+    def supports_purifier(self) -> bool:
+        return self._supports_purifier
 
     @property
-    def filter_alert(self) -> Optional[bool]:
-        return self._filter_alert
+    def purifier(self) -> Optional[bool]:
+        return self._purifier
 
-    @property
-    def indoor_temperature(self) -> Optional[float]:
-        return self._indoor_temperature
-
-    @property
-    def outdoor_temperature(self) -> Optional[float]:
-        return self._outdoor_temperature
+    @purifier.setter
+    def purifier(self, enabled: bool) -> None:
+        self._purifier = enabled
 
     @property
     def supports_display_control(self) -> Optional[bool]:
         return self._supports_display_control
 
     @property
+    def display_on(self) -> Optional[bool]:
+        return self._display_on
+
+    @property
     def supports_filter_reminder(self) -> Optional[bool]:
         return self._supports_filter_reminder
+
+    @property
+    def filter_alert(self) -> Optional[bool]:
+        return self._filter_alert
 
     @property
     def enable_energy_usage_requests(self) -> bool:
