@@ -660,6 +660,10 @@ class AirConditioner(Device):
         return self._real_time_power_usage
 
     @property
+    def supports_humidity(self) -> Optional[bool]:
+        return self._supports_humidity
+
+    @property
     def indoor_humidity(self) -> Optional[int]:
         return self._indoor_humidity
 
