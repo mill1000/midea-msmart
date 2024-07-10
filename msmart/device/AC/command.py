@@ -19,10 +19,11 @@ class InvalidResponseException(Exception):
 
 
 class ResponseId(IntEnum):
-    STATE = 0xC0
-    CAPABILITIES = 0xB5
     PROPERTIES_ACK = 0xB0  # In response to property commands
     PROPERTIES = 0xB1
+    CAPABILITIES = 0xB5
+    STATE = 0xC0
+    GROUP_DATA = 0xC1
 
 
 class CapabilityId(IntEnum):
@@ -51,7 +52,7 @@ class CapabilityId(IntEnum):
     PRESET_FREEZE_PROTECTION = 0x0213
     MODES = 0x0214
     SWING_MODES = 0x0215
-    POWER = 0x0216
+    ENERGY = 0x0216  # AKA electricity
     FILTER_REMIND = 0x0217
     AUX_ELECTRIC_HEAT = 0x0219  # AKA PTC
     PRESET_TURBO = 0x021A
@@ -152,6 +153,40 @@ class GetStateCommand(Command):
         ]))
 
 
+class GetEnergyUsageCommand(Command):
+    """Command to query energy usage from device."""
+
+    def __init__(self) -> None:
+        super().__init__(frame_type=FrameType.QUERY)
+
+    def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
+        payload = bytearray(20)
+
+        payload[0] = 0x41
+        payload[1] = 0x21
+        payload[2] = 0x01
+        payload[3] = 0x44
+
+        return super().tobytes(payload)
+
+
+class GetHumidityCommand(Command):
+    """Command to query indoor humidity from device."""
+
+    def __init__(self) -> None:
+        super().__init__(frame_type=FrameType.QUERY)
+
+    def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
+        payload = bytearray(20)
+
+        payload[0] = 0x41
+        payload[1] = 0x21
+        payload[2] = 0x01
+        payload[3] = 0x45
+
+        return super().tobytes(payload)
+
+
 class SetStateCommand(Command):
     """Command to set basic state of the device."""
 
@@ -171,6 +206,7 @@ class SetStateCommand(Command):
         self.freeze_protection_mode = False
         self.follow_me = False
         self.purifier = False
+        self.target_humidity = 40
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
         # Build beep and power status bytes
@@ -212,7 +248,10 @@ class SetStateCommand(Command):
         turbo_alt = 0x20 if self.turbo_mode else 0
         follow_me = 0x80 if self.follow_me else 0
 
-        # Build alternate turbo byte
+        # Build target humidity byte
+        humidity = self.target_humidity & 0x7F
+
+        # Build freeze protection byte
         freeze_protect = 0x80 if self.freeze_protection_mode else 0
 
         return super().tobytes(bytes([
@@ -239,8 +278,10 @@ class SetStateCommand(Command):
             0x00, 0x00, 0x00,
             # Alternate temperature
             temperature_alt,
+            # Target humidity
+            humidity,
             # Unknown
-            0x00, 0x00,
+            0x00,
             # Frost/freeze protection
             freeze_protect,
             # Unknown
@@ -357,6 +398,9 @@ class Response():
             # Validate the frame
             Frame.validate(frame_mv)
 
+            # Default to base class
+            response_class = Response
+
             # Fetch the appropriate response class from the ID
             frame_type = frame_mv[9]
             response_id = frame_mv[10]
@@ -367,8 +411,13 @@ class Response():
                 response_class = CapabilitiesResponse
             elif response_id in [ResponseId.PROPERTIES, ResponseId.PROPERTIES_ACK]:
                 response_class = PropertiesResponse
-            else:
-                response_class = Response
+            elif response_id == ResponseId.GROUP_DATA:
+                # Response type depends on an additional "group" byte
+                group = frame_mv[13] & 0xF
+                if group == 4:
+                    response_class = EnergyUsageResponse
+                elif group == 5:
+                    response_class = HumidityResponse
 
             # Validate the payload CRC
             # ...except for properties which certain devices send invalid CRCs
@@ -436,10 +485,10 @@ class CapabilitiesResponse(Response):
                 reader("auto_mode", lambda v: v in [0, 1, 2, 7, 8, 9]),
             ],
             CapabilityId.ONE_KEY_NO_WIND_ON_ME: reader("one_key_no_wind_on_me", get_value(1)),
-            CapabilityId.POWER: [
-                reader("power_stats", lambda v: v in [2, 3, 4, 5]),
-                reader("power_setting", lambda v: v in [3, 5]),
-                reader("power_bcd", lambda v: v in [4, 5]),
+            CapabilityId.ENERGY: [
+                reader("energy_stats", lambda v: v in [2, 3, 4, 5]),
+                reader("energy_setting", lambda v: v in [3, 5]),
+                reader("energy_bcd", lambda v: v in [2, 3]),
             ],
             CapabilityId.PRESET_ECO: [
                 reader("eco_mode", get_value(1)),
@@ -623,11 +672,13 @@ class CapabilitiesResponse(Response):
 
     @property
     def eco_mode(self) -> bool:
-        return self._capabilities.get("eco_mode", False) or self._capabilities.get("eco_mode_2", False)
+        return (self._capabilities.get("eco_mode", False)
+                or self._capabilities.get("eco_mode_2", False))
 
     @property
     def turbo_mode(self) -> bool:
-        return self._capabilities.get("turbo_heat", False) or self._capabilities.get("turbo_cool", False)
+        return (self._capabilities.get("turbo_heat", False)
+                or self._capabilities.get("turbo_cool", False))
 
     @property
     def freeze_protection_mode(self) -> bool:
@@ -652,6 +703,16 @@ class CapabilitiesResponse(Response):
         mode = ["cool", "auto", "heat"]
         return max([self._capabilities.get(f"{m}_max_temperature", 30) for m in mode])
 
+    @property
+    def energy_stats(self) -> bool:
+        return self._capabilities.get("energy_stats", False)
+
+    @property
+    def humidity(self) -> bool:
+        # TODO Unsure the difference between these two
+        return (self._capabilities.get("humidity_auto_set", False)
+                or self._capabilities.get("humidity_manual_set", False))
+
 
 class StateResponse(Response):
     """Response to state query."""
@@ -675,6 +736,7 @@ class StateResponse(Response):
         self.freeze_protection_mode = None
         self.follow_me = None
         self.purifier = None
+        self.target_humidity = None
 
         _LOGGER.debug("State response payload: %s", payload.hex())
 
@@ -763,10 +825,13 @@ class StateResponse(Response):
         if self.outdoor_temperature:
             self.outdoor_temperature += (payload[15] >> 4) / 10
 
-        # TODO dudanov/MideaUART humidity set point in byte 19, mask 0x7F
-
         # TODO Some payloads are shorter than expected. Unsure what, when or why
-        # This length was picked arbitrarily from one user's shorter payload
+        # The lengths below were picked arbitrarily from user payload data
+        if len(payload) < 20:
+            return
+
+        self.target_humidity = payload[19] & 0x7F
+
         if len(payload) < 22:
             return
 
@@ -850,3 +915,74 @@ class PropertiesResponse(Response):
 
     def get_property(self, id: PropertyId) -> Optional[Any]:
         return self._properties.get(id, None)
+
+
+class EnergyUsageResponse(Response):
+    """Response to a GetEnergyUsageCommand."""
+
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
+
+        self.total_energy = None
+        self.current_energy = None
+        self.real_time_power = None
+
+        _LOGGER.debug("Energy response payload: %s", payload.hex())
+
+        self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+        # Response is technically a "group data 4" response
+        # and may contain other interesting data
+
+        def decode_bcd(d: int) -> int:
+            return 10 * (d >> 4) + (d & 0xF)
+
+        # Lua reference decodes real time power field in BCD and binary form
+        # JS reference decodes multiple energy/power fields in BCD only.
+
+        # Total energy in bytes 4 - 8
+        total_energy = (10000 * decode_bcd(payload[4]) +
+                        100 * decode_bcd(payload[5]) +
+                        1 * decode_bcd(payload[6]) +
+                        0.01 * decode_bcd(payload[7]))
+
+        # JS references decodes bytes 8 - 11 as "total running energy"
+        # Older JS does not decode these bytes, and sample payloads contain bogus data
+
+        # Current run energy consumption bytes 12 - 16
+        current_energy = (10000 * decode_bcd(payload[12]) +
+                          100 * decode_bcd(payload[13]) +
+                          1 * decode_bcd(payload[14]) +
+                          0.01 * decode_bcd(payload[15]))
+
+        # Real time power usage bytes 16 - 18
+        real_time_power = (1000 * decode_bcd(payload[16]) +
+                           10 * decode_bcd(payload[17]) +
+                           0.1 * decode_bcd(payload[18]))
+
+        # Assume energy monitory is valid if at least one stats is non zero
+        valid = total_energy or current_energy or real_time_power
+
+        self.total_energy = total_energy if valid else None
+        self.current_energy = current_energy if valid else None
+        self.real_time_power = real_time_power if valid else None
+
+
+class HumidityResponse(Response):
+    """Response to a GetHumidityCommand."""
+
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
+
+        self.humidity = None
+
+        _LOGGER.debug("Humidity response payload: %s", payload.hex())
+
+        self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+        # Response is technically a "group data 5" response
+        # and may contain other interesting data
+
+        self.humidity = payload[4] if payload[4] != 0 else None

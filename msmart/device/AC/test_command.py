@@ -1,14 +1,11 @@
 import logging
 import unittest
-from typing import Union, cast
+from typing import cast
 
 from msmart.const import DeviceType, FrameType
 from msmart.frame import Frame, InvalidFrameException
 
-from .command import (CapabilitiesResponse, CapabilityId, Command,
-                      GetPropertiesCommand, GetStateCommand,
-                      InvalidResponseException, PropertiesResponse, PropertyId,
-                      Response, SetPropertiesCommand, StateResponse)
+from .command import *
 
 
 class _TestResponseBase(unittest.TestCase):
@@ -19,7 +16,7 @@ class _TestResponseBase(unittest.TestCase):
         self.assertTrue(hasattr(obj, attr),
                         msg=f"Object {obj} lacks attribute '{attr}'.")
 
-    def _test_build_response(self, msg) -> Union[StateResponse, CapabilitiesResponse, PropertiesResponse, Response]:
+    def _test_build_response(self, msg) -> Response:
         """Build a response from the frame and assert it exists."""
         resp = Response.construct(msg)
         self.assertIsNotNone(resp)
@@ -319,7 +316,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "cool_mode": True, "dry_mode": True,
             "auto_mode": True,
             "swing_horizontal": True, "swing_vertical": True,
-            "power_stats": False, "power_setting": False, "power_bcd": False,
+            "energy_stats": False, "energy_setting": False, "energy_bcd": False,
             "filter_notice": False, "filter_clean": False,
             "turbo_heat": True, "turbo_cool": True
         }
@@ -361,7 +358,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "eco_mode": True, "eco_mode_2": False, "silky_cool": False,
             "heat_mode": True, "cool_mode": True, "dry_mode": True,
             "auto_mode": True, "swing_horizontal": True, "swing_vertical": True,
-            "power_stats": False, "power_setting": False, "power_bcd": False,
+            "energy_stats": False, "energy_setting": False, "energy_bcd": False,
             "turbo_heat": True, "turbo_cool": True,
             "fan_custom": True, "fan_silent": False, "fan_low": False,
             "fan_medium": False,  "fan_high": False, "fan_auto": False,
@@ -489,7 +486,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "breeze_control": True,
             "heat_mode": True, "cool_mode": True, "dry_mode": True, "auto_mode": True,
             "swing_horizontal": True, "swing_vertical": True,
-            "power_stats": False, "power_setting": False, "power_bcd": False,
+            "energy_stats": False, "energy_setting": False, "energy_bcd": False,
             "turbo_heat": True, "turbo_cool": True,
             "fan_silent": False, "fan_low": False, "fan_medium": False, "fan_high": False, "fan_auto": False, "fan_custom": True,
             "humidity_auto_set": False, "humidity_manual_set": True,
@@ -533,7 +530,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "breeze_control": True,
             "heat_mode": True, "cool_mode": True, "dry_mode": True, "auto_mode": True,
             "swing_horizontal": True, "swing_vertical": True,
-            "power_stats": False, "power_setting": False, "power_bcd": False,
+            "energy_stats": False, "energy_setting": False, "energy_bcd": False,
             "turbo_heat": True, "turbo_cool": True,
             "fan_silent": False, "fan_low": False, "fan_medium": False, "fan_high": False, "fan_auto": False, "fan_custom": True,
             "humidity_auto_set": False, "humidity_manual_set": True,
@@ -729,6 +726,57 @@ class TestResponseConstruct(_TestResponseBase):
 
         self.assertIsNotNone(resp)
         self.assertEqual(type(resp), PropertiesResponse)
+
+
+class TestGroupDataResponse(_TestResponseBase):
+    """Test group data response messages."""
+
+    def test_energy_usage(self) -> None:
+        """Test we decode energy usage responses correctly."""
+        TEST_RESPONSES = {
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2181633174
+            (679.2, 0, 0): bytes.fromhex("aa1fac00000000000303c121014400067920000000000000000000000000aabf"),
+
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2191412432
+            (5650.02, 1514.0, 0): bytes.fromhex("aa20ac00000000000203c121014400564a02640000000014ae0000000000041a22"),
+
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2218753545
+            (None, None, None): bytes.fromhex("aa20ac00000000000303c1210144000000000000000000000000000000000843bc"),
+        }
+
+        for power, response in TEST_RESPONSES.items():
+            resp = self._test_build_response(response)
+
+            # Assert response is a correct type
+            self.assertEqual(type(resp), EnergyUsageResponse)
+            resp = cast(EnergyUsageResponse, resp)
+
+            total, current, real_time = power
+
+            self.assertEqual(resp.total_energy, total)
+            self.assertEqual(resp.current_energy, current)
+            self.assertEqual(resp.real_time_power, real_time)
+
+    def test_humidity(self) -> None:
+        """Test we decode humidity responses correctly."""
+        TEST_RESPONSES = {
+            # Device supports humidity
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2218019069
+            63: bytes.fromhex("aa20ac00000000000303c12101453f546c005d0a000000de1f0000ba9a0004af9c"),
+
+            # Device does not support humidity
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2192724566
+            None: bytes.fromhex("aa1fac00000000000303c1210145000000000000000000000000000000001aed"),
+        }
+
+        for humidity, response in TEST_RESPONSES.items():
+            resp = self._test_build_response(response)
+
+            # Assert response is a correct type
+            self.assertEqual(type(resp), HumidityResponse)
+            resp = cast(HumidityResponse, resp)
+
+            self.assertEqual(resp.humidity, humidity)
 
 
 if __name__ == "__main__":

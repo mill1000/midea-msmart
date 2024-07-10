@@ -8,8 +8,10 @@ from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum
 
-from .command import (CapabilitiesResponse, GetCapabilitiesCommand,
-                      GetPropertiesCommand, GetStateCommand,
+from .command import (CapabilitiesResponse, EnergyUsageResponse,
+                      GetCapabilitiesCommand, GetEnergyUsageCommand,
+                      GetHumidityCommand, GetPropertiesCommand,
+                      GetStateCommand, HumidityResponse,
                       InvalidResponseException, PropertiesResponse, PropertyId,
                       Response, ResponseId, SetPropertiesCommand,
                       SetStateCommand, StateResponse, ToggleDisplayCommand)
@@ -34,6 +36,7 @@ class AirConditioner(Device):
         DRY = 3
         HEAT = 4
         FAN_ONLY = 5
+        # TODO SMART_DRY = 6
 
         DEFAULT = FAN_ONLY
 
@@ -83,6 +86,7 @@ class AirConditioner(Device):
         self._filter_alert = False
         self._follow_me = False
         self._purifier = False
+        self._target_humidity = 40
 
         # Support all known modes initially
         self._supported_op_modes = cast(
@@ -104,6 +108,14 @@ class AirConditioner(Device):
         self._indoor_temperature = None
         self._outdoor_temperature = None
 
+        self._supports_humidity = False
+        self._indoor_humidity = None
+
+        self._request_energy_usage = False
+        self._total_energy_usage = None
+        self._current_energy_usage = None
+        self._real_time_power_usage = None
+
         # Default to assuming device can't handle any properties
         self._supported_properties = set()
         self._updated_properties = set()
@@ -111,9 +123,10 @@ class AirConditioner(Device):
         self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
 
-    def _update_state(self, res: Union[StateResponse, PropertiesResponse]) -> None:
-        if isinstance(res, StateResponse):
+    def _update_state(self, res: Response) -> None:
+        """Update the local state from a device state response."""
 
+        if isinstance(res, StateResponse):
             self._power_state = res.power_on
 
             self._target_temperature = res.target_temperature
@@ -152,6 +165,8 @@ class AirConditioner(Device):
             self._follow_me = res.follow_me
             self._purifier = res.purifier
 
+            self._target_humidity = res.target_humidity
+
         elif isinstance(res, PropertiesResponse):
 
             if (angle := res.get_property(PropertyId.SWING_LR_ANGLE)) is not None:
@@ -163,6 +178,18 @@ class AirConditioner(Device):
                 self._vertical_swing_angle = cast(
                     AirConditioner.SwingAngle,
                     AirConditioner.SwingAngle.get_from_value(angle))
+
+        elif isinstance(res, EnergyUsageResponse):
+            self._total_energy_usage = res.total_energy
+            self._current_energy_usage = res.current_energy
+            self._real_time_power_usage = res.real_time_power
+
+        elif isinstance(res, HumidityResponse):
+            self._indoor_humidity = res.humidity
+
+        else:
+            _LOGGER.debug("Ignored unknown response from %s:%d: %s",
+                          self.ip, self.port, res.payload.hex())
 
     def _update_capabilities(self, res: CapabilitiesResponse) -> None:
         # Build list of supported operation modes
@@ -216,22 +243,20 @@ class AirConditioner(Device):
         self._min_target_temperature = res.min_temperature
         self._max_target_temperature = res.max_temperature
 
-        self._supported_properties.clear()
+        # Allow capabilities to enable energy usage requests, but not disable them
+        # We've seen devices that claim no capability but return energy data
+        self._request_energy_usage |= res.energy_stats
+
+        self._supports_humidity = res.humidity
+
         # Add supported properties based on capabilities
+        self._supported_properties.clear()
+
         if res.swing_vertical_angle:
             self._supported_properties.add(PropertyId.SWING_UD_ANGLE)
 
         if res.swing_horizontal_angle:
             self._supported_properties.add(PropertyId.SWING_LR_ANGLE)
-
-    def _process_state_response(self, response: Response) -> None:
-        """Update the local state from a device state response."""
-
-        if isinstance(response, (StateResponse, PropertiesResponse)):
-            self._update_state(response)
-        else:
-            _LOGGER.debug("Ignored unknown response from %s:%d: %s",
-                          self.ip, self.port, response.payload.hex())
 
     async def _send_command_get_responses(self, command) -> List[Response]:
         """Send a command and return all valid responses."""
@@ -319,16 +344,27 @@ class AirConditioner(Device):
     async def refresh(self) -> None:
         """Refresh the local copy of the device state by sending a GetState command."""
 
-        cmd = GetStateCommand()
-        # Process any state responses from the device
-        for response in await self._send_command_get_responses(cmd):
-            self._process_state_response(response)
+        commands = []
+
+        # Always request state updates
+        commands.append(GetStateCommand())
+
+        # Fetch power stats if supported
+        if self._request_energy_usage:
+            commands.append(GetEnergyUsageCommand())
+
+        # Fetch humidity if supported
+        if self._supports_humidity:
+            commands.append(GetHumidityCommand())
 
         # Update supported properties
         if len(self._supported_properties):
-            cmd = GetPropertiesCommand(self._supported_properties)
+            commands.append(GetPropertiesCommand(self._supported_properties))
+
+        # Send commands and process any responses
+        for cmd in commands:
             for response in await self._send_command_get_responses(cmd):
-                self._process_state_response(response)
+                self._update_state(response)
 
     async def apply(self) -> None:
         """Apply the local state to the device."""
@@ -362,8 +398,7 @@ class AirConditioner(Device):
         cmd = SetStateCommand()
         cmd.beep_on = self._beep_on
         cmd.power_on = or_default(self._power_state, False)
-        cmd.target_temperature = or_default(
-            self._target_temperature, 25)  # TODO?
+        cmd.target_temperature = or_default(self._target_temperature, 25)
         cmd.operational_mode = self._operational_mode
         cmd.fan_speed = self._fan_speed
         cmd.swing_mode = self._swing_mode
@@ -375,10 +410,11 @@ class AirConditioner(Device):
         cmd.fahrenheit = or_default(self._fahrenheit_unit, False)
         cmd.follow_me = or_default(self._follow_me, False)
         cmd.purifier = or_default(self._purifier, False)
+        cmd.target_humidity = or_default(self._target_humidity, 40)
 
         # Process any state responses from the device
         for response in await self._send_command_get_responses(cmd):
-            self._process_state_response(response)
+            self._update_state(response)
 
         # Done if no properties need updating
         if not len(self._updated_properties):
@@ -400,7 +436,7 @@ class AirConditioner(Device):
         # Build command with properties
         cmd = SetPropertiesCommand(props)
         for response in await self._send_command_get_responses(cmd):
-            self._process_state_response(response)
+            self._update_state(response)
 
         # Reset updated properties set
         self._updated_properties.clear()
@@ -603,6 +639,38 @@ class AirConditioner(Device):
     def supports_filter_reminder(self) -> Optional[bool]:
         return self._supports_filter_reminder
 
+    @property
+    def enable_energy_usage_requests(self) -> bool:
+        return self._request_energy_usage
+
+    @enable_energy_usage_requests.setter
+    def enable_energy_usage_requests(self, enable: bool) -> None:
+        self._request_energy_usage = enable
+
+    @property
+    def total_energy_usage(self) -> Optional[float]:
+        return self._total_energy_usage
+
+    @property
+    def current_energy_usage(self) -> Optional[float]:
+        return self._current_energy_usage
+
+    @property
+    def real_time_power_usage(self) -> Optional[float]:
+        return self._real_time_power_usage
+
+    @property
+    def indoor_humidity(self) -> Optional[int]:
+        return self._indoor_humidity
+
+    @property
+    def target_humidity(self) -> Optional[int]:
+        return self._target_humidity
+
+    @target_humidity.setter
+    def target_humidity(self, humidity: int) -> None:
+        self._target_humidity = humidity
+
     def to_dict(self) -> dict:
         return {**super().to_dict(), **{
             "power": self.power_state,
@@ -614,6 +682,8 @@ class AirConditioner(Device):
             "target_temperature": self.target_temperature,
             "indoor_temperature": self.indoor_temperature,
             "outdoor_temperature": self.outdoor_temperature,
+            "target_humidity": self.target_humidity,
+            "indoor_humidity": self.indoor_humidity,
             "eco": self.eco_mode,
             "turbo": self.turbo_mode,
             "freeze_protection": self.freeze_protection_mode,
@@ -624,4 +694,7 @@ class AirConditioner(Device):
             "filter_alert": self.filter_alert,
             "follow_me": self.follow_me,
             "purifier": self.purifier,
+            "total_energy_usage": self.total_energy_usage,
+            "current_energy_usage": self.current_energy_usage,
+            "real_time_power_usage": self.real_time_power_usage,
         }}
