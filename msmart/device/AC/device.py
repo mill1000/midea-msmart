@@ -23,6 +23,7 @@ class AirConditioner(Device):
 
     class FanSpeed(MideaIntEnum):
         AUTO = 102
+        MAX = 100
         HIGH = 80
         MEDIUM = 60
         LOW = 40
@@ -231,6 +232,9 @@ class AirConditioner(Device):
             fan_speeds.append(AirConditioner.FanSpeed.HIGH)
         if res.fan_auto:
             fan_speeds.append(AirConditioner.FanSpeed.AUTO)
+        if res.fan_custom:
+            # Include additional MAX speed if custom speeds are supported
+            fan_speeds.append(AirConditioner.FanSpeed.MAX)
 
         self._supported_fan_speeds = fan_speeds
         self._supports_custom_fan_speed = res.fan_custom
