@@ -36,7 +36,7 @@ class AirConditioner(Device):
         DRY = 3
         HEAT = 4
         FAN_ONLY = 5
-        # TODO SMART_DRY = 6
+        SMART_DRY = 6
 
         DEFAULT = FAN_ONLY
 
@@ -103,6 +103,7 @@ class AirConditioner(Device):
         self._supports_filter_reminder = True
         self._supports_purifier = True
         self._supports_humidity = True
+        self._supports_target_humidity = True
         self._min_target_temperature = 16
         self._max_target_temperature = 30
 
@@ -247,6 +248,10 @@ class AirConditioner(Device):
         self._request_energy_usage |= res.energy_stats
 
         self._supports_humidity = res.humidity
+        self._supports_target_humidity = res.target_humidity
+        if res.target_humidity:
+            self._supported_op_modes.append(
+                AirConditioner.OperationalMode.SMART_DRY)
 
         # Add supported properties based on capabilities
         self._supported_properties.clear()
@@ -665,6 +670,10 @@ class AirConditioner(Device):
     @property
     def indoor_humidity(self) -> Optional[int]:
         return self._indoor_humidity
+
+    @property
+    def supports_target_humidity(self) -> Optional[bool]:
+        return self._supports_target_humidity
 
     @property
     def target_humidity(self) -> Optional[int]:

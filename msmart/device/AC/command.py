@@ -720,6 +720,10 @@ class CapabilitiesResponse(Response):
         return (self._capabilities.get("humidity_auto_set", False)
                 or self._capabilities.get("humidity_manual_set", False))
 
+    @property
+    def target_humidity(self) -> bool:
+        return self._capabilities.get("humidity_manual_set", False)
+
 
 class StateResponse(Response):
     """Response to state query."""
