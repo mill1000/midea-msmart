@@ -202,6 +202,9 @@ class AirConditioner(Device):
             op_modes.append(AirConditioner.OperationalMode.HEAT)
         if res.auto_mode:
             op_modes.append(AirConditioner.OperationalMode.AUTO)
+        if res.target_humidity:
+            # Add SMART_DRY support if target humidity is supported
+            op_modes.append(AirConditioner.OperationalMode.SMART_DRY)
 
         self._supported_op_modes = op_modes
 
@@ -249,9 +252,6 @@ class AirConditioner(Device):
 
         self._supports_humidity = res.humidity
         self._supports_target_humidity = res.target_humidity
-        if res.target_humidity:
-            self._supported_op_modes.append(
-                AirConditioner.OperationalMode.SMART_DRY)
 
         # Add supported properties based on capabilities
         self._supported_properties.clear()
