@@ -724,6 +724,10 @@ class CapabilitiesResponse(Response):
     def target_humidity(self) -> bool:
         return self._capabilities.get("humidity_manual_set", False)
 
+    @property
+    def self_clean(self) -> bool:
+        return self._capabilities.get("self_clean", False)
+
 
 class StateResponse(Response):
     """Response to state query."""
