@@ -123,6 +123,7 @@ class AirConditioner(Device):
 
         self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
+        self._self_clean_active = False
 
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
@@ -169,7 +170,6 @@ class AirConditioner(Device):
             self._target_humidity = res.target_humidity
 
         elif isinstance(res, PropertiesResponse):
-
             if (angle := res.get_property(PropertyId.SWING_LR_ANGLE)) is not None:
                 self._horizontal_swing_angle = cast(
                     AirConditioner.SwingAngle,
@@ -179,6 +179,9 @@ class AirConditioner(Device):
                 self._vertical_swing_angle = cast(
                     AirConditioner.SwingAngle,
                     AirConditioner.SwingAngle.get_from_value(angle))
+
+            if (value := res.get_property(PropertyId.SELF_CLEAN)) is not None:
+                self._self_clean_active = bool(value)
 
         elif isinstance(res, EnergyUsageResponse):
             self._total_energy_usage = res.total_energy
@@ -266,6 +269,9 @@ class AirConditioner(Device):
         if res.swing_horizontal_angle:
             self._supported_properties.add(PropertyId.SWING_LR_ANGLE)
 
+        if res.self_clean:
+            self._supported_properties.add(PropertyId.SELF_CLEAN)
+
     async def _send_command_get_responses(self, command) -> List[Response]:
         """Send a command and return all valid responses."""
 
@@ -349,6 +355,14 @@ class AirConditioner(Device):
         # Force a refresh to get the updated display state
         await self.refresh()
 
+    async def start_self_clean(self) -> None:
+        """Start a self cleaning if the device supports it."""
+
+        # Start self clean via properties command
+        await self._apply_properties({
+            PropertyId.SELF_CLEAN: True,
+        })
+
     async def refresh(self) -> None:
         """Refresh the local copy of the device state by sending a GetState command."""
 
@@ -373,6 +387,21 @@ class AirConditioner(Device):
         for cmd in commands:
             for response in await self._send_command_get_responses(cmd):
                 self._update_state(response)
+
+    async def _apply_properties(self, properties: dict[PropertyId, Union[bytes, int]]) -> None:
+        """Apply the provided properties to the device."""
+
+        # Warn if attempting to update a property that isn't supported
+        for prop in (properties.keys() - self._supported_properties):
+            _LOGGER.warning("Device is not capable of property %s.", prop)
+
+        # Always add buzzer property
+        properties[PropertyId.BUZZER] = self._beep_on
+
+        # Build command with properties
+        cmd = SetPropertiesCommand(properties)
+        for response in await self._send_command_get_responses(cmd):
+            self._update_state(response)
 
     async def apply(self) -> None:
         """Apply the local state to the device."""
@@ -428,23 +457,14 @@ class AirConditioner(Device):
         if not len(self._updated_properties):
             return
 
-        # Warn if attempting to update a property that isn't supported
-        for prop in (self._updated_properties - self._supported_properties):
-            _LOGGER.warning("Device is not capable of property %s.", prop)
-
         # Get current state of updated properties
         props = {
             k: getattr(self, self._PROPERTY_MAP[k])
             for k in self._updated_properties & self._PROPERTY_MAP.keys()
         }
 
-        # Always add buzzer property
-        props[PropertyId.BUZZER] = self._beep_on
-
-        # Build command with properties
-        cmd = SetPropertiesCommand(props)
-        for response in await self._send_command_get_responses(cmd):
-            self._update_state(response)
+        # Apply new properties
+        await self._apply_properties(props)
 
         # Reset updated properties set
         self._updated_properties.clear()
@@ -686,6 +706,14 @@ class AirConditioner(Device):
     @target_humidity.setter
     def target_humidity(self, humidity: int) -> None:
         self._target_humidity = humidity
+
+    @property
+    def supports_self_clean(self) -> bool:
+        return PropertyId.SELF_CLEAN in self._supported_properties
+
+    @property
+    def self_clean_active(self) -> bool:
+        return self._self_clean_active
 
     def to_dict(self) -> dict:
         return {**super().to_dict(), **{
