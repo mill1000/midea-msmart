@@ -103,8 +103,8 @@ class AirConditioner(Device):
         self._supports_display_control = True
         self._supports_filter_reminder = True
         self._supports_purifier = True
-        self._supports_humidity = True
-        self._supports_target_humidity = True
+        self._supports_humidity = False
+        self._supports_target_humidity = False
         self._min_target_temperature = 16
         self._max_target_temperature = 30
 
