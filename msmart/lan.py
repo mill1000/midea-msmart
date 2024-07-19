@@ -202,21 +202,22 @@ class _LanProtocolV3(_LanProtocol):
             start = self._buffer.find(b"\x83\x70")
             if start == -1:
                 _LOGGER.warning(
-                    "No start of packet found. Buffer: %s", self._buffer.hex())
+                    "Peer %s: No start of packet found. Buffer: %s", self.peer, self._buffer.hex())
                 return
 
             # Create a memoryview for zero copy slicing
             with memoryview(self._buffer) as buf:
                 if start != 0:
                     _LOGGER.warning(
-                        "Ignoring data before packet: %s", buf[:start].hex())
+                        "Peer %s: Ignoring data before packet: %s", self.peer, buf[:start].hex())
 
                 # Trim any leading data
                 buf = buf[start:]
 
                 # Check if the header has been received
                 if len(buf) < 6:
-                    _LOGGER.warning("Buffer too short. Buffer: %s", buf.hex())
+                    _LOGGER.warning(
+                        "Peer %s: Buffer too short. Buffer: %s", self.peer, buf.hex())
                     return
 
                 # 6 byte header + 2 packet id + padded encrypted payload
@@ -225,7 +226,7 @@ class _LanProtocolV3(_LanProtocol):
                 # Ensure entire packet is received
                 if len(buf) < total_size:
                     _LOGGER.warning(
-                        "Partial packet received. Buffer: %s", buf.hex())
+                        "Peer %s: Partial packet received. Buffer: %s", self.peer, buf.hex())
                     return
 
                 # Extract the packet from the buffer
@@ -413,8 +414,8 @@ class _LanProtocolV3(_LanProtocol):
         self._local_key_expiration = datetime.now(
             timezone.utc) + self.AUTHENTICATION_EXPIRATION
 
-        _LOGGER.info("Authentication successful. Expiration: %s, Local key: %s",
-                     self._local_key_expiration.isoformat(timespec="seconds"), self._local_key.hex())
+        _LOGGER.info("Authentication with %s successful. Expiration: %s, Local key: %s",
+                     self.peer, self._local_key_expiration.isoformat(timespec="seconds"), self._local_key.hex())
 
 
 class LAN:
@@ -528,7 +529,8 @@ class LAN:
                 break
             except (TimeoutError, asyncio.TimeoutError) as e:
                 if retries > 1:
-                    _LOGGER.debug("Authentication timeout. Resending.")
+                    _LOGGER.debug(
+                        "Authentication timeout. Resending to %s.", self._protocol.peer)
                     retries -= 1
                 else:
                     raise TimeoutError("No response from host.") from e
@@ -611,7 +613,8 @@ class LAN:
                 break
             except (TimeoutError, asyncio.TimeoutError) as e:
                 if retries > 1:
-                    _LOGGER.debug("Request timeout. Resending.")
+                    _LOGGER.debug("Read timeout. Resending to %s.",
+                                  self._protocol.peer)
                     retries -= 1
                 else:
                     self._disconnect()
