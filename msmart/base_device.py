@@ -45,7 +45,7 @@ class Device():
             response_time = round(time.time() - start, 2)
 
         if responses is None:
-            _LOGGER.warning("No response from %s:%d in %f seconds. ",
+            _LOGGER.warning("No response from %s:%d in %f seconds.",
                             self.ip, self.port, response_time)
             return None
 

@@ -321,7 +321,8 @@ class AirConditioner(Device):
         response = cast(CapabilitiesResponse, response)
 
         if response is None:
-            _LOGGER.error("Failed to query device capabilities.")
+            _LOGGER.error(
+                "Failed to query capabilities from %s:%d.", self.ip, self.port)
             return
 
         # Send 2nd capabilities request if needed
@@ -336,7 +337,7 @@ class AirConditioner(Device):
                 response.merge(additional_response)
             else:
                 _LOGGER.warning(
-                    "Failed to query additional device capabilities.")
+                    "Failed to query additional capabilities from %s:%d.", self.ip, self.port)
 
         # Update device capabilities
         self._update_capabilities(response)
