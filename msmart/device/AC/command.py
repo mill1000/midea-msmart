@@ -74,9 +74,11 @@ class CapabilityId(IntEnum):
 class PropertyId(IntEnum):
     SWING_UD_ANGLE = 0x0009
     SWING_LR_ANGLE = 0x000A
-    BUZZER = 0x001A
     INDOOR_HUMIDITY = 0x0015  # TODO Reference refers to a potential bug with this
+    NO_WIND_SENSE = 0x0018
+    BUZZER = 0x001A
     SELF_CLEAN = 0x0039
+    FA_NO_WIND_SENSE = 0x0043
     RATE_SELECT = 0x0048
     FRESH_AIR = 0x004B
     ANION = 0x021E
