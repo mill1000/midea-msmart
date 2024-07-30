@@ -500,6 +500,11 @@ class CapabilitiesResponse(Response):
                 reader("turbo_heat", lambda v: v == 1 or v == 3),
                 reader("turbo_cool", lambda v: v < 2),
             ],
+            CapabilityId.RATE_SELECT:  [
+                reader("rate_select_2_level", get_value(1)),  # Gear
+                reader("rate_select_5_level", lambda v: v in [
+                       2, 3]),  # Genmode and Gear5
+            ],
             CapabilityId.SELF_CLEAN:  reader("self_clean", get_value(1)),
             CapabilityId.SILKY_COOL: reader("silky_cool", get_value(1)),
             CapabilityId.SMART_EYE:  reader("smart_eye", get_value(1)),
@@ -727,6 +732,11 @@ class CapabilitiesResponse(Response):
     @property
     def self_clean(self) -> bool:
         return self._capabilities.get("self_clean", False)
+
+    @property
+    def rate_select(self) -> bool:
+        return (self._capabilities.get("rate_select_2_level", False) or
+                self._capabilities.get("rate_select_5_level", False))
 
 
 class StateResponse(Response):
