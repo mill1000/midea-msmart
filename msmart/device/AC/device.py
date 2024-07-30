@@ -59,6 +59,22 @@ class AirConditioner(Device):
 
         DEFAULT = OFF
 
+    class RateSelect(MideaIntEnum):
+        OFF = 100
+
+        # 2 levels
+        GEAR_50 = 50
+        GEAR_75 = 75
+
+        # 5 levels
+        LEVEL_1 = 1
+        LEVEL_2 = 20
+        LEVEL_3 = 40
+        LEVEL_4 = 60
+        LEVEL_5 = 80
+
+        DEFAULT = OFF
+
     # Create a dict to map properties to attribute names
     _PROPERTY_MAP = {
         PropertyId.SWING_LR_ANGLE: "_horizontal_swing_angle",
@@ -180,6 +196,11 @@ class AirConditioner(Device):
                     AirConditioner.SwingAngle,
                     AirConditioner.SwingAngle.get_from_value(angle))
 
+            if (rate := res.get_property(PropertyId.RATE_SELECT)) is not None:
+                self._rate_select = cast(
+                    AirConditioner.RateSelect,
+                    AirConditioner.RateSelect.get_from_value(rate))
+
             if (value := res.get_property(PropertyId.SELF_CLEAN)) is not None:
                 self._self_clean_active = bool(value)
 
@@ -271,6 +292,9 @@ class AirConditioner(Device):
 
         if res.self_clean:
             self._supported_properties.add(PropertyId.SELF_CLEAN)
+
+        if res.rate_select:
+            self._supported_properties.add(PropertyId.RATE_SELECT)
 
     async def _send_command_get_responses(self, command) -> List[Response]:
         """Send a command and return all valid responses."""
