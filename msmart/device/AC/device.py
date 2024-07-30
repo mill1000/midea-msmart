@@ -140,6 +140,7 @@ class AirConditioner(Device):
         self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
         self._self_clean_active = False
+        self._rate_select = AirConditioner.RateSelect.OFF
 
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
@@ -196,13 +197,13 @@ class AirConditioner(Device):
                     AirConditioner.SwingAngle,
                     AirConditioner.SwingAngle.get_from_value(angle))
 
+            if (value := res.get_property(PropertyId.SELF_CLEAN)) is not None:
+                self._self_clean_active = bool(value)
+
             if (rate := res.get_property(PropertyId.RATE_SELECT)) is not None:
                 self._rate_select = cast(
                     AirConditioner.RateSelect,
                     AirConditioner.RateSelect.get_from_value(rate))
-
-            if (value := res.get_property(PropertyId.SELF_CLEAN)) is not None:
-                self._self_clean_active = bool(value)
 
         elif isinstance(res, EnergyUsageResponse):
             self._total_energy_usage = res.total_energy
@@ -740,6 +741,19 @@ class AirConditioner(Device):
     def self_clean_active(self) -> bool:
         return self._self_clean_active
 
+    @property
+    def supports_rate_select(self) -> bool:
+        return PropertyId.RATE_SELECT in self._supported_properties
+
+    @property
+    def rate_select(self) -> RateSelect:
+        return self._rate_select
+
+    @rate_select.setter
+    def rate_select(self, rate: RateSelect) -> None:
+        self._rate_select = rate
+        self._updated_properties.add(PropertyId.RATE_SELECT)
+
     def to_dict(self) -> dict:
         return {**super().to_dict(), **{
             "power": self.power_state,
@@ -767,4 +781,5 @@ class AirConditioner(Device):
             "total_energy_usage": self.total_energy_usage,
             "current_energy_usage": self.current_energy_usage,
             "real_time_power_usage": self.real_time_power_usage,
+            "rate_select": self.rate_select,
         }}
