@@ -78,6 +78,7 @@ class PropertyId(IntEnum):
     NO_WIND_SENSE = 0x0018
     BUZZER = 0x001A
     SELF_CLEAN = 0x0039
+    BREEZE_AWAY = 0x0042  # AKA "Prevent Straight Wind"
     FA_NO_WIND_SENSE = 0x0043
     RATE_SELECT = 0x0048
     FRESH_AIR = 0x004B
