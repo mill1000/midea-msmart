@@ -141,6 +141,7 @@ class AirConditioner(Device):
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
         self._self_clean_active = False
         self._rate_select = AirConditioner.RateSelect.OFF
+        self._supported_rate_selects = []
 
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
@@ -296,6 +297,22 @@ class AirConditioner(Device):
 
         if res.rate_select:
             self._supported_properties.add(PropertyId.RATE_SELECT)
+
+            if res.rate_select_levels > 2:
+                self._supported_rate_selects = [
+                    AirConditioner.RateSelect.OFF,
+                    AirConditioner.RateSelect.LEVEL_1,
+                    AirConditioner.RateSelect.LEVEL_2,
+                    AirConditioner.RateSelect.LEVEL_3,
+                    AirConditioner.RateSelect.LEVEL_4,
+                    AirConditioner.RateSelect.LEVEL_5,
+                ]
+            else:
+                self._supported_rate_selects = [
+                    AirConditioner.RateSelect.OFF,
+                    AirConditioner.RateSelect.GEAR_75,
+                    AirConditioner.RateSelect.GEAR_50,
+                ]
 
     async def _send_command_get_responses(self, command) -> List[Response]:
         """Send a command and return all valid responses."""
@@ -740,6 +757,10 @@ class AirConditioner(Device):
     @property
     def self_clean_active(self) -> bool:
         return self._self_clean_active
+
+    @property
+    def supported_rate_selects(self) -> List[RateSelect]:
+        return self._supported_rate_selects
 
     @property
     def supports_rate_select(self) -> bool:
