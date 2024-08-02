@@ -77,6 +77,7 @@ class AirConditioner(Device):
 
     # Create a dict to map properties to attribute names
     _PROPERTY_MAP = {
+        PropertyId.RATE_SELECT: "_rate_select",
         PropertyId.SWING_LR_ANGLE: "_horizontal_swing_angle",
         PropertyId.SWING_UD_ANGLE: "_vertical_swing_angle"
     }
@@ -141,7 +142,7 @@ class AirConditioner(Device):
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
         self._self_clean_active = False
         self._rate_select = AirConditioner.RateSelect.OFF
-        self._supported_rate_selects = []
+        self._supported_rate_selects = [AirConditioner.RateSelect.OFF]
 
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
@@ -472,6 +473,10 @@ class AirConditioner(Device):
         if self._freeze_protection_mode and not self._supports_freeze_protection_mode:
             _LOGGER.warning("Device is not capable of freeze protection.")
 
+        if self._rate_select != AirConditioner.RateSelect.OFF and self._rate_select not in self._supported_rate_selects:
+            _LOGGER.warning(
+                "Device is not capable of rate select %s.", self._rate_select)
+
         # Define function to return value or a default if value is None
         def or_default(v, d) -> Any: return v if v is not None else d
 
@@ -761,10 +766,6 @@ class AirConditioner(Device):
     @property
     def supported_rate_selects(self) -> List[RateSelect]:
         return self._supported_rate_selects
-
-    @property
-    def supports_rate_select(self) -> bool:
-        return PropertyId.RATE_SELECT in self._supported_properties
 
     @property
     def rate_select(self) -> RateSelect:
