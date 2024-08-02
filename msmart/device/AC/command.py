@@ -740,10 +740,7 @@ class CapabilitiesResponse(Response):
 
     @property
     def rate_select_levels(self) -> int:
-        if self._capabilities.get("rate_select_5_level", False):
-            return 5
-        else:
-            return 2
+        return 5 if self._capabilities.get("rate_select_5_level", False) else 2
 
 
 class StateResponse(Response):
