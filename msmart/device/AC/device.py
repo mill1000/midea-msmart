@@ -302,11 +302,11 @@ class AirConditioner(Device):
             if res.rate_select_levels > 2:
                 self._supported_rate_selects = [
                     AirConditioner.RateSelect.OFF,
-                    AirConditioner.RateSelect.LEVEL_1,
-                    AirConditioner.RateSelect.LEVEL_2,
-                    AirConditioner.RateSelect.LEVEL_3,
-                    AirConditioner.RateSelect.LEVEL_4,
                     AirConditioner.RateSelect.LEVEL_5,
+                    AirConditioner.RateSelect.LEVEL_4,
+                    AirConditioner.RateSelect.LEVEL_3,
+                    AirConditioner.RateSelect.LEVEL_2,
+                    AirConditioner.RateSelect.LEVEL_1,
                 ]
             else:
                 self._supported_rate_selects = [
