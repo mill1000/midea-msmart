@@ -475,7 +475,7 @@ class AirConditioner(Device):
 
         if self._rate_select != AirConditioner.RateSelect.OFF and self._rate_select not in self._supported_rate_selects:
             _LOGGER.warning(
-                "Device is not capable of rate select %s.", self._rate_select)
+                "Device is not capable of rate select %r.", self._rate_select)
 
         # Define function to return value or a default if value is None
         def or_default(v, d) -> Any: return v if v is not None else d
