@@ -24,7 +24,7 @@ jobs:
           container: ${{ env.CONTAINER_NAME }}
           token: ${{ secrets.GITHUB_TOKEN }}
           prune-tags-regexes: ^pr-${{github.event.pull_request.number}}
-          dry-run: true
+          #dry-run: true
 
   prune-old-images:
     if: github.event_name != 'pull_request'
@@ -43,11 +43,11 @@ jobs:
           keep-tags: |
             edge
             latest
-          dry-run: true
+          #dry-run: true
 
       - uses: dataaxiom/ghcr-cleanup-action@v1
         with:
           package: ${{ env.CONTAINER_NAME }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          dry-run: true
+          #dry-run: true
           validate: true
