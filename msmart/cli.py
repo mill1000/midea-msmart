@@ -204,7 +204,7 @@ async def _control(args) -> None:
 
     # Set remaining properties
     for prop, value in new_properties.items():
-        _LOGGER.info("Setting '%s' to %s.", prop, repr(value))
+        _LOGGER.info("Setting '%s' to %r.", prop, value)
         setattr(device, prop, value)
 
     # Apply to device

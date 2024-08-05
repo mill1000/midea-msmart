@@ -394,7 +394,7 @@ class AirConditioner(Device):
 
         # Warn if attempting to update a property that isn't supported
         for prop in (properties.keys() - self._supported_properties):
-            _LOGGER.warning("Device is not capable of property %s.", prop)
+            _LOGGER.warning("Device is not capable of property %r.", prop)
 
         # Always add buzzer property
         properties[PropertyId.BUZZER] = self._beep_on
@@ -410,16 +410,16 @@ class AirConditioner(Device):
         # Warn if trying to apply unsupported modes
         if self._operational_mode not in self._supported_op_modes:
             _LOGGER.warning(
-                "Device is not capable of operational mode %s.", self._operational_mode)
+                "Device is not capable of operational mode %r.", self._operational_mode)
 
         if (self._fan_speed not in self._supported_fan_speeds
                 and not self._supports_custom_fan_speed):
             _LOGGER.warning(
-                "Device is not capable of fan speed %s.", self._fan_speed)
+                "Device is not capable of fan speed %r.", self._fan_speed)
 
         if self._swing_mode not in self._supported_swing_modes:
             _LOGGER.warning(
-                "Device is not capable of swing mode %s.", self._swing_mode)
+                "Device is not capable of swing mode %r.", self._swing_mode)
 
         if self._turbo_mode and not self._supports_turbo_mode:
             _LOGGER.warning("Device is not capable of turbo mode.")
