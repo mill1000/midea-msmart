@@ -140,9 +140,15 @@ class AirConditioner(Device):
 
         self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
+
         self._self_clean_active = False
+
         self._rate_select = AirConditioner.RateSelect.OFF
         self._supported_rate_selects = [AirConditioner.RateSelect.OFF]
+
+        self._breeze_away = False
+        self._breeze_mild = False
+        self._breezeless = False
 
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
@@ -206,6 +212,17 @@ class AirConditioner(Device):
                 self._rate_select = cast(
                     AirConditioner.RateSelect,
                     AirConditioner.RateSelect.get_from_value(rate))
+
+            if (value := res.get_property(PropertyId.BREEZE_AWAY)) is not None:
+                self._breeze_away = value
+
+            if (value := res.get_property(PropertyId.BREEZE_CONTROL)) is not None:
+                self._breeze_away = (value == 2)
+                self._breeze_mild = (value == 3)
+                self._breezeless = (value == 4)
+
+            if (value := res.get_property(PropertyId.BREEZELESS)) is not None:
+                self._breezeless = value
 
         elif isinstance(res, EnergyUsageResponse):
             self._total_energy_usage = res.total_energy
@@ -315,6 +332,16 @@ class AirConditioner(Device):
                     AirConditioner.RateSelect.GEAR_75,
                     AirConditioner.RateSelect.GEAR_50,
                 ]
+
+        # Breeze control supersedes breeze away and breezeless
+        if res.breeze_control:
+            self._supported_properties.add(PropertyId.BREEZE_CONTROL)
+        else:
+            if res.breeze_away:
+                self._supported_properties.add(PropertyId.BREEZE_AWAY)
+
+            if res.breezeless:
+                self._supported_properties.add(PropertyId.BREEZELESS)
 
     async def _send_command_get_responses(self, command) -> List[Response]:
         """Send a command and return all valid responses."""
@@ -597,6 +624,66 @@ class AirConditioner(Device):
             speed = int(speed)
 
         self._fan_speed = speed
+
+    @property
+    def supports_breeze_away(self) -> Optional[bool]:
+        return (PropertyId.BREEZE_AWAY in self._supported_properties
+                or PropertyId.BREEZE_CONTROL in self._supported_properties)
+
+    @property
+    def breeze_away(self) -> Optional[bool]:
+        return self._breeze_away
+
+    @breeze_away.setter
+    def breeze_away(self, enable: bool) -> None:
+        self._breeze_away = enable
+        self._updated_properties.add(
+            PropertyId.BREEZE_CONTROL if PropertyId.BREEZE_CONTROL in self._supported_properties
+            else PropertyId.BREEZE_AWAY)
+
+        # Disable other breeze functions
+        if enable:
+            self._breeze_mild = False
+            self._breezeless = False
+
+    @property
+    def supports_breeze_mild(self) -> Optional[bool]:
+        return PropertyId.BREEZE_CONTROL in self._supported_properties
+
+    @property
+    def breeze_mild(self) -> Optional[bool]:
+        return self._breeze_mild
+
+    @breeze_mild.setter
+    def breeze_mild(self, enable: bool) -> None:
+        self._breeze_mild = enable
+        self._updated_properties.add(PropertyId.BREEZE_CONTROL)
+
+        # Disable other breeze functions
+        if enable:
+            self._breeze_away = False
+            self._breezeless = False
+
+    @property
+    def supports_breezeless(self) -> Optional[bool]:
+        return (PropertyId.BREEZELESS in self._supported_properties
+                or PropertyId.BREEZE_CONTROL in self._supported_properties)
+
+    @property
+    def breezeless(self) -> Optional[bool]:
+        return self._breezeless
+
+    @breezeless.setter
+    def breezeless(self, enable: bool) -> None:
+        self._breezeless = enable
+        self._updated_properties.add(
+            PropertyId.BREEZE_CONTROL if PropertyId.BREEZE_CONTROL in self._supported_properties
+            else PropertyId.BREEZELESS)
+
+        # Disable other breeze functions
+        if enable:
+            self._breeze_away = False
+            self._breeze_mild = False
 
     @property
     def supported_swing_modes(self) -> List[SwingMode]:
