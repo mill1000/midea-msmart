@@ -2,7 +2,7 @@ import unittest
 
 from .command import (EnergyUsageResponse, HumidityResponse,
                       PropertiesResponse, Response, StateResponse)
-from .device import AirConditioner as AC
+from .device import AirConditioner as AC, PropertyId
 
 
 class TestDeviceEnums(unittest.TestCase):
@@ -305,6 +305,78 @@ class TestUpdateStateFromResponse(unittest.TestCase):
 
             # Assert state is expected
             self.assertEqual(device.indoor_humidity, humidity)
+
+
+class TestSetState(unittest.TestCase):
+    """Test setting device state."""
+
+    def test_properties_breeze_control(self) -> None:
+        """Test setting breeze properties with breeze control."""
+
+        # Create dummy device with breeze control
+        device = AC(0, 0, 0)
+        device._supported_properties.add(PropertyId.BREEZE_CONTROL)
+
+        # Enable a breeze mode
+        device.breeze_mild = True
+
+        # Assert state is expected
+        self.assertEqual(device.breeze_away, False)
+        self.assertEqual(device.breeze_mild, True)
+        self.assertEqual(device.breezeless, False)
+
+        # Assert correct property is being updated
+        self.assertIn(PropertyId.BREEZE_CONTROL, device._updated_properties)
+
+        # Switch to a different breeze mode
+        device.breezeless = True
+
+        # Assert state is expected
+        self.assertEqual(device.breeze_away, False)
+        self.assertEqual(device.breeze_mild, False)
+        self.assertEqual(device.breezeless, True)
+
+        # Assert correct property is being updated
+        self.assertIn(PropertyId.BREEZE_CONTROL, device._updated_properties)
+        self.assertNotIn(PropertyId.BREEZELESS, device._updated_properties)
+
+    def test_properties_breezeless(self) -> None:
+        """Test setting breezeless property without breeze control."""
+
+        # Create dummy device with breeze control
+        device = AC(0, 0, 0)
+        device._supported_properties.add(PropertyId.BREEZELESS)
+
+        # Enable breezeless
+        device.breezeless = True
+
+        # Assert state is expected
+        self.assertEqual(device.breeze_away, False)
+        self.assertEqual(device.breeze_mild, False)
+        self.assertEqual(device.breezeless, True)
+
+        # Assert correct property is being updated
+        self.assertIn(PropertyId.BREEZELESS, device._updated_properties)
+        self.assertNotIn(PropertyId.BREEZE_CONTROL, device._updated_properties)
+
+    def test_properties_breeze_away(self) -> None:
+        """Test setting breeze away property without breeze control."""
+
+        # Create dummy device with breeze control
+        device = AC(0, 0, 0)
+        device._supported_properties.add(PropertyId.BREEZE_AWAY)
+
+        # Enable breezeless
+        device.breeze_away = True
+
+        # Assert state is expected
+        self.assertEqual(device.breeze_away, True)
+        self.assertEqual(device.breeze_mild, False)
+        self.assertEqual(device.breezeless, False)
+
+        # Assert correct property is being updated
+        self.assertIn(PropertyId.BREEZE_AWAY, device._updated_properties)
+        self.assertNotIn(PropertyId.BREEZE_CONTROL, device._updated_properties)
 
 
 if __name__ == "__main__":
