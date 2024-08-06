@@ -75,11 +75,16 @@ class AirConditioner(Device):
 
         DEFAULT = OFF
 
-    # Create a dict to map properties to attribute names
+    # Create a dict to map attributes to property values
     _PROPERTY_MAP = {
-        PropertyId.RATE_SELECT: "_rate_select",
-        PropertyId.SWING_LR_ANGLE: "_horizontal_swing_angle",
-        PropertyId.SWING_UD_ANGLE: "_vertical_swing_angle"
+        PropertyId.BREEZE_AWAY: lambda s: 2 if s._breeze_away else 1,
+        PropertyId.BREEZE_CONTROL: lambda s: (4 if s._breezeless else
+                                              (3 if s._breeze_mild else
+                                               (2 if s._breeze_away else 0))),
+        PropertyId.BREEZELESS: lambda s: s._breezeless,
+        PropertyId.RATE_SELECT: lambda s: s._rate_select,
+        PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
+        PropertyId.SWING_UD_ANGLE: lambda s: s._vertical_swing_angle
     }
 
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
@@ -535,7 +540,7 @@ class AirConditioner(Device):
 
         # Get current state of updated properties
         props = {
-            k: getattr(self, self._PROPERTY_MAP[k])
+            k: self._PROPERTY_MAP[k](self)
             for k in self._updated_properties & self._PROPERTY_MAP.keys()
         }
 
