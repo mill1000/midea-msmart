@@ -260,13 +260,13 @@ class TestCapabilitiesResponse(_TestResponseBase):
             self.assertIsNotNone(resp)
             return resp
 
-        # Test SILKY_COOL capability which uses a get_value parser. e.g. X == 1
+        # Test BREEZELESS capability which uses a get_value parser. e.g. X == 1
         self.assertEqual(_build_capability_response(
-            CapabilityId.SILKY_COOL, 0)._capabilities["silky_cool"], False)
+            CapabilityId.BREEZELESS, 0)._capabilities["breezeless"], False)
         self.assertEqual(_build_capability_response(
-            CapabilityId.SILKY_COOL, 1)._capabilities["silky_cool"], True)
+            CapabilityId.BREEZELESS, 1)._capabilities["breezeless"], True)
         self.assertEqual(_build_capability_response(
-            CapabilityId.SILKY_COOL, 100)._capabilities["silky_cool"], False)
+            CapabilityId.BREEZELESS, 100)._capabilities["breezeless"], False)
 
         # Test PRESET_ECO capability which uses 2 get_value parsers.
         # e.g. eco_mode -> X == 1, eco_mode2 -> X == 2
@@ -357,7 +357,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
                              "Ignored unknown capability. ID: 0x0040")
 
         EXPECTED_RAW_CAPABILITIES = {
-            "eco_mode": True, "eco_mode_2": False, "silky_cool": False,
+            "eco_mode": True, "eco_mode_2": False, "breezeless": False,
             "heat_mode": True, "cool_mode": True, "dry_mode": True,
             "auto_mode": True, "swing_horizontal": True, "swing_vertical": True,
             "energy_stats": False, "energy_setting": False, "energy_bcd": False,
