@@ -650,6 +650,18 @@ class CapabilitiesResponse(Response):
         return self._capabilities.get("fan_custom", False)
 
     @property
+    def breeze_away(self) -> bool:
+        return self._capabilities.get("breeze_away", False)
+
+    @property
+    def breeze_control(self) -> bool:
+        return self._capabilities.get("breeze_control", False)
+
+    @property
+    def breezeless(self) -> bool:
+        return self._capabilities.get("breezeless", False)
+
+    @property
     def swing_horizontal_angle(self) -> bool:
         return self._capabilities.get("swing_horizontal_angle", False)
 
