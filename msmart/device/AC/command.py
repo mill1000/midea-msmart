@@ -29,13 +29,13 @@ class ResponseId(IntEnum):
 class CapabilityId(IntEnum):
     SWING_UD_ANGLE = 0x0009
     SWING_LR_ANGLE = 0x000A
-    SILKY_COOL = 0x0018
+    BREEZELESS = 0x0018  # AKA "No Wind Sense"
     SMART_EYE = 0x0030
     WIND_ON_ME = 0x0032
     WIND_OFF_ME = 0x0033
     SELF_CLEAN = 0x0039  # AKA Active Clean
     _UNKNOWN = 0x0040  # Unknown ID from various logs
-    ONE_KEY_NO_WIND_ON_ME = 0x0042
+    BREEZE_AWAY = 0x0042  # AKA "Prevent Straight Wind"
     BREEZE_CONTROL = 0x0043  # AKA "FA No Wind Sense"
     RATE_SELECT = 0x0048
     FRESH_AIR = 0x004B
@@ -75,11 +75,11 @@ class PropertyId(IntEnum):
     SWING_UD_ANGLE = 0x0009
     SWING_LR_ANGLE = 0x000A
     INDOOR_HUMIDITY = 0x0015  # TODO Reference refers to a potential bug with this
-    NO_WIND_SENSE = 0x0018
+    BREEZELESS = 0x0018  # AKA "No Wind Sense"
     BUZZER = 0x001A
     SELF_CLEAN = 0x0039
     BREEZE_AWAY = 0x0042  # AKA "Prevent Straight Wind"
-    FA_NO_WIND_SENSE = 0x0043
+    BREEZE_CONTROL = 0x0043  # AKA "FA No Wind Sense"
     RATE_SELECT = 0x0048
     FRESH_AIR = 0x004B
     ANION = 0x021E
@@ -461,7 +461,9 @@ class CapabilitiesResponse(Response):
         capability_readers = {
             CapabilityId.ANION: reader("anion", get_value(1)),
             CapabilityId.AUX_ELECTRIC_HEAT: reader("aux_electric_heat", get_value(1)),
+            CapabilityId.BREEZE_AWAY: reader("breeze_away", get_value(1)),
             CapabilityId.BREEZE_CONTROL: reader("breeze_control", get_value(1)),
+            CapabilityId.BREEZELESS: reader("breezeless", get_value(1)),
             CapabilityId.BUZZER:  reader("buzzer", get_value(1)),
             CapabilityId.DISPLAY_CONTROL: reader("display_control", lambda v: v in [1, 2, 100]),
             CapabilityId.FAHRENHEIT: reader("fahrenheit", get_value(0)),
@@ -488,7 +490,6 @@ class CapabilitiesResponse(Response):
                 reader("dry_mode", lambda v: v in [0, 1, 5, 6, 9]),
                 reader("auto_mode", lambda v: v in [0, 1, 2, 7, 8, 9]),
             ],
-            CapabilityId.ONE_KEY_NO_WIND_ON_ME: reader("one_key_no_wind_on_me", get_value(1)),
             CapabilityId.ENERGY: [
                 reader("energy_stats", lambda v: v in [2, 3, 4, 5]),
                 reader("energy_setting", lambda v: v in [3, 5]),
@@ -509,7 +510,6 @@ class CapabilitiesResponse(Response):
                        2, 3]),  # Genmode and Gear5
             ],
             CapabilityId.SELF_CLEAN:  reader("self_clean", get_value(1)),
-            CapabilityId.SILKY_COOL: reader("silky_cool", get_value(1)),
             CapabilityId.SMART_EYE:  reader("smart_eye", get_value(1)),
             CapabilityId.SWING_LR_ANGLE: reader("swing_horizontal_angle", get_value(1)),
             CapabilityId.SWING_UD_ANGLE: reader("swing_vertical_angle", get_value(1)),
