@@ -904,9 +904,9 @@ class PropertiesResponse(Response):
         # keys for each. e.g. capabilities
         parsers = {
             PropertyId.ANION: lambda v: v[0],
-            PropertyId.BREEZE_AWAY: lambda v: v[0] == 2,
+            PropertyId.BREEZE_AWAY: lambda v: v[0],
             PropertyId.BREEZE_CONTROL: lambda v: v[0],
-            PropertyId.BREEZELESS: lambda v: bool(v[0]),
+            PropertyId.BREEZELESS: lambda v: v[0],
             PropertyId.BUZZER: lambda v: None,  # Don't bother parsing buzzer state
             PropertyId.FRESH_AIR: lambda v: (v[0], v[1], v[2]),
             PropertyId.INDOOR_HUMIDITY: lambda v: v[0],

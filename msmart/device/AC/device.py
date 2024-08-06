@@ -219,7 +219,7 @@ class AirConditioner(Device):
                     AirConditioner.RateSelect.get_from_value(rate))
 
             if (value := res.get_property(PropertyId.BREEZE_AWAY)) is not None:
-                self._breeze_away = value
+                self._breeze_away = (value == 2)
 
             if (value := res.get_property(PropertyId.BREEZE_CONTROL)) is not None:
                 self._breeze_away = (value == 2)
@@ -227,7 +227,7 @@ class AirConditioner(Device):
                 self._breezeless = (value == 4)
 
             if (value := res.get_property(PropertyId.BREEZELESS)) is not None:
-                self._breezeless = value
+                self._breezeless = bool(value)
 
         elif isinstance(res, EnergyUsageResponse):
             self._total_energy_usage = res.total_energy
