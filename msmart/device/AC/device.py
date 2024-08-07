@@ -59,8 +59,25 @@ class AirConditioner(Device):
 
         DEFAULT = OFF
 
+    class RateSelect(MideaIntEnum):
+        OFF = 100
+
+        # 2 levels
+        GEAR_50 = 50
+        GEAR_75 = 75
+
+        # 5 levels
+        LEVEL_1 = 1
+        LEVEL_2 = 20
+        LEVEL_3 = 40
+        LEVEL_4 = 60
+        LEVEL_5 = 80
+
+        DEFAULT = OFF
+
     # Create a dict to map properties to attribute names
     _PROPERTY_MAP = {
+        PropertyId.RATE_SELECT: "_rate_select",
         PropertyId.SWING_LR_ANGLE: "_horizontal_swing_angle",
         PropertyId.SWING_UD_ANGLE: "_vertical_swing_angle"
     }
@@ -124,6 +141,8 @@ class AirConditioner(Device):
         self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
         self._self_clean_active = False
+        self._rate_select = AirConditioner.RateSelect.OFF
+        self._supported_rate_selects = [AirConditioner.RateSelect.OFF]
 
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
@@ -182,6 +201,11 @@ class AirConditioner(Device):
 
             if (value := res.get_property(PropertyId.SELF_CLEAN)) is not None:
                 self._self_clean_active = bool(value)
+
+            if (rate := res.get_property(PropertyId.RATE_SELECT)) is not None:
+                self._rate_select = cast(
+                    AirConditioner.RateSelect,
+                    AirConditioner.RateSelect.get_from_value(rate))
 
         elif isinstance(res, EnergyUsageResponse):
             self._total_energy_usage = res.total_energy
@@ -271,6 +295,26 @@ class AirConditioner(Device):
 
         if res.self_clean:
             self._supported_properties.add(PropertyId.SELF_CLEAN)
+
+        # Add supported rate select levels
+        if (rates := res.rate_select_levels) is not None:
+            self._supported_properties.add(PropertyId.RATE_SELECT)
+
+            if rates > 2:
+                self._supported_rate_selects = [
+                    AirConditioner.RateSelect.OFF,
+                    AirConditioner.RateSelect.LEVEL_5,
+                    AirConditioner.RateSelect.LEVEL_4,
+                    AirConditioner.RateSelect.LEVEL_3,
+                    AirConditioner.RateSelect.LEVEL_2,
+                    AirConditioner.RateSelect.LEVEL_1,
+                ]
+            else:
+                self._supported_rate_selects = [
+                    AirConditioner.RateSelect.OFF,
+                    AirConditioner.RateSelect.GEAR_75,
+                    AirConditioner.RateSelect.GEAR_50,
+                ]
 
     async def _send_command_get_responses(self, command) -> List[Response]:
         """Send a command and return all valid responses."""
@@ -429,6 +473,10 @@ class AirConditioner(Device):
 
         if self._freeze_protection_mode and not self._supports_freeze_protection_mode:
             _LOGGER.warning("Device is not capable of freeze protection.")
+
+        if self._rate_select != AirConditioner.RateSelect.OFF and self._rate_select not in self._supported_rate_selects:
+            _LOGGER.warning(
+                "Device is not capable of rate select %r.", self._rate_select)
 
         # Define function to return value or a default if value is None
         def or_default(v, d) -> Any: return v if v is not None else d
@@ -716,6 +764,19 @@ class AirConditioner(Device):
     def self_clean_active(self) -> bool:
         return self._self_clean_active
 
+    @property
+    def supported_rate_selects(self) -> List[RateSelect]:
+        return self._supported_rate_selects
+
+    @property
+    def rate_select(self) -> RateSelect:
+        return self._rate_select
+
+    @rate_select.setter
+    def rate_select(self, rate: RateSelect) -> None:
+        self._rate_select = rate
+        self._updated_properties.add(PropertyId.RATE_SELECT)
+
     def to_dict(self) -> dict:
         return {**super().to_dict(), **{
             "power": self.power_state,
@@ -743,4 +804,5 @@ class AirConditioner(Device):
             "total_energy_usage": self.total_energy_usage,
             "current_energy_usage": self.current_energy_usage,
             "real_time_power_usage": self.real_time_power_usage,
+            "rate_select": self.rate_select,
         }}
