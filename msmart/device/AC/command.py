@@ -495,10 +495,7 @@ class CapabilitiesResponse(Response):
                 reader("energy_setting", lambda v: v in [3, 5]),
                 reader("energy_bcd", lambda v: v in [2, 3]),
             ],
-            CapabilityId.PRESET_ECO: [
-                reader("eco_mode", get_value(1)),
-                reader("eco_mode_2", get_value(2)),
-            ],
+            CapabilityId.PRESET_ECO: reader("eco_mode", lambda v: v in [1, 2]),
             CapabilityId.PRESET_FREEZE_PROTECTION: reader("freeze_protection", get_value(1)),
             CapabilityId.PRESET_TURBO:  [
                 reader("turbo_heat", lambda v: v == 1 or v == 3),
@@ -699,8 +696,7 @@ class CapabilitiesResponse(Response):
 
     @property
     def eco_mode(self) -> bool:
-        return (self._capabilities.get("eco_mode", False)
-                or self._capabilities.get("eco_mode_2", False))
+        return self._capabilities.get("eco_mode", False)
 
     @property
     def turbo_mode(self) -> bool:
