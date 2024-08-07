@@ -476,13 +476,13 @@ class CapabilitiesResponse(Response):
                 reader("fan_custom", get_value(1)),
             ],
             CapabilityId.FILTER_REMIND: [
-                reader("filter_notice", lambda v: v == 1 or v == 2 or v == 4),
-                reader("filter_clean", lambda v: v == 3 or v == 4),
+                reader("filter_notice", lambda v: v in [1, 2, 4]),
+                reader("filter_clean", lambda v: v in [3, 4]),
             ],
             CapabilityId.HUMIDITY:
             [
-                reader("humidity_auto_set", lambda v: v == 1 or v == 2),
-                reader("humidity_manual_set", lambda v: v == 2 or v == 3),
+                reader("humidity_auto_set", lambda v: v in [1, 2]),
+                reader("humidity_manual_set", lambda v: v in [2, 3]),
             ],
             CapabilityId.MODES: [
                 reader("heat_mode", lambda v: v in [1, 2, 4, 6, 7, 9]),
@@ -498,7 +498,7 @@ class CapabilitiesResponse(Response):
             CapabilityId.PRESET_ECO: reader("eco_mode", lambda v: v in [1, 2]),
             CapabilityId.PRESET_FREEZE_PROTECTION: reader("freeze_protection", get_value(1)),
             CapabilityId.PRESET_TURBO:  [
-                reader("turbo_heat", lambda v: v == 1 or v == 3),
+                reader("turbo_heat", lambda v: v in [1, 3]),
                 reader("turbo_cool", lambda v: v < 2),
             ],
             CapabilityId.RATE_SELECT:  [
@@ -511,7 +511,7 @@ class CapabilitiesResponse(Response):
             CapabilityId.SWING_LR_ANGLE: reader("swing_horizontal_angle", get_value(1)),
             CapabilityId.SWING_UD_ANGLE: reader("swing_vertical_angle", get_value(1)),
             CapabilityId.SWING_MODES: [
-                reader("swing_horizontal", lambda v: v == 1 or v == 3),
+                reader("swing_horizontal", lambda v: v in [1, 3]),
                 reader("swing_vertical", lambda v: v < 2),
             ],
             # CapabilityId.TEMPERATURES too complex to be handled here
