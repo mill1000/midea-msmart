@@ -236,7 +236,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
                            "dry_mode", "cool_mode", "heat_mode", "auto_mode",
                            "eco_mode", "turbo_mode", "freeze_protection_mode",
                            "min_temperature", "max_temperature",
-                           "display_control", "filter_reminder"]
+                           "display_control", "filter_reminder", "rate_select_levels"]
 
     def test_properties(self) -> None:
         """Test that the capabilities response has the expected properties."""
@@ -330,7 +330,8 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_custom": False, "fan_silent": False, "fan_low": True,
             "fan_medium": True,  "fan_high": True, "fan_auto": True,
             "min_temperature": 16, "max_temperature": 30,
-            "display_control": False, "filter_reminder": False
+            "display_control": False, "filter_reminder": False,
+            "rate_select_levels": None
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_PROPERTIES:
@@ -379,7 +380,8 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_custom": True, "fan_silent": True, "fan_low": True,
             "fan_medium": True,  "fan_high": True, "fan_auto": True,
             "min_temperature": 16, "max_temperature": 30,
-            "display_control": False, "filter_reminder": False
+            "display_control": False, "filter_reminder": False,
+            "rate_select_levels": None
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_PROPERTIES:
@@ -417,7 +419,8 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_custom": False, "fan_silent": False, "fan_low": True,
             "fan_medium": True,  "fan_high": True, "fan_auto": True,
             "min_temperature": 16, "max_temperature": 30,
-            "display_control": True, "filter_reminder": True
+            "display_control": True, "filter_reminder": True,
+            "rate_select_levels": None
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_PROPERTIES:
@@ -457,7 +460,8 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_custom": True, "fan_silent": True, "fan_low": True,
             "fan_medium": True,  "fan_high": True, "fan_auto": True,
             "min_temperature": 16, "max_temperature": 30,
-            "display_control": True, "filter_reminder": True
+            "display_control": True, "filter_reminder": True,
+            "rate_select_levels": None
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_PROPERTIES:
@@ -557,7 +561,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_medium": True,  "fan_high": True, "fan_auto": True,
             "min_temperature": 16, "max_temperature": 30,
             "display_control": False, "filter_reminder": False,
-            "anion": True
+            "anion": True, "rate_select_levels": None
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_PROPERTIES:
