@@ -296,10 +296,11 @@ class AirConditioner(Device):
         if res.self_clean:
             self._supported_properties.add(PropertyId.SELF_CLEAN)
 
-        if res.rate_select:
+        # Add supported rate select levels
+        if (rates := res.rate_select_levels) is not None:
             self._supported_properties.add(PropertyId.RATE_SELECT)
 
-            if res.rate_select_levels > 2:
+            if rates > 2:
                 self._supported_rate_selects = [
                     AirConditioner.RateSelect.OFF,
                     AirConditioner.RateSelect.LEVEL_5,

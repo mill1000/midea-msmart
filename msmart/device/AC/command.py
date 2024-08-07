@@ -734,13 +734,13 @@ class CapabilitiesResponse(Response):
         return self._capabilities.get("self_clean", False)
 
     @property
-    def rate_select(self) -> bool:
-        return (self._capabilities.get("rate_select_2_level", False) or
-                self._capabilities.get("rate_select_5_level", False))
+    def rate_select_levels(self) -> Optional[int]:
+        if self._capabilities.get("rate_select_5_level", False):
+            return 5
+        elif self._capabilities.get("rate_select_2_level", False):
+            return 2
 
-    @property
-    def rate_select_levels(self) -> int:
-        return 5 if self._capabilities.get("rate_select_5_level", False) else 2
+        return None
 
 
 class StateResponse(Response):
