@@ -2,7 +2,8 @@ import unittest
 
 from .command import (EnergyUsageResponse, HumidityResponse,
                       PropertiesResponse, Response, StateResponse)
-from .device import AirConditioner as AC, PropertyId
+from .device import AirConditioner as AC
+from .device import PropertyId
 
 
 class TestDeviceEnums(unittest.TestCase):
