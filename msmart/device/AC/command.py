@@ -82,6 +82,7 @@ class PropertyId(IntEnum):
     BREEZE_CONTROL = 0x0043  # AKA "FA No Wind Sense"
     RATE_SELECT = 0x0048
     FRESH_AIR = 0x004B
+    IECO = 0x00E3
     ANION = 0x021E
 
 
@@ -906,6 +907,7 @@ class PropertiesResponse(Response):
             PropertyId.BREEZELESS: lambda v: v[0],
             PropertyId.BUZZER: lambda v: None,  # Don't bother parsing buzzer state
             PropertyId.FRESH_AIR: lambda v: (v[0], v[1], v[2]),
+            PropertyId.IECO: lambda v: v[1], # v[0] - ieco_number, v[1] - ieco_switch
             PropertyId.INDOOR_HUMIDITY: lambda v: v[0],
             PropertyId.RATE_SELECT: lambda v: v[0],
             PropertyId.SELF_CLEAN: lambda v: v[0],
