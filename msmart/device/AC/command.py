@@ -43,7 +43,7 @@ class CapabilityId(IntEnum):
     PREVENT_STRAIGHT_WIND_SELECT = 0x0058  # ??
     WIND_AROUND = 0x0059  # ??
     JET_COOL = 0x0067  # ??
-    IECO_SWITCH = 0x00E3  # ??
+    PRESET_IECO = 0x00E3
     ICHECK = 0x0091  # ??
     EMERGENT_HEAT_WIND = 0x0093  # ??
     HEAT_PTC_WIND = 0x0094  # ??
@@ -484,6 +484,7 @@ class CapabilitiesResponse(Response):
                 reader("humidity_auto_set", lambda v: v in [1, 2]),
                 reader("humidity_manual_set", lambda v: v in [2, 3]),
             ],
+            CapabilityId.PRESET_IECO: reader("ieco", get_value(1)),
             CapabilityId.MODES: [
                 reader("heat_mode", lambda v: v in [1, 2, 4, 6, 7, 9]),
                 reader("cool_mode", lambda v: v != 2),
