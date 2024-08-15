@@ -50,6 +50,17 @@ class TestCloud(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(CloudError):
             await client.get_token(BAD_UDPID)
 
+    async def test_connect_exception(self) -> None:
+        """Test that an exception is thrown when the cloud connection fails."""
+
+        client = Cloud(OPEN_MIDEA_APP_ACCOUNT, OPEN_MIDEA_APP_PASSWORD)
+
+        # Override URL to an invalid domain
+        client._base_url = "https://fake_server.invalid."
+
+        with self.assertRaises(CloudError):
+            await client.login()
+
 
 if __name__ == "__main__":
     unittest.main()
