@@ -88,6 +88,7 @@ class AirConditioner(Device):
         PropertyId.BREEZE_AWAY: lambda s: 2 if s._breeze_mode == AirConditioner.BreezeMode.BREEZE_AWAY else 1,
         PropertyId.BREEZE_CONTROL: lambda s: s._breeze_mode,
         PropertyId.BREEZELESS: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZELESS,
+        PropertyId.IECO: lambda s: s._ieco_mode,
         PropertyId.RATE_SELECT: lambda s: s._rate_select,
         PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
         PropertyId.SWING_UD_ANGLE: lambda s: s._vertical_swing_angle
@@ -158,6 +159,8 @@ class AirConditioner(Device):
         self._supported_rate_selects = [AirConditioner.RateSelect.OFF]
 
         self._breeze_mode = AirConditioner.BreezeMode.OFF
+
+        self._ieco_mode = False
 
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
@@ -234,6 +237,9 @@ class AirConditioner(Device):
                 if (value := res.get_property(PropertyId.BREEZELESS)) is not None:
                     self._breeze_mode = (AirConditioner.BreezeMode.BREEZELESS if bool(value)
                                          else AirConditioner.BreezeMode.OFF)
+
+            if (value := res.get_property(PropertyId.IECO)) is not None:
+                self._ieco_mode = bool(value)
 
         elif isinstance(res, EnergyUsageResponse):
             self._total_energy_usage = res.total_energy
@@ -353,6 +359,9 @@ class AirConditioner(Device):
 
             if res.breezeless:
                 self._supported_properties.add(PropertyId.BREEZELESS)
+
+        if res.ieco_mode:
+            self._supported_properties.add(PropertyId.IECO)
 
     async def _send_command_get_responses(self, command) -> List[Response]:
         """Send a command and return all valid responses."""
@@ -736,6 +745,19 @@ class AirConditioner(Device):
     @eco_mode.setter
     def eco_mode(self, enabled: bool) -> None:
         self._eco_mode = enabled
+
+    @property
+    def supports_ieco_mode(self) -> bool:
+        return PropertyId.IECO in self._supported_properties
+
+    @property
+    def ieco_mode(self) -> Optional[bool]:
+        return self._ieco_mode
+
+    @ieco_mode.setter
+    def ieco_mode(self, enabled: bool) -> None:
+        self._ieco_mode = enabled
+        self._updated_properties.add(PropertyId.IECO)
 
     @property
     def supports_turbo_mode(self) -> bool:
