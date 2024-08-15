@@ -111,6 +111,8 @@ class Cloud:
                         retries -= 1
                     else:
                         raise CloudError("No response from server.") from e
+                except httpx.RequestError as e:
+                    raise CloudError("Request failed.") from e
 
     async def _api_request(self, endpoint: str, body: Dict[str, Any]) -> Optional[dict]:
         """Make a request to the Midea cloud return the results."""
