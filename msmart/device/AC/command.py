@@ -701,6 +701,10 @@ class CapabilitiesResponse(Response):
         return self._capabilities.get("eco_mode", False)
 
     @property
+    def ieco_mode(self) -> bool:
+        return self._capabilities.get("ieco", False)
+
+    @property
     def turbo_mode(self) -> bool:
         return (self._capabilities.get("turbo_heat", False)
                 or self._capabilities.get("turbo_cool", False))
@@ -907,7 +911,8 @@ class PropertiesResponse(Response):
             PropertyId.BREEZELESS: lambda v: v[0],
             PropertyId.BUZZER: lambda v: None,  # Don't bother parsing buzzer state
             PropertyId.FRESH_AIR: lambda v: (v[0], v[1], v[2]),
-            PropertyId.IECO: lambda v: v[1], # v[0] - ieco_number, v[1] - ieco_switch
+            # v[0] - ieco_number, v[1] - ieco_switch
+            PropertyId.IECO: lambda v: v[1],
             PropertyId.INDOOR_HUMIDITY: lambda v: v[0],
             PropertyId.RATE_SELECT: lambda v: v[0],
             PropertyId.SELF_CLEAN: lambda v: v[0],
