@@ -575,11 +575,11 @@ class AirConditioner(Device):
         self._fahrenheit_unit = enabled
 
     @property
-    def min_target_temperature(self) -> Optional[int]:
+    def min_target_temperature(self) -> int:
         return self._min_target_temperature
 
     @property
-    def max_target_temperature(self) -> Optional[int]:
+    def max_target_temperature(self) -> int:
         return self._max_target_temperature
 
     @property
@@ -615,7 +615,7 @@ class AirConditioner(Device):
         return self._supported_fan_speeds
 
     @property
-    def supports_custom_fan_speed(self) -> Optional[bool]:
+    def supports_custom_fan_speed(self) -> bool:
         return self._supports_custom_fan_speed
 
     @property
@@ -631,7 +631,7 @@ class AirConditioner(Device):
         self._fan_speed = speed
 
     @property
-    def supports_breeze_away(self) -> Optional[bool]:
+    def supports_breeze_away(self) -> bool:
         return (PropertyId.BREEZE_AWAY in self._supported_properties
                 or PropertyId.BREEZE_CONTROL in self._supported_properties)
 
@@ -652,7 +652,7 @@ class AirConditioner(Device):
             self._breezeless = False
 
     @property
-    def supports_breeze_mild(self) -> Optional[bool]:
+    def supports_breeze_mild(self) -> bool:
         return PropertyId.BREEZE_CONTROL in self._supported_properties
 
     @property
@@ -670,7 +670,7 @@ class AirConditioner(Device):
             self._breezeless = False
 
     @property
-    def supports_breezeless(self) -> Optional[bool]:
+    def supports_breezeless(self) -> bool:
         return (PropertyId.BREEZELESS in self._supported_properties
                 or PropertyId.BREEZE_CONTROL in self._supported_properties)
 
@@ -729,7 +729,7 @@ class AirConditioner(Device):
         self._updated_properties.add(PropertyId.SWING_UD_ANGLE)
 
     @property
-    def supports_eco_mode(self) -> Optional[bool]:
+    def supports_eco_mode(self) -> bool:
         return self._supports_eco_mode
 
     @property
@@ -741,7 +741,7 @@ class AirConditioner(Device):
         self._eco_mode = enabled
 
     @property
-    def supports_turbo_mode(self) -> Optional[bool]:
+    def supports_turbo_mode(self) -> bool:
         return self._supports_turbo_mode
 
     @property
@@ -753,7 +753,7 @@ class AirConditioner(Device):
         self._turbo_mode = enabled
 
     @property
-    def supports_freeze_protection_mode(self) -> Optional[bool]:
+    def supports_freeze_protection_mode(self) -> bool:
         return self._supports_freeze_protection_mode
 
     @property
@@ -793,7 +793,7 @@ class AirConditioner(Device):
         self._purifier = enabled
 
     @property
-    def supports_display_control(self) -> Optional[bool]:
+    def supports_display_control(self) -> bool:
         return self._supports_display_control
 
     @property
@@ -801,7 +801,7 @@ class AirConditioner(Device):
         return self._display_on
 
     @property
-    def supports_filter_reminder(self) -> Optional[bool]:
+    def supports_filter_reminder(self) -> bool:
         return self._supports_filter_reminder
 
     @property
@@ -829,7 +829,7 @@ class AirConditioner(Device):
         return self._real_time_power_usage
 
     @property
-    def supports_humidity(self) -> Optional[bool]:
+    def supports_humidity(self) -> bool:
         return self._supports_humidity
 
     @property
@@ -837,7 +837,7 @@ class AirConditioner(Device):
         return self._indoor_humidity
 
     @property
-    def supports_target_humidity(self) -> Optional[bool]:
+    def supports_target_humidity(self) -> bool:
         return self._supports_target_humidity
 
     @property
