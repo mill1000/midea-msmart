@@ -654,8 +654,13 @@ class TestPropertiesResponse(_TestResponseBase):
         TEST_RESPONSE = bytes.fromhex(
             "aa18ac00000000000302b0020a0000013209001101000089a4")
 
-        resp = self._test_build_response(TEST_RESPONSE)
-        resp = cast(PropertiesResponse, resp)
+        # Device did not support SWING_UD_ANGLE, check that an error was reported
+        with self.assertLogs("msmart", logging.WARNING) as log:
+            resp = self._test_build_response(TEST_RESPONSE)
+            resp = cast(PropertiesResponse, resp)
+
+            self.assertRegex(
+                log.output[0], "Property .*SWING_UD_ANGLE.* failed, Result: 0x11.")
 
         # Assert response is a correct type
         self.assertEqual(type(resp), PropertiesResponse)
@@ -693,13 +698,29 @@ class TestPropertiesResponse(_TestResponseBase):
             resp = cast(PropertiesResponse, resp)
 
             # Check warning is generated for ID 0x001E
-            self.assertRegex(log.output[0], "Unknown property. ID: 0x001E")
+            self.assertRegex(log.output[0], "Unknown property ID 0x001E")
 
         # Assert response is a correct type
         self.assertEqual(type(resp), PropertiesResponse)
 
         # Assert that the buzzer property is not decoded
         self.assertIsNone(resp.get_property(PropertyId.BUZZER))
+
+    def test_properties_execution_failed(self) -> None:
+        """Test we error when decoding properties that had an execution error."""
+        # https://github.com/mill1000/midea-msmart/issues/161#issuecomment-2282839178
+        TEST_RESPONSE = bytes.fromhex(
+            "aa18ac00000000000302b00243001101041a00000100002ce5")
+
+        with self.assertLogs("msmart", logging.WARNING) as log:
+            resp = self._test_build_response(TEST_RESPONSE)
+            resp = cast(PropertiesResponse, resp)
+
+            self.assertRegex(
+                log.output[0], "Property .*BREEZE_CONTROL.* failed, Result: 0x11.")
+
+        # Assert response is a correct type
+        self.assertEqual(type(resp), PropertiesResponse)
 
 
 class TestResponseConstruct(_TestResponseBase):
