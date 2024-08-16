@@ -80,7 +80,7 @@ class AirConditioner(Device):
         PropertyId.BREEZE_AWAY: lambda s: 2 if s._breeze_away else 1,
         PropertyId.BREEZE_CONTROL: lambda s: (4 if s._breezeless else
                                               (3 if s._breeze_mild else
-                                               (2 if s._breeze_away else 0))),
+                                               (2 if s._breeze_away else 1))),
         PropertyId.BREEZELESS: lambda s: s._breezeless,
         PropertyId.RATE_SELECT: lambda s: s._rate_select,
         PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
