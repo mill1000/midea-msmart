@@ -351,7 +351,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
 
             # Check debug message is generated for ID 0x0040
             self.assertRegex("\n".join(log.output),
-                             "Ignored unknown capability. ID: 0x0040")
+                             "Ignored unknown capability ID: 0x0040")
 
         EXPECTED_RAW_CAPABILITIES = {
             "eco_mode": True, "breezeless": False,
@@ -482,7 +482,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
 
             # Check debug message is generated for ID 0x0040
             self.assertRegex("\n".join(log.output),
-                             "Ignored unknown capability. ID: 0x0040")
+                             "Ignored unknown capability ID: 0x0040")
 
         EXPECTED_RAW_CAPABILITIES = {
             "eco_mode": True,

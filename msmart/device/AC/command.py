@@ -543,7 +543,7 @@ class CapabilitiesResponse(Response):
                 capability_id = CapabilityId(raw_id)
             except ValueError:
                 _LOGGER.warning(
-                    "Unknown capability. ID: 0x%04X, Size: %d.", raw_id, size)
+                    "Unknown capability ID: 0x%04X, Size: %d.", raw_id, size)
                 # Advanced to next capability
                 caps = caps[3+size:]
                 continue
@@ -584,11 +584,11 @@ class CapabilitiesResponse(Response):
             elif capability_id == CapabilityId._UNKNOWN:
                 # Supress warnings from unknown capability
                 _LOGGER.debug(
-                    "Ignored unknown capability. ID: 0x%04X, Size: %d.", capability_id, size)
+                    "Ignored unknown capability ID: 0x%04X, Size: %d.", capability_id, size)
 
             else:
                 _LOGGER.info(
-                    "Unsupported capability. ID: 0x%04X, Size: %d.", capability_id, size)
+                    "Unsupported capability %r, Size: %d.", capability_id, size)
 
             # Advanced to next capability
             caps = caps[3+size:]
