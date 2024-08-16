@@ -1,3 +1,4 @@
+import logging
 import unittest
 
 from .command import (EnergyUsageResponse, HumidityResponse,
@@ -175,8 +176,13 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         device.horizontal_swing_angle = AC.SwingAngle.OFF
         device.vertical_swing_angle = AC.SwingAngle.OFF
 
-        resp = Response.construct(TEST_RESPONSE)
-        self.assertIsNotNone(resp)
+        # Device did not support SWING_UD_ANGLE, check that an error was reported
+        with self.assertLogs("msmart", logging.WARNING) as log:
+            resp = Response.construct(TEST_RESPONSE)
+            self.assertIsNotNone(resp)
+
+            self.assertRegex(
+                log.output[0], "Property .*SWING_UD_ANGLE.* failed, Result: 0x11.")
 
         # Assert response is a state response
         self.assertEqual(type(resp), PropertiesResponse)

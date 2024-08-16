@@ -939,7 +939,7 @@ class PropertiesResponse(Response):
                 property = PropertyId(raw_id)
             except ValueError:
                 _LOGGER.warning(
-                    "Unknown property. ID: 0x%04X, Size: %d.", raw_id, size)
+                    "Unknown property ID 0x%04X, Size: %d.", raw_id, size)
                 # Advanced to next property
                 props = props[4+size:]
                 continue
@@ -947,15 +947,23 @@ class PropertiesResponse(Response):
             # Fetch parser for this property
             parser = parsers.get(property, None)
 
-            # Apply parser if it exists
-            if parser is not None:
-                # Parse the property
-                if (value := parser(props[4:])) is not None:
-                    self._properties.update({property: value})
-
-            else:
+            # Check if parser exists
+            if parser is None:
                 _LOGGER.warning(
-                    "Unsupported property. ID: 0x%04X, Size: %d.", property, size)
+                    "Unsupported property %r, Size: %d.", property, size)
+                # Advanced to next property
+                props = props[4+size:]
+                continue
+
+            # Check execution result and log any errors
+            error = props[2] & 0x10
+            if error:
+                _LOGGER.error(
+                    "Property %r failed, Result: 0x%02X.", property, props[2])
+
+            # Parse the property
+            if (value := parser(props[4:])) is not None:
+                self._properties.update({property: value})
 
             # Advanced to next property
             props = props[4+size:]
