@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 from typing import Any, List, Optional, Union, cast
 
+from deprecated import deprecated
+
 from msmart.base_device import Device
 from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
@@ -107,10 +109,10 @@ class AirConditioner(Device):
         self._operational_mode = AirConditioner.OperationalMode.AUTO
         self._fan_speed = AirConditioner.FanSpeed.AUTO
         self._swing_mode = AirConditioner.SwingMode.OFF
-        self._eco_mode = False
-        self._turbo_mode = False
-        self._freeze_protection_mode = False
-        self._sleep_mode = False
+        self._eco = False
+        self._turbo = False
+        self._freeze_protection = False
+        self._sleep = False
         self._fahrenheit_unit = False  # Display temperature in Fahrenheit
         self._display_on = False
         self._filter_alert = False
@@ -126,9 +128,9 @@ class AirConditioner(Device):
         self._supported_fan_speeds = cast(
             List[AirConditioner.FanSpeed], AirConditioner.FanSpeed.list())
         self._supports_custom_fan_speed = True
-        self._supports_eco_mode = True
-        self._supports_turbo_mode = True
-        self._supports_freeze_protection_mode = True
+        self._supports_eco = True
+        self._supports_turbo = True
+        self._supports_freeze_protection = True
         self._supports_display_control = True
         self._supports_filter_reminder = True
         self._supports_purifier = True
@@ -160,7 +162,7 @@ class AirConditioner(Device):
 
         self._breeze_mode = AirConditioner.BreezeMode.OFF
 
-        self._ieco_mode = False
+        self._ieco = False
 
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
@@ -188,10 +190,10 @@ class AirConditioner(Device):
                 AirConditioner.SwingMode,
                 AirConditioner.SwingMode.get_from_value(res.swing_mode))
 
-            self._eco_mode = res.eco_mode
-            self._turbo_mode = res.turbo_mode
-            self._freeze_protection_mode = res.freeze_protection_mode
-            self._sleep_mode = res.sleep_mode
+            self._eco = res.eco
+            self._turbo = res.turbo
+            self._freeze_protection = res.freeze_protection
+            self._sleep = res.sleep
 
             self._indoor_temperature = res.indoor_temperature
             self._outdoor_temperature = res.outdoor_temperature
@@ -239,7 +241,7 @@ class AirConditioner(Device):
                                          else AirConditioner.BreezeMode.OFF)
 
             if (value := res.get_property(PropertyId.IECO)) is not None:
-                self._ieco_mode = value
+                self._ieco = value
 
         elif isinstance(res, EnergyUsageResponse):
             self._total_energy_usage = res.total_energy
@@ -300,9 +302,9 @@ class AirConditioner(Device):
         self._supported_fan_speeds = fan_speeds
         self._supports_custom_fan_speed = res.fan_custom
 
-        self._supports_eco_mode = res.eco_mode
-        self._supports_turbo_mode = res.turbo_mode
-        self._supports_freeze_protection_mode = res.freeze_protection_mode
+        self._supports_eco = res.eco
+        self._supports_turbo = res.turbo
+        self._supports_freeze_protection = res.freeze_protection
 
         self._supports_display_control = res.display_control
         self._supports_filter_reminder = res.filter_reminder
@@ -512,13 +514,13 @@ class AirConditioner(Device):
             _LOGGER.warning(
                 "Device is not capable of swing mode %r.", self._swing_mode)
 
-        if self._turbo_mode and not self._supports_turbo_mode:
+        if self._turbo and not self._supports_turbo:
             _LOGGER.warning("Device is not capable of turbo mode.")
 
-        if self._eco_mode and not self._supports_eco_mode:
+        if self._eco and not self._supports_eco:
             _LOGGER.warning("Device is not capable of eco mode.")
 
-        if self._freeze_protection_mode and not self._supports_freeze_protection_mode:
+        if self._freeze_protection and not self._supports_freeze_protection:
             _LOGGER.warning("Device is not capable of freeze protection.")
 
         if self._rate_select != AirConditioner.RateSelect.OFF and self._rate_select not in self._supported_rate_selects:
@@ -535,11 +537,11 @@ class AirConditioner(Device):
         cmd.operational_mode = self._operational_mode
         cmd.fan_speed = self._fan_speed
         cmd.swing_mode = self._swing_mode
-        cmd.eco_mode = or_default(self._eco_mode, False)
-        cmd.turbo_mode = or_default(self._turbo_mode, False)
-        cmd.freeze_protection_mode = or_default(
-            self._freeze_protection_mode, False)
-        cmd.sleep_mode = or_default(self._sleep_mode, False)
+        cmd.eco = or_default(self._eco, False)
+        cmd.turbo = or_default(self._turbo, False)
+        cmd.freeze_protection = or_default(
+            self._freeze_protection, False)
+        cmd.sleep = or_default(self._sleep, False)
         cmd.fahrenheit = or_default(self._fahrenheit_unit, False)
         cmd.follow_me = or_default(self._follow_me, False)
         cmd.purifier = or_default(self._purifier, False)
@@ -735,61 +737,61 @@ class AirConditioner(Device):
         self._updated_properties.add(PropertyId.SWING_UD_ANGLE)
 
     @property
-    def supports_eco_mode(self) -> bool:
-        return self._supports_eco_mode
+    def supports_eco(self) -> bool:
+        return self._supports_eco
 
     @property
-    def eco_mode(self) -> Optional[bool]:
-        return self._eco_mode
+    def eco(self) -> Optional[bool]:
+        return self._eco
 
-    @eco_mode.setter
-    def eco_mode(self, enabled: bool) -> None:
-        self._eco_mode = enabled
+    @eco.setter
+    def eco(self, enabled: bool) -> None:
+        self._eco = enabled
 
     @property
-    def supports_ieco_mode(self) -> bool:
+    def supports_ieco(self) -> bool:
         return PropertyId.IECO in self._supported_properties
 
     @property
-    def ieco_mode(self) -> Optional[bool]:
-        return self._ieco_mode
+    def ieco(self) -> Optional[bool]:
+        return self._ieco
 
-    @ieco_mode.setter
-    def ieco_mode(self, enabled: bool) -> None:
-        self._ieco_mode = enabled
+    @ieco.setter
+    def ieco(self, enabled: bool) -> None:
+        self._ieco = enabled
         self._updated_properties.add(PropertyId.IECO)
 
     @property
-    def supports_turbo_mode(self) -> bool:
-        return self._supports_turbo_mode
+    def supports_turbo(self) -> bool:
+        return self._supports_turbo
 
     @property
-    def turbo_mode(self) -> Optional[bool]:
-        return self._turbo_mode
+    def turbo(self) -> Optional[bool]:
+        return self._turbo
 
-    @turbo_mode.setter
-    def turbo_mode(self, enabled: bool) -> None:
-        self._turbo_mode = enabled
-
-    @property
-    def supports_freeze_protection_mode(self) -> bool:
-        return self._supports_freeze_protection_mode
+    @turbo.setter
+    def turbo(self, enabled: bool) -> None:
+        self._turbo = enabled
 
     @property
-    def freeze_protection_mode(self) -> Optional[bool]:
-        return self._freeze_protection_mode
-
-    @freeze_protection_mode.setter
-    def freeze_protection_mode(self, enabled: bool) -> None:
-        self._freeze_protection_mode = enabled
+    def supports_freeze_protection(self) -> bool:
+        return self._supports_freeze_protection
 
     @property
-    def sleep_mode(self) -> Optional[bool]:
-        return self._sleep_mode
+    def freeze_protection(self) -> Optional[bool]:
+        return self._freeze_protection
 
-    @sleep_mode.setter
-    def sleep_mode(self, enabled: bool) -> None:
-        self._sleep_mode = enabled
+    @freeze_protection.setter
+    def freeze_protection(self, enabled: bool) -> None:
+        self._freeze_protection = enabled
+
+    @property
+    def sleep(self) -> Optional[bool]:
+        return self._sleep
+
+    @sleep.setter
+    def sleep(self, enabled: bool) -> None:
+        self._sleep = enabled
 
     @property
     def follow_me(self) -> Optional[bool]:
@@ -901,10 +903,10 @@ class AirConditioner(Device):
             "outdoor_temperature": self.outdoor_temperature,
             "target_humidity": self.target_humidity,
             "indoor_humidity": self.indoor_humidity,
-            "eco": self.eco_mode,
-            "turbo": self.turbo_mode,
-            "freeze_protection": self.freeze_protection_mode,
-            "sleep": self.sleep_mode,
+            "eco": self.eco,
+            "turbo": self.turbo,
+            "freeze_protection": self.freeze_protection,
+            "sleep": self.sleep,
             "display_on": self.display_on,
             "beep": self.beep,
             "fahrenheit": self.fahrenheit,
@@ -917,3 +919,59 @@ class AirConditioner(Device):
             "real_time_power_usage": self.real_time_power_usage,
             "rate_select": self.rate_select,
         }}
+
+    # Deprecated methods and properties
+    @property
+    @deprecated(reason="Use 'supports_eco'.")
+    def supports_eco_mode(self) -> bool:
+        return self.supports_eco
+
+    @property
+    @deprecated(reason="Use 'eco'.")
+    def eco_mode(self) -> Optional[bool]:
+        return self.eco
+
+    @eco_mode.setter
+    @deprecated(reason="Use 'eco'.")
+    def eco_mode(self, enabled: bool) -> None:
+        self.eco = enabled
+
+    @property
+    @deprecated(reason="Use 'supports_freeze_protection'.")
+    def supports_freeze_protection_mode(self) -> bool:
+        return self.supports_freeze_protection
+
+    @property
+    @deprecated(reason="Use 'freeze_protection'.")
+    def freeze_protection_mode(self) -> Optional[bool]:
+        return self.freeze_protection
+
+    @freeze_protection_mode.setter
+    @deprecated(reason="Use 'freeze_protection'.")
+    def freeze_protection_mode(self, enabled: bool) -> None:
+        self.freeze_protection = enabled
+
+    @property
+    @deprecated(reason="Use 'sleep'.")
+    def sleep_mode(self) -> Optional[bool]:
+        return self.sleep
+
+    @sleep_mode.setter
+    @deprecated(reason="Use 'sleep'.")
+    def sleep_mode(self, enabled: bool) -> None:
+        self.sleep = enabled
+
+    @property
+    @deprecated(reason="Use 'supports_turbo'.")
+    def supports_turbo_mode(self) -> bool:
+        return self.supports_turbo
+
+    @property
+    @deprecated(reason="Use 'turbo'.")
+    def turbo_mode(self) -> Optional[bool]:
+        return self.turbo
+
+    @turbo_mode.setter
+    @deprecated(reason="Use 'turbo'.")
+    def turbo_mode(self, enabled: bool) -> None:
+        self.turbo = enabled

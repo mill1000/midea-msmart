@@ -129,10 +129,10 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(device.indoor_temperature, 21.0)
         self.assertEqual(device.outdoor_temperature, 28.5)
 
-        self.assertEqual(device.eco_mode, True)
-        self.assertEqual(device.turbo_mode, False)
-        self.assertEqual(device.freeze_protection_mode, False)
-        self.assertEqual(device.sleep_mode, False)
+        self.assertEqual(device.eco, True)
+        self.assertEqual(device.turbo, False)
+        self.assertEqual(device.freeze_protection, False)
+        self.assertEqual(device.sleep, False)
 
         self.assertEqual(device.operational_mode, AC.OperationalMode.COOL)
         self.assertEqual(device.fan_speed, AC.FanSpeed.AUTO)
