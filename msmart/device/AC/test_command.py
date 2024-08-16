@@ -272,15 +272,12 @@ class TestCapabilitiesResponse(_TestResponseBase):
         # e.g. eco_mode -> X == 1, eco_mode2 -> X == 2
         resp = _build_capability_response(CapabilityId.PRESET_ECO, 0)
         self.assertEqual(resp._capabilities["eco_mode"], False)
-        self.assertEqual(resp._capabilities["eco_mode_2"], False)
 
         resp = _build_capability_response(CapabilityId.PRESET_ECO, 1)
         self.assertEqual(resp._capabilities["eco_mode"], True)
-        self.assertEqual(resp._capabilities["eco_mode_2"], False)
 
         resp = _build_capability_response(CapabilityId.PRESET_ECO, 2)
-        self.assertEqual(resp._capabilities["eco_mode"], False)
-        self.assertEqual(resp._capabilities["eco_mode_2"], True)
+        self.assertEqual(resp._capabilities["eco_mode"], True)
 
         # Test PRESET_TURBO capability which uses 2 custom parsers.
         # e.g. turbo_heat -> X == 1 or X == 3, turbo_cool -> X < 2
@@ -311,7 +308,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
         resp = cast(CapabilitiesResponse, resp)
 
         EXPECTED_RAW_CAPABILITIES = {
-            "eco_mode": True, "eco_mode_2": False,
+            "eco_mode": True,
             "freeze_protection": True, "heat_mode": True,
             "cool_mode": True, "dry_mode": True,
             "auto_mode": True,
@@ -354,10 +351,10 @@ class TestCapabilitiesResponse(_TestResponseBase):
 
             # Check debug message is generated for ID 0x0040
             self.assertRegex("\n".join(log.output),
-                             "Ignored unknown capability. ID: 0x0040")
+                             "Ignored unknown capability ID: 0x0040")
 
         EXPECTED_RAW_CAPABILITIES = {
-            "eco_mode": True, "eco_mode_2": False, "breezeless": False,
+            "eco_mode": True, "breezeless": False,
             "heat_mode": True, "cool_mode": True, "dry_mode": True,
             "auto_mode": True, "swing_horizontal": True, "swing_vertical": True,
             "energy_stats": False, "energy_setting": False, "energy_bcd": False,
@@ -400,7 +397,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
         resp = cast(CapabilitiesResponse, resp)
 
         EXPECTED_RAW_CAPABILITIES = {
-            "eco_mode": False, "eco_mode_2": True, "heat_mode": False,
+            "eco_mode": True, "heat_mode": False,
             "cool_mode": True, "dry_mode": True, "auto_mode": True,
             "swing_horizontal": False, "swing_vertical": False,
             "filter_notice": True, "filter_clean": False, "turbo_heat": False,
@@ -439,7 +436,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
         resp = cast(CapabilitiesResponse, resp)
 
         EXPECTED_RAW_CAPABILITIES = {
-            "eco_mode": False, "eco_mode_2": True, "freeze_protection": False,
+            "eco_mode": True, "freeze_protection": False,
             "heat_mode": False, "cool_mode": True, "dry_mode": True, "auto_mode": True,
             "swing_horizontal": False, "swing_vertical": True, "filter_notice": True,
             "filter_clean": False, "turbo_heat": False, "turbo_cool": True,
@@ -485,10 +482,10 @@ class TestCapabilitiesResponse(_TestResponseBase):
 
             # Check debug message is generated for ID 0x0040
             self.assertRegex("\n".join(log.output),
-                             "Ignored unknown capability. ID: 0x0040")
+                             "Ignored unknown capability ID: 0x0040")
 
         EXPECTED_RAW_CAPABILITIES = {
-            "eco_mode": True, "eco_mode_2": False,
+            "eco_mode": True,
             "breeze_control": True,
             "heat_mode": True, "cool_mode": True, "dry_mode": True, "auto_mode": True,
             "swing_horizontal": True, "swing_vertical": True,
@@ -532,7 +529,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
         resp.merge(additional_resp)
 
         EXPECTED_MERGED_RAW_CAPABILITIES = {
-            "eco_mode": True, "eco_mode_2": False,
+            "eco_mode": True,
             "breeze_control": True,
             "heat_mode": True, "cool_mode": True, "dry_mode": True, "auto_mode": True,
             "swing_horizontal": True, "swing_vertical": True,

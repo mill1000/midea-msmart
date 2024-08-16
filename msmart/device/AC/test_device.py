@@ -1,8 +1,9 @@
 import logging
 import unittest
 
-from .command import (EnergyUsageResponse, HumidityResponse,
-                      PropertiesResponse, Response, StateResponse)
+from .command import (CapabilitiesResponse, EnergyUsageResponse,
+                      HumidityResponse, PropertiesResponse, Response,
+                      StateResponse)
 from .device import AirConditioner as AC
 from .device import PropertyId
 
@@ -312,6 +313,149 @@ class TestUpdateStateFromResponse(unittest.TestCase):
 
             # Assert state is expected
             self.assertEqual(device.indoor_humidity, humidity)
+
+
+class TestCapabilities(unittest.TestCase):
+    """Test parsing of CapabilitiesResponse into device capabilities."""
+
+    def test_general_capabilities(self) -> None:
+        """Test general device capabilities."""
+        # Device with numerous supported features
+        # https://github.com/mill1000/midea-msmart/issues/150#issuecomment-2276158338
+        CAPABILITIES_PAYLOAD_0 = bytes.fromhex(
+            "b50a12020101430001011402010115020101160201001a020101100201011f020103250207203c203c203c05400001000100")
+        CAPABILITIES_PAYLOAD_1 = bytes.fromhex(
+            "b5051e020101130201012202010019020100390001010000")
+
+        # Create a dummy device and process the response
+        device = AC(0, 0, 0)
+
+        # Parse capability payloads
+        with memoryview(CAPABILITIES_PAYLOAD_0) as payload0, memoryview(CAPABILITIES_PAYLOAD_1) as payload1:
+            resp0 = CapabilitiesResponse(payload0)
+            resp1 = CapabilitiesResponse(payload1)
+
+            resp0.merge(resp1)
+            device._update_capabilities(resp0)
+
+        self.assertCountEqual(device.supported_operation_modes, [AC.OperationalMode.AUTO,
+                                                                 AC.OperationalMode.COOL,
+                                                                 AC.OperationalMode.DRY,
+                                                                 AC.OperationalMode.FAN_ONLY,
+                                                                 AC.OperationalMode.HEAT,
+                                                                 AC.OperationalMode.SMART_DRY])
+
+        self.assertCountEqual(device.supported_swing_modes, [AC.SwingMode.OFF,
+                                                             AC.SwingMode.BOTH,
+                                                             AC.SwingMode.HORIZONTAL,
+                                                             AC.SwingMode.VERTICAL])
+
+        self.assertEqual(device.supports_custom_fan_speed, True)
+        self.assertCountEqual(device.supported_fan_speeds, [AC.FanSpeed.SILENT,
+                                                            AC.FanSpeed.LOW,
+                                                            AC.FanSpeed.MEDIUM,
+                                                            AC.FanSpeed.HIGH,
+                                                            AC.FanSpeed.MAX,  # Supports custom
+                                                            AC.FanSpeed.AUTO,
+                                                            ])
+
+        self.assertEqual(device.supports_humidity, True)
+        self.assertEqual(device.supports_target_humidity, True)
+
+        self.assertEqual(device.supports_purifier, True)
+        self.assertEqual(device.supports_self_clean, True)
+
+        self.assertEqual(device.supports_eco_mode, True)
+        self.assertEqual(device.supports_freeze_protection_mode, True)
+        self.assertEqual(device.supports_turbo_mode, True)
+
+    def test_rate_select(self) -> None:
+        """Test rate select device capability."""
+        # https://github.com/mill1000/midea-msmart/issues/148#issuecomment-2273549806
+        CAPABILITIES_PAYLOAD_0 = bytes.fromhex(
+            "b50a1202010114020101150201001e020101170201021a02010110020101250207203c203c203c0024020101480001010101")
+        CAPABILITIES_PAYLOAD_1 = bytes.fromhex(
+            "b5071f0201002c020101160201043900010151000101e3000101130201010002")
+
+        # Create a dummy device and process the response
+        device = AC(0, 0, 0)
+
+        # Parse capability payloads
+        with memoryview(CAPABILITIES_PAYLOAD_0) as payload0, memoryview(CAPABILITIES_PAYLOAD_1) as payload1:
+            resp0 = CapabilitiesResponse(payload0)
+            resp1 = CapabilitiesResponse(payload1)
+
+            resp0.merge(resp1)
+            device._update_capabilities(resp0)
+
+        self.assertCountEqual(device.supported_rate_selects, [AC.RateSelect.OFF,
+                                                              AC.RateSelect.GEAR_75,
+                                                              AC.RateSelect.GEAR_50
+                                                              ])
+
+        # TODO find device with 5 levels of rate select
+
+    def test_breeze_modes(self) -> None:
+        """Test breeze mode capabilities."""
+        # "Modern" breezeless device with "breeze control" i.e. breeze away, breeze mild and breezeless.
+        # https://github.com/mill1000/midea-msmart/issues/150#issuecomment-2276158338
+        CAPABILITIES_PAYLOAD_0 = bytes.fromhex(
+            "b50a12020101430001011402010115020101160201001a020101100201011f020103250207203c203c203c05400001000100")
+        CAPABILITIES_PAYLOAD_1 = bytes.fromhex(
+            "b5051e020101130201012202010019020100390001010000")
+
+        # Create a dummy device and process the response
+        device = AC(0, 0, 0)
+
+        # Parse capability payloads
+        with memoryview(CAPABILITIES_PAYLOAD_0) as payload0, memoryview(CAPABILITIES_PAYLOAD_1) as payload1:
+            resp0 = CapabilitiesResponse(payload0)
+            resp1 = CapabilitiesResponse(payload1)
+
+            resp0.merge(resp1)
+            device._update_capabilities(resp0)
+
+        self.assertEqual(device.supports_breeze_away, True)
+        self.assertEqual(device.supports_breeze_mild, True)
+        self.assertEqual(device.supports_breezeless, True)
+
+        # Device with only breeze away
+        # https://github.com/mill1000/midea-msmart/issues/150#issuecomment-2259796473
+        CAPABILITIES_PAYLOAD_0 = bytes.fromhex(
+            "b50912020101180001001402010115020101160201001a020101100201011f020103250207203c203c203c050100")
+        CAPABILITIES_PAYLOAD_1 = bytes.fromhex(
+            "b5091e0201011302010122020100190201003900010142000101090001010a000101300001010000")
+
+        # Parse capability payloads
+        with memoryview(CAPABILITIES_PAYLOAD_0) as payload0, memoryview(CAPABILITIES_PAYLOAD_1) as payload1:
+            resp0 = CapabilitiesResponse(payload0)
+            resp1 = CapabilitiesResponse(payload1)
+
+            resp0.merge(resp1)
+            device._update_capabilities(resp0)
+
+        self.assertEqual(device.supports_breeze_away, True)
+        self.assertEqual(device.supports_breeze_mild, False)
+        self.assertEqual(device.supports_breezeless, False)
+
+        # "Legacy" breezeless device with only breezeless.
+        # https://github.com/mill1000/midea-ac-py/issues/186#issuecomment-2249023972
+        CAPABILITIES_PAYLOAD_0 = bytes.fromhex(
+            "b50912020101180001011402010115020101160201001a020101100201011f020103250207203c203c203c050100")
+        CAPABILITIES_PAYLOAD_1 = bytes.fromhex(
+            "b5041e0201011302010122020100190201000000")
+
+        # Parse capability payloads
+        with memoryview(CAPABILITIES_PAYLOAD_0) as payload0, memoryview(CAPABILITIES_PAYLOAD_1) as payload1:
+            resp0 = CapabilitiesResponse(payload0)
+            resp1 = CapabilitiesResponse(payload1)
+
+            resp0.merge(resp1)
+            device._update_capabilities(resp0)
+
+        self.assertEqual(device.supports_breeze_away, False)
+        self.assertEqual(device.supports_breeze_mild, False)
+        self.assertEqual(device.supports_breezeless, True)
 
 
 class TestSetState(unittest.TestCase):

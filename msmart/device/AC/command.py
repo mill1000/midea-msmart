@@ -476,13 +476,13 @@ class CapabilitiesResponse(Response):
                 reader("fan_custom", get_value(1)),
             ],
             CapabilityId.FILTER_REMIND: [
-                reader("filter_notice", lambda v: v == 1 or v == 2 or v == 4),
-                reader("filter_clean", lambda v: v == 3 or v == 4),
+                reader("filter_notice", lambda v: v in [1, 2, 4]),
+                reader("filter_clean", lambda v: v in [3, 4]),
             ],
             CapabilityId.HUMIDITY:
             [
-                reader("humidity_auto_set", lambda v: v == 1 or v == 2),
-                reader("humidity_manual_set", lambda v: v == 2 or v == 3),
+                reader("humidity_auto_set", lambda v: v in [1, 2]),
+                reader("humidity_manual_set", lambda v: v in [2, 3]),
             ],
             CapabilityId.MODES: [
                 reader("heat_mode", lambda v: v in [1, 2, 4, 6, 7, 9]),
@@ -495,13 +495,10 @@ class CapabilitiesResponse(Response):
                 reader("energy_setting", lambda v: v in [3, 5]),
                 reader("energy_bcd", lambda v: v in [2, 3]),
             ],
-            CapabilityId.PRESET_ECO: [
-                reader("eco_mode", get_value(1)),
-                reader("eco_mode_2", get_value(2)),
-            ],
+            CapabilityId.PRESET_ECO: reader("eco_mode", lambda v: v in [1, 2]),
             CapabilityId.PRESET_FREEZE_PROTECTION: reader("freeze_protection", get_value(1)),
             CapabilityId.PRESET_TURBO:  [
-                reader("turbo_heat", lambda v: v == 1 or v == 3),
+                reader("turbo_heat", lambda v: v in [1, 3]),
                 reader("turbo_cool", lambda v: v < 2),
             ],
             CapabilityId.RATE_SELECT:  [
@@ -514,7 +511,7 @@ class CapabilitiesResponse(Response):
             CapabilityId.SWING_LR_ANGLE: reader("swing_horizontal_angle", get_value(1)),
             CapabilityId.SWING_UD_ANGLE: reader("swing_vertical_angle", get_value(1)),
             CapabilityId.SWING_MODES: [
-                reader("swing_horizontal", lambda v: v == 1 or v == 3),
+                reader("swing_horizontal", lambda v: v in [1, 3]),
                 reader("swing_vertical", lambda v: v < 2),
             ],
             # CapabilityId.TEMPERATURES too complex to be handled here
@@ -546,7 +543,7 @@ class CapabilitiesResponse(Response):
                 capability_id = CapabilityId(raw_id)
             except ValueError:
                 _LOGGER.warning(
-                    "Unknown capability. ID: 0x%04X, Size: %d.", raw_id, size)
+                    "Unknown capability ID: 0x%04X, Size: %d.", raw_id, size)
                 # Advanced to next capability
                 caps = caps[3+size:]
                 continue
@@ -587,11 +584,11 @@ class CapabilitiesResponse(Response):
             elif capability_id == CapabilityId._UNKNOWN:
                 # Supress warnings from unknown capability
                 _LOGGER.debug(
-                    "Ignored unknown capability. ID: 0x%04X, Size: %d.", capability_id, size)
+                    "Ignored unknown capability ID: 0x%04X, Size: %d.", capability_id, size)
 
             else:
                 _LOGGER.info(
-                    "Unsupported capability. ID: 0x%04X, Size: %d.", capability_id, size)
+                    "Unsupported capability %r, Size: %d.", capability_id, size)
 
             # Advanced to next capability
             caps = caps[3+size:]
@@ -699,8 +696,7 @@ class CapabilitiesResponse(Response):
 
     @property
     def eco_mode(self) -> bool:
-        return (self._capabilities.get("eco_mode", False)
-                or self._capabilities.get("eco_mode_2", False))
+        return self._capabilities.get("eco_mode", False)
 
     @property
     def turbo_mode(self) -> bool:
