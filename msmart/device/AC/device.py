@@ -84,11 +84,13 @@ class AirConditioner(Device):
         DEFAULT = OFF
 
     # Create a dict to map attributes to property values
+    # TODO encoding of properties should be pushed into commands
     _PROPERTY_MAP = {
         PropertyId.BREEZE_AWAY: lambda s: 2 if s._breeze_mode == AirConditioner.BreezeMode.BREEZE_AWAY else 1,
         PropertyId.BREEZE_CONTROL: lambda s: s._breeze_mode,
         PropertyId.BREEZELESS: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZELESS,
-        PropertyId.IECO: lambda s: s._ieco_mode,
+        # ieco_frame, ieco_number, ieco_switch, ...
+        PropertyId.IECO: lambda s: bytes([0, 1, s._ieco_mode]) + bytes(10),
         PropertyId.RATE_SELECT: lambda s: s._rate_select,
         PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
         PropertyId.SWING_UD_ANGLE: lambda s: s._vertical_swing_angle
