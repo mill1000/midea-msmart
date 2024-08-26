@@ -629,7 +629,6 @@ class LAN:
                 self._disconnect()
                 raise TimeoutError("Read cancelled.") from e
 
-
         # Read any additional responses without blocking
         async for resp in self._read_available():
             responses.append(resp)
