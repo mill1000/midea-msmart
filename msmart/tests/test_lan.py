@@ -7,7 +7,7 @@ from msmart.lan import (LAN, AuthenticationError, ProtocolError, _LanProtocol,
                         _LanProtocolV3, _Packet)
 
 
-class TestEncodeDecode(unittest.TestCase):
+class TestEncodeDecode(unittest.IsolatedAsyncioTestCase):
     # pylint: disable=protected-access
 
     def test_encode_packet_roundtrip(self) -> None:
