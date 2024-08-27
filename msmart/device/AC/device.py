@@ -222,17 +222,18 @@ class AirConditioner(Device):
                     AirConditioner.RateSelect,
                     AirConditioner.RateSelect.get_from_value(rate))
 
-            if (value := res.get_property(PropertyId.BREEZE_AWAY)) is not None:
-                self._breeze_mode = (AirConditioner.BreezeMode.BREEZE_AWAY if (value == 2)
-                                     else AirConditioner.BreezeMode.OFF)
-
+            # Breeze control supersedes breeze away and breezeless
             if (value := res.get_property(PropertyId.BREEZE_CONTROL)) is not None:
                 self._breeze_mode = (AirConditioner.BreezeMode(value) if value in AirConditioner.BreezeMode
                                      else AirConditioner.BreezeMode.OFF)
+            else:
+                if (value := res.get_property(PropertyId.BREEZE_AWAY)) is not None:
+                    self._breeze_mode = (AirConditioner.BreezeMode.BREEZE_AWAY if (value == 2)
+                                         else AirConditioner.BreezeMode.OFF)
 
-            if (value := res.get_property(PropertyId.BREEZELESS)) is not None:
-                self._breeze_mode = (AirConditioner.BreezeMode.BREEZELESS if bool(value)
-                                     else AirConditioner.BreezeMode.OFF)
+                if (value := res.get_property(PropertyId.BREEZELESS)) is not None:
+                    self._breeze_mode = (AirConditioner.BreezeMode.BREEZELESS if bool(value)
+                                         else AirConditioner.BreezeMode.OFF)
 
         elif isinstance(res, EnergyUsageResponse):
             self._total_energy_usage = res.total_energy
