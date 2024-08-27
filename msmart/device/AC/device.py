@@ -659,7 +659,7 @@ class AirConditioner(Device):
 
     @property
     def breeze_mild(self) -> Optional[bool]:
-        self._breeze_mode = AirConditioner.BreezeMode.BREEZE_MILD
+        return self._breeze_mode == AirConditioner.BreezeMode.BREEZE_MILD
 
     @breeze_mild.setter
     def breeze_mild(self, enable: bool) -> None:
@@ -675,7 +675,7 @@ class AirConditioner(Device):
 
     @property
     def breezeless(self) -> Optional[bool]:
-        self._breeze_mode = AirConditioner.BreezeMode.BREEZELESS
+        return self._breeze_mode == AirConditioner.BreezeMode.BREEZELESS
 
     @breezeless.setter
     def breezeless(self, enable: bool) -> None:
