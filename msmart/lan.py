@@ -624,6 +624,10 @@ class LAN:
                 # TODO could add a fatal flag to exception to trigger disconnect
                 self._disconnect()
                 raise e
+            except asyncio.CancelledError as e:
+                _LOGGER.warning("Read cancelled. Disconnecting.")
+                self._disconnect()
+                raise TimeoutError("Read cancelled.") from e
 
         # Read any additional responses without blocking
         async for resp in self._read_available():
