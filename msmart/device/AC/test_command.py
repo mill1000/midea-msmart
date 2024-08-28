@@ -593,8 +593,7 @@ class TestSetPropertiesCommand(unittest.TestCase):
     def test_payload(self) -> None:
         """Test that we encode set properties payloads correctly."""
         # TODO this test is not based on a real world sample
-        PROPS = {PropertyId.SWING_UD_ANGLE: bytes(
-            [25]), PropertyId.SWING_LR_ANGLE: bytes([75])}
+        PROPS = {PropertyId.SWING_UD_ANGLE: 25, PropertyId.SWING_LR_ANGLE: 75}
 
         # Build command
         command = SetPropertiesCommand(PROPS)
@@ -610,11 +609,9 @@ class TestSetPropertiesCommand(unittest.TestCase):
         self.assertEqual(payload[2], PropertyId.SWING_UD_ANGLE & 0xFF)
         self.assertEqual(payload[3], PropertyId.SWING_UD_ANGLE >> 8 & 0xFF)
 
-        # Assert length is correct
-        self.assertEqual(payload[4], len(PROPS[PropertyId.SWING_UD_ANGLE]))
-
-        # Assert data is correct
-        self.assertEqual(payload[5], PROPS[PropertyId.SWING_UD_ANGLE][0])
+        # Assert length is correct and data is correct
+        self.assertEqual(payload[4], 1)
+        self.assertEqual(payload[5], PROPS[PropertyId.SWING_UD_ANGLE])
 
 
 class TestPropertiesResponse(_TestResponseBase):

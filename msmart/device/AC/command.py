@@ -85,6 +85,27 @@ class PropertyId(IntEnum):
     IECO = 0x00E3
     ANION = 0x021E
 
+    def decode(self, data: bytes) -> Any:
+        if self in [PropertyId.BREEZELESS, PropertyId.SELF_CLEAN]:
+            return bool(data[0])
+        elif self == PropertyId.BREEZE_AWAY:
+            return data[0] == 2
+        elif self == PropertyId.BUZZER:
+            return None  # Don't decode buzzer
+        elif self == PropertyId.IECO:
+            return data[1]  # data[0] - ieco_number, data[1] - ieco_switch
+        else:
+            return data[0]
+
+    def encode(self, *args, **kwargs) -> bytes:
+        if self == PropertyId.BREEZE_AWAY:
+            return bytes([2 if args[0] else 1])
+        elif self == PropertyId.IECO:
+            # ieco_frame, ieco_number, ieco_switch, ...
+            return bytes([0, 1, args[0]]) + bytes(10)
+        else:
+            return bytes(args[0:1])
+
 
 class TemperatureType(IntEnum):
     UNKNOWN = 0
@@ -344,7 +365,7 @@ class GetPropertiesCommand(Command):
 class SetPropertiesCommand(Command):
     """Command to set specific properties of the device."""
 
-    def __init__(self, props: Mapping[PropertyId, Union[bytes, int]]) -> None:
+    def __init__(self, props: Mapping[PropertyId, Union[int, bool]]) -> None:
         super().__init__(frame_type=FrameType.CONTROL)
 
         self._properties = props
@@ -358,8 +379,8 @@ class SetPropertiesCommand(Command):
         for prop, value in self._properties.items():
             payload += struct.pack("<H", prop)
 
-            if isinstance(value, int):
-                value = bytes([value])
+            # Encode property value to bytes
+            value = prop.encode(value)
 
             payload += bytes([len(value)])
             payload += value
@@ -900,26 +921,6 @@ class PropertiesResponse(Response):
         # Clear existing properties
         self._properties.clear()
 
-        # Define parsing functions for supported properties
-        # TODO when a properties has multiple field .e.g fresh air
-        # should they be stored all under the fresh_air key or create different
-        # keys for each. e.g. capabilities
-        parsers = {
-            PropertyId.ANION: lambda v: v[0],
-            PropertyId.BREEZE_AWAY: lambda v: v[0],
-            PropertyId.BREEZE_CONTROL: lambda v: v[0],
-            PropertyId.BREEZELESS: lambda v: v[0],
-            PropertyId.BUZZER: lambda v: None,  # Don't bother parsing buzzer state
-            PropertyId.FRESH_AIR: lambda v: (v[0], v[1], v[2]),
-            # v[0] - ieco_number, v[1] - ieco_switch
-            PropertyId.IECO: lambda v: v[1],
-            PropertyId.INDOOR_HUMIDITY: lambda v: v[0],
-            PropertyId.RATE_SELECT: lambda v: v[0],
-            PropertyId.SELF_CLEAN: lambda v: v[0],
-            PropertyId.SWING_UD_ANGLE: lambda v: v[0],
-            PropertyId.SWING_LR_ANGLE: lambda v: v[0],
-        }
-
         count = payload[1]
         props = payload[2:]
 
@@ -948,17 +949,6 @@ class PropertiesResponse(Response):
                 props = props[4+size:]
                 continue
 
-            # Fetch parser for this property
-            parser = parsers.get(property, None)
-
-            # Check if parser exists
-            if parser is None:
-                _LOGGER.warning(
-                    "Unsupported property %r, Size: %d.", property, size)
-                # Advanced to next property
-                props = props[4+size:]
-                continue
-
             # Check execution result and log any errors
             error = props[2] & 0x10
             if error:
@@ -966,7 +956,7 @@ class PropertiesResponse(Response):
                     "Property %r failed, Result: 0x%02X.", property, props[2])
 
             # Parse the property
-            if (value := parser(props[4:])) is not None:
+            if (value := property.decode(props[4:])) is not None:
                 self._properties.update({property: value})
 
             # Advanced to next property
