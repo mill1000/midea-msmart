@@ -93,7 +93,7 @@ class PropertyId(IntEnum):
         elif self == PropertyId.BUZZER:
             return None  # Don't decode buzzer
         elif self == PropertyId.IECO:
-            return data[1]  # data[0] - ieco_number, data[1] - ieco_switch
+            return bool(data[1])  # data[0] - ieco_number, data[1] - ieco_switch
         else:
             return data[0]
 
