@@ -590,6 +590,30 @@ class TestGetPropertiesCommand(unittest.TestCase):
 
 class TestSetPropertiesCommand(unittest.TestCase):
 
+    def test_encode(self) -> None:
+        """Test encoding of property values to bytes objects."""
+        TEST_ENCODES = {
+            # Breeze away: 0x02 - On, 0x01 - Off
+            (PropertyId.BREEZE_AWAY, True): bytes([0x02]),
+            (PropertyId.BREEZE_AWAY, False): bytes([0x01]),
+
+            # Breezeless: Boolean
+            (PropertyId.BREEZELESS, True): bytes([0x01]),
+            (PropertyId.BREEZELESS, False): bytes([0x00]),
+
+            # Breeze control: Passthru
+            (PropertyId.BREEZE_CONTROL, 0x04): bytes([0x04]),
+            (PropertyId.BREEZE_CONTROL, 0x00): bytes([0x00]),
+
+            # IECO: 13 bytes ieco_frame, ieco_number, ieco_switch, ...
+            (PropertyId.IECO, True): bytes([0, 1, 1]) + bytes(10),
+            (PropertyId.IECO, False): bytes([0, 1, 0]) + bytes(10),
+        }
+
+        for (prop, value), expected_data in TEST_ENCODES.items():
+            self.assertEqual(prop.encode(value), expected_data, msg=f"Encode {
+                             repr(prop)}, Value: {value}, Expected: {expected_data}")
+
     def test_payload(self) -> None:
         """Test that we encode set properties payloads correctly."""
         # TODO this test is not based on a real world sample
@@ -617,8 +641,36 @@ class TestSetPropertiesCommand(unittest.TestCase):
 class TestPropertiesResponse(_TestResponseBase):
     """Test properties response messages."""
 
+    def test_decode(self) -> None:
+        """Test decoding of bytes objects to property values."""
+        TEST_DECODES = {
+            # Breeze away 0x02 - On, 0x01 - Off
+            (PropertyId.BREEZE_AWAY, bytes([0x02])): True,
+            (PropertyId.BREEZE_AWAY, bytes([0x01])): False,
+
+            # Breezeless: Boolean
+            (PropertyId.BREEZELESS, bytes([0x01])): True,
+            (PropertyId.BREEZELESS, bytes([0x00])): False,
+            (PropertyId.BREEZELESS, bytes([0x02])): True,
+
+            # Breeze control: Passthru
+            (PropertyId.BREEZE_CONTROL, bytes([0x04])): 0x04,
+            (PropertyId.BREEZE_CONTROL, bytes([0x00])): 0x00,
+
+            # Buzzer: Don't decode
+            (PropertyId.BUZZER, bytes([0x00])): None,
+
+            # IECO: 2 bytes
+            (PropertyId.IECO, bytes([0x00, 0x00])): False,
+            (PropertyId.IECO, bytes([0x00, 0x01])): True,
+        }
+
+        for (prop, data), expected_value in TEST_DECODES.items():
+            self.assertEqual(prop.decode(data), expected_value, msg=f"Decode {
+                             repr(prop)}, Data: {data}, Expected: {expected_value}")
+
     def test_properties_parsing(self) -> None:
-        """Test we decode properties correctly."""
+        """Test we decode properties responses correctly."""
         # https://github.com/mill1000/midea-ac-py/issues/60#issuecomment-1936976587
         TEST_RESPONSE = bytes.fromhex(
             "aa21ac00000000000303b10409000001000a00000100150000012b1e020000005fa3")
