@@ -43,7 +43,7 @@ class CapabilityId(IntEnum):
     PREVENT_STRAIGHT_WIND_SELECT = 0x0058  # ??
     WIND_AROUND = 0x0059  # ??
     JET_COOL = 0x0067  # ??
-    IECO_SWITCH = 0x00E3  # ??
+    PRESET_IECO = 0x00E3
     ICHECK = 0x0091  # ??
     EMERGENT_HEAT_WIND = 0x0093  # ??
     HEAT_PTC_WIND = 0x0094  # ??
@@ -82,6 +82,7 @@ class PropertyId(IntEnum):
     BREEZE_CONTROL = 0x0043  # AKA "FA No Wind Sense"
     RATE_SELECT = 0x0048
     FRESH_AIR = 0x004B
+    IECO = 0x00E3
     ANION = 0x021E
 
 
@@ -484,6 +485,7 @@ class CapabilitiesResponse(Response):
                 reader("humidity_auto_set", lambda v: v in [1, 2]),
                 reader("humidity_manual_set", lambda v: v in [2, 3]),
             ],
+            CapabilityId.PRESET_IECO: reader("ieco", get_value(1)),
             CapabilityId.MODES: [
                 reader("heat_mode", lambda v: v in [1, 2, 4, 6, 7, 9]),
                 reader("cool_mode", lambda v: v != 2),
@@ -699,6 +701,10 @@ class CapabilitiesResponse(Response):
         return self._capabilities.get("eco_mode", False)
 
     @property
+    def ieco_mode(self) -> bool:
+        return self._capabilities.get("ieco", False)
+
+    @property
     def turbo_mode(self) -> bool:
         return (self._capabilities.get("turbo_heat", False)
                 or self._capabilities.get("turbo_cool", False))
@@ -905,6 +911,8 @@ class PropertiesResponse(Response):
             PropertyId.BREEZELESS: lambda v: v[0],
             PropertyId.BUZZER: lambda v: None,  # Don't bother parsing buzzer state
             PropertyId.FRESH_AIR: lambda v: (v[0], v[1], v[2]),
+            # v[0] - ieco_number, v[1] - ieco_switch
+            PropertyId.IECO: lambda v: v[1],
             PropertyId.INDOOR_HUMIDITY: lambda v: v[0],
             PropertyId.RATE_SELECT: lambda v: v[0],
             PropertyId.SELF_CLEAN: lambda v: v[0],
