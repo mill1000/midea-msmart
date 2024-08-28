@@ -85,7 +85,23 @@ class PropertyId(IntEnum):
     IECO = 0x00E3
     ANION = 0x021E
 
+    def _supported(self) -> bool:
+        return self in [
+            PropertyId.BREEZE_AWAY,
+            PropertyId.BREEZE_CONTROL,
+            PropertyId.BREEZELESS,
+            PropertyId.BUZZER,
+            PropertyId.IECO,
+            PropertyId.RATE_SELECT,
+            PropertyId.SELF_CLEAN,
+            PropertyId.SWING_LR_ANGLE,
+            PropertyId.SWING_UD_ANGLE,
+        ]
+
     def decode(self, data: bytes) -> Any:
+        if not self._supported():
+            raise NotImplementedError(f"{repr(self)} decode is not supported.")
+
         if self in [PropertyId.BREEZELESS, PropertyId.SELF_CLEAN]:
             return bool(data[0])
         elif self == PropertyId.BREEZE_AWAY:
@@ -99,6 +115,9 @@ class PropertyId(IntEnum):
             return data[0]
 
     def encode(self, *args, **kwargs) -> bytes:
+        if not self._supported():
+            raise NotImplementedError(f"{repr(self)} encode is not supported.")
+
         if self == PropertyId.BREEZE_AWAY:
             return bytes([2 if args[0] else 1])
         elif self == PropertyId.IECO:
@@ -957,8 +976,12 @@ class PropertiesResponse(Response):
                     "Property %r failed, Result: 0x%02X.", property, props[2])
 
             # Parse the property
-            if (value := property.decode(props[4:])) is not None:
-                self._properties.update({property: value})
+            try:
+                if (value := property.decode(props[4:])) is not None:
+                    self._properties.update({property: value})
+            except NotImplementedError:
+                _LOGGER.warning(
+                    "Unsupported property %r, Size: %d.", property, size)
 
             # Advanced to next property
             props = props[4+size:]

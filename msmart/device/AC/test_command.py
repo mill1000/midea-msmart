@@ -675,14 +675,18 @@ class TestPropertiesResponse(_TestResponseBase):
         TEST_RESPONSE = bytes.fromhex(
             "aa21ac00000000000303b10409000001000a00000100150000012b1e020000005fa3")
 
-        resp = self._test_build_response(TEST_RESPONSE)
+        with self.assertLogs("msmart", logging.WARNING) as log:
+            resp = self._test_build_response(TEST_RESPONSE)
+
+            # Check debug message is generated for ID 0x0040
+            self.assertRegex("\n".join(log.output),
+                             "Unsupported property .*INDOOR_HUMIDITY.*")
 
         # Assert response is a correct type
         self.assertEqual(type(resp), PropertiesResponse)
         resp = cast(PropertiesResponse, resp)
 
         EXPECTED_RAW_PROPERTIES = {
-            PropertyId.INDOOR_HUMIDITY: 43,
             PropertyId.SWING_LR_ANGLE: 0,
             PropertyId.SWING_UD_ANGLE: 0,
         }
@@ -690,7 +694,6 @@ class TestPropertiesResponse(_TestResponseBase):
         self.assertEqual(resp._properties, EXPECTED_RAW_PROPERTIES)
 
         # Check state
-        self.assertEqual(resp.get_property(PropertyId.INDOOR_HUMIDITY), 43)
         self.assertEqual(resp.get_property(PropertyId.SWING_LR_ANGLE), 0)
         self.assertEqual(resp.get_property(PropertyId.SWING_UD_ANGLE), 0)
 
