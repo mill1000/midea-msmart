@@ -84,13 +84,11 @@ class AirConditioner(Device):
         DEFAULT = OFF
 
     # Create a dict to map attributes to property values
-    # TODO encoding of properties should be pushed into commands
     _PROPERTY_MAP = {
-        PropertyId.BREEZE_AWAY: lambda s: 2 if s._breeze_mode == AirConditioner.BreezeMode.BREEZE_AWAY else 1,
+        PropertyId.BREEZE_AWAY: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZE_AWAY,
         PropertyId.BREEZE_CONTROL: lambda s: s._breeze_mode,
         PropertyId.BREEZELESS: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZELESS,
-        # ieco_frame, ieco_number, ieco_switch, ...
-        PropertyId.IECO: lambda s: bytes([0, 1, s._ieco_mode]) + bytes(10),
+        PropertyId.IECO: lambda s: s._ieco_mode,
         PropertyId.RATE_SELECT: lambda s: s._rate_select,
         PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
         PropertyId.SWING_UD_ANGLE: lambda s: s._vertical_swing_angle
@@ -220,7 +218,7 @@ class AirConditioner(Device):
                     AirConditioner.SwingAngle.get_from_value(angle))
 
             if (value := res.get_property(PropertyId.SELF_CLEAN)) is not None:
-                self._self_clean_active = bool(value)
+                self._self_clean_active = value
 
             if (rate := res.get_property(PropertyId.RATE_SELECT)) is not None:
                 self._rate_select = cast(
@@ -233,15 +231,15 @@ class AirConditioner(Device):
                                      else AirConditioner.BreezeMode.OFF)
             else:
                 if (value := res.get_property(PropertyId.BREEZE_AWAY)) is not None:
-                    self._breeze_mode = (AirConditioner.BreezeMode.BREEZE_AWAY if (value == 2)
+                    self._breeze_mode = (AirConditioner.BreezeMode.BREEZE_AWAY if value
                                          else AirConditioner.BreezeMode.OFF)
 
                 if (value := res.get_property(PropertyId.BREEZELESS)) is not None:
-                    self._breeze_mode = (AirConditioner.BreezeMode.BREEZELESS if bool(value)
+                    self._breeze_mode = (AirConditioner.BreezeMode.BREEZELESS if value
                                          else AirConditioner.BreezeMode.OFF)
 
             if (value := res.get_property(PropertyId.IECO)) is not None:
-                self._ieco_mode = bool(value)
+                self._ieco_mode = value
 
         elif isinstance(res, EnergyUsageResponse):
             self._total_energy_usage = res.total_energy
@@ -482,7 +480,7 @@ class AirConditioner(Device):
             for response in await self._send_command_get_responses(cmd):
                 self._update_state(response)
 
-    async def _apply_properties(self, properties: dict[PropertyId, Union[bytes, int]]) -> None:
+    async def _apply_properties(self, properties: dict[PropertyId, Union[int, bool]]) -> None:
         """Apply the provided properties to the device."""
 
         # Warn if attempting to update a property that isn't supported

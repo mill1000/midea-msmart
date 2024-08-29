@@ -151,10 +151,15 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         device.horizontal_swing_angle = AC.SwingAngle.POS_5
         device.vertical_swing_angle = AC.SwingAngle.POS_5
 
-        resp = Response.construct(TEST_RESPONSE)
-        self.assertIsNotNone(resp)
+        # Response contains an unsupported property so check the log for warnings
+        with self.assertLogs("msmart", logging.WARNING) as log:
+            resp = Response.construct(TEST_RESPONSE)
+
+            self.assertRegex("\n".join(log.output),
+                             "Unsupported property .*INDOOR_HUMIDITY.*")
 
         # Assert response is a state response
+        self.assertIsNotNone(resp)
         self.assertEqual(type(resp), PropertiesResponse)
 
         # Process the response
