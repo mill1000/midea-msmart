@@ -613,6 +613,11 @@ class TestSetPropertiesCommand(unittest.TestCase):
         for (prop, value), expected_data in TEST_ENCODES.items():
             self.assertEqual(prop.encode(value), expected_data, msg=f"""Encode {
                              repr(prop)}, Value: {value}, Expected: {expected_data}""")
+        
+        # Validate "unsupported" properties raise exceptions
+        with self.assertRaisesRegex(NotImplementedError, ".* encode is not supported."):
+            PropertyId.ANION.encode(True)
+
 
     def test_payload(self) -> None:
         """Test that we encode set properties payloads correctly."""
@@ -668,6 +673,10 @@ class TestPropertiesResponse(_TestResponseBase):
         for (prop, data), expected_value in TEST_DECODES.items():
             self.assertEqual(prop.decode(data), expected_value, msg=f"""Decode {
                              repr(prop)}, Data: {data}, Expected: {expected_value}""")
+            
+        # Validate "unsupported" properties raise exceptions
+        with self.assertRaisesRegex(NotImplementedError, ".* decode is not supported."):
+            PropertyId.INDOOR_HUMIDITY.decode(bytes([1]))
 
     def test_properties_parsing(self) -> None:
         """Test we decode properties responses correctly."""

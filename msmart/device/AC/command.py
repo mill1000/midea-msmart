@@ -85,7 +85,9 @@ class PropertyId(IntEnum):
     IECO = 0x00E3
     ANION = 0x021E
 
+    @property
     def _supported(self) -> bool:
+        """Check if a property ID is supported/tested."""
         return self in [
             PropertyId.BREEZE_AWAY,
             PropertyId.BREEZE_CONTROL,
@@ -99,7 +101,8 @@ class PropertyId(IntEnum):
         ]
 
     def decode(self, data: bytes) -> Any:
-        if not self._supported():
+        """Decode raw property data into a convenient form."""
+        if not self._supported:
             raise NotImplementedError(f"{repr(self)} decode is not supported.")
 
         if self in [PropertyId.BREEZELESS, PropertyId.SELF_CLEAN]:
@@ -115,7 +118,8 @@ class PropertyId(IntEnum):
             return data[0]
 
     def encode(self, *args, **kwargs) -> bytes:
-        if not self._supported():
+        """Encode property into raw form."""
+        if not self._supported:
             raise NotImplementedError(f"{repr(self)} encode is not supported.")
 
         if self == PropertyId.BREEZE_AWAY:
