@@ -151,10 +151,10 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         device.horizontal_swing_angle = AC.SwingAngle.POS_5
         device.vertical_swing_angle = AC.SwingAngle.POS_5
 
+        # Response contains an unsupported property so check the log for warnings
         with self.assertLogs("msmart", logging.WARNING) as log:
             resp = Response.construct(TEST_RESPONSE)
 
-            # Check debug message is generated for ID 0x0040
             self.assertRegex("\n".join(log.output),
                              "Unsupported property .*INDOOR_HUMIDITY.*")
 

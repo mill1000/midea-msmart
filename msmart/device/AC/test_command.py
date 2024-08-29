@@ -613,11 +613,10 @@ class TestSetPropertiesCommand(unittest.TestCase):
         for (prop, value), expected_data in TEST_ENCODES.items():
             self.assertEqual(prop.encode(value), expected_data, msg=f"""Encode {
                              repr(prop)}, Value: {value}, Expected: {expected_data}""")
-        
+
         # Validate "unsupported" properties raise exceptions
         with self.assertRaisesRegex(NotImplementedError, ".* encode is not supported."):
             PropertyId.ANION.encode(True)
-
 
     def test_payload(self) -> None:
         """Test that we encode set properties payloads correctly."""
@@ -673,7 +672,7 @@ class TestPropertiesResponse(_TestResponseBase):
         for (prop, data), expected_value in TEST_DECODES.items():
             self.assertEqual(prop.decode(data), expected_value, msg=f"""Decode {
                              repr(prop)}, Data: {data}, Expected: {expected_value}""")
-            
+
         # Validate "unsupported" properties raise exceptions
         with self.assertRaisesRegex(NotImplementedError, ".* decode is not supported."):
             PropertyId.INDOOR_HUMIDITY.decode(bytes([1]))
@@ -684,10 +683,10 @@ class TestPropertiesResponse(_TestResponseBase):
         TEST_RESPONSE = bytes.fromhex(
             "aa21ac00000000000303b10409000001000a00000100150000012b1e020000005fa3")
 
+        # Response contains an unsupported property so check the log for warnings
         with self.assertLogs("msmart", logging.WARNING) as log:
             resp = self._test_build_response(TEST_RESPONSE)
 
-            # Check debug message is generated for ID 0x0040
             self.assertRegex("\n".join(log.output),
                              "Unsupported property .*INDOOR_HUMIDITY.*")
 
