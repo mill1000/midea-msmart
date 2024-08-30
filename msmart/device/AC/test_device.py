@@ -370,9 +370,9 @@ class TestCapabilities(unittest.TestCase):
         self.assertEqual(device.supports_purifier, True)
         self.assertEqual(device.supports_self_clean, True)
 
-        self.assertEqual(device.supports_eco_mode, True)
-        self.assertEqual(device.supports_freeze_protection_mode, True)
-        self.assertEqual(device.supports_turbo_mode, True)
+        self.assertEqual(device.supports_eco, True)
+        self.assertEqual(device.supports_freeze_protection, True)
+        self.assertEqual(device.supports_turbo, True)
 
     def test_rate_select(self) -> None:
         """Test rate select device capability."""
