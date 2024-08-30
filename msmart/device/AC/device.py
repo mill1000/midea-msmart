@@ -145,6 +145,7 @@ class AirConditioner(Device):
         self._total_energy_usage = None
         self._current_energy_usage = None
         self._real_time_power_usage = None
+        self._use_binary_energy = False
 
         # Default to assuming device can't handle any properties
         self._supported_properties = set()
@@ -242,9 +243,9 @@ class AirConditioner(Device):
                 self._ieco_mode = value
 
         elif isinstance(res, EnergyUsageResponse):
-            self._total_energy_usage = res.total_energy
-            self._current_energy_usage = res.current_energy
-            self._real_time_power_usage = res.real_time_power
+            self._total_energy_usage = res.total_energy_binary if self._use_binary_energy else res.total_energy
+            self._current_energy_usage = res.current_energy_binary if self._use_binary_energy else res.current_energy
+            self._real_time_power_usage = res.real_time_power_binary if self._use_binary_energy else res.real_time_power
 
         elif isinstance(res, HumidityResponse):
             self._indoor_humidity = res.humidity
@@ -826,6 +827,14 @@ class AirConditioner(Device):
     @property
     def filter_alert(self) -> Optional[bool]:
         return self._filter_alert
+
+    @property
+    def use_alternate_energy_format(self) -> bool:
+        return self._use_binary_energy
+
+    @use_alternate_energy_format.setter
+    def use_alternate_energy_format(self, enable: bool) -> None:
+        self._use_binary_energy = enable
 
     @property
     def enable_energy_usage_requests(self) -> bool:
