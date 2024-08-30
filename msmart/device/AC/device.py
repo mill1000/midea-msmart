@@ -88,7 +88,7 @@ class AirConditioner(Device):
         PropertyId.BREEZE_AWAY: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZE_AWAY,
         PropertyId.BREEZE_CONTROL: lambda s: s._breeze_mode,
         PropertyId.BREEZELESS: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZELESS,
-        PropertyId.IECO: lambda s: s._ieco_mode,
+        PropertyId.IECO: lambda s: s._ieco,
         PropertyId.RATE_SELECT: lambda s: s._rate_select,
         PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
         PropertyId.SWING_UD_ANGLE: lambda s: s._vertical_swing_angle
@@ -360,7 +360,7 @@ class AirConditioner(Device):
             if res.breezeless:
                 self._supported_properties.add(PropertyId.BREEZELESS)
 
-        if res.ieco_mode:
+        if res.ieco:
             self._supported_properties.add(PropertyId.IECO)
 
     async def _send_command_get_responses(self, command) -> List[Response]:
