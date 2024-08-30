@@ -3,12 +3,10 @@ from __future__ import annotations
 import logging
 from typing import Any, List, Optional, Union, cast
 
-from deprecated import deprecated
-
 from msmart.base_device import Device
 from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
-from msmart.utils import MideaIntEnum
+from msmart.utils import MideaIntEnum, deprecated
 
 from .command import (CapabilitiesResponse, EnergyUsageResponse,
                       GetCapabilitiesCommand, GetEnergyUsageCommand,
@@ -922,56 +920,56 @@ class AirConditioner(Device):
 
     # Deprecated methods and properties
     @property
-    @deprecated(reason="Use 'supports_eco'.")
+    @deprecated("supports_eco")
     def supports_eco_mode(self) -> bool:
         return self.supports_eco
 
     @property
-    @deprecated(reason="Use 'eco'.")
+    @deprecated("eco")
     def eco_mode(self) -> Optional[bool]:
         return self.eco
 
     @eco_mode.setter
-    @deprecated(reason="Use 'eco'.")
+    @deprecated("eco")
     def eco_mode(self, enabled: bool) -> None:
         self.eco = enabled
 
     @property
-    @deprecated(reason="Use 'supports_freeze_protection'.")
+    @deprecated("supports_freeze_protection")
     def supports_freeze_protection_mode(self) -> bool:
         return self.supports_freeze_protection
 
     @property
-    @deprecated(reason="Use 'freeze_protection'.")
+    @deprecated("freeze_protection")
     def freeze_protection_mode(self) -> Optional[bool]:
         return self.freeze_protection
 
     @freeze_protection_mode.setter
-    @deprecated(reason="Use 'freeze_protection'.")
+    @deprecated("freeze_protection")
     def freeze_protection_mode(self, enabled: bool) -> None:
         self.freeze_protection = enabled
 
     @property
-    @deprecated(reason="Use 'sleep'.")
+    @deprecated("sleep")
     def sleep_mode(self) -> Optional[bool]:
         return self.sleep
 
     @sleep_mode.setter
-    @deprecated(reason="Use 'sleep'.")
+    @deprecated("sleep")
     def sleep_mode(self, enabled: bool) -> None:
         self.sleep = enabled
 
     @property
-    @deprecated(reason="Use 'supports_turbo'.")
+    @deprecated("supports_turbo")
     def supports_turbo_mode(self) -> bool:
         return self.supports_turbo
 
     @property
-    @deprecated(reason="Use 'turbo'.")
+    @deprecated("turbo")
     def turbo_mode(self) -> Optional[bool]:
         return self.turbo
 
     @turbo_mode.setter
-    @deprecated(reason="Use 'turbo'.")
+    @deprecated("turbo")
     def turbo_mode(self, enabled: bool) -> None:
         self.turbo = enabled

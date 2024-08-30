@@ -23,7 +23,6 @@ classifiers = [
   "Topic :: Home Automation"
 ]
 dependencies = [
-  "deprecated",
   "httpx",
   "pycryptodome"
 ]

@@ -1,9 +1,10 @@
 """Utility classes and methods for Midea AC."""
 from __future__ import annotations
 
+import functools
 import logging
 from enum import IntEnum
-from typing import List, Optional, cast
+from typing import Any, Callable, List, Optional, cast
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,3 +35,29 @@ class MideaIntEnum(IntEnum):
             if default is None:
                 default = cls.DEFAULT  # pyright: ignore[reportAttributeAccessIssue] # nopep8
             return cls(default)
+
+
+def deprecated(replacement: str) -> Callable[[Callable], Callable]:
+    """Mark function as deprecated and recommend a replacement."""
+
+    def deprecated_decorator(func: Callable) -> Callable:
+        """Decorate function as deprecated."""
+
+        @functools.wraps(func)
+        def deprecated_func(*args, **kwargs) -> Any:
+            """Wrap for the original function."""
+
+            # Check if already warned
+            if not getattr(func, "_warn_deprecate", False):
+                logger = logging.getLogger(func.__module__)
+                logger.warning("'%s' is deprecated. Please use '%s' instead.",
+                               func.__name__,
+                               replacement,
+                               )
+                setattr(func, "_warn_deprecate", True)
+
+            return func(*args, **kwargs)
+
+        return deprecated_func
+
+    return deprecated_decorator
