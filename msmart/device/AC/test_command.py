@@ -840,6 +840,29 @@ class TestGroupDataResponse(_TestResponseBase):
             self.assertEqual(resp.current_energy, current)
             self.assertEqual(resp.real_time_power, real_time)
 
+    def test_binary_energy_usage(self) -> None:
+        """Test we decode binary energy usage responses correctly."""
+        TEST_RESPONSES = {
+            # https://github.com/mill1000/midea-ac-py/issues/204#issuecomment-2314705021
+            (150.4, .6, 279.5): bytes.fromhex("aa22ac00000000000803c1210144000005e00000000000000006000aeb000000487a5e"),
+
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2218753545
+            (None, None, None): bytes.fromhex("aa20ac00000000000303c1210144000000000000000000000000000000000843bc"),
+        }
+
+        for power, response in TEST_RESPONSES.items():
+            resp = self._test_build_response(response)
+
+            # Assert response is a correct type
+            self.assertEqual(type(resp), EnergyUsageResponse)
+            resp = cast(EnergyUsageResponse, resp)
+
+            total, current, real_time = power
+
+            self.assertEqual(resp.total_energy_binary, total)
+            self.assertEqual(resp.current_energy_binary, current)
+            self.assertEqual(resp.real_time_power_binary, real_time)
+
     def test_humidity(self) -> None:
         """Test we decode humidity responses correctly."""
         TEST_RESPONSES = {

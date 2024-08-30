@@ -293,6 +293,39 @@ class TestUpdateStateFromResponse(unittest.TestCase):
             self.assertEqual(device.current_energy_usage, current)
             self.assertEqual(device.real_time_power_usage, real_time)
 
+    def test_binary_energy_usage_response(self) -> None:
+        """Test parsing of EnergyUsageResponses into device state with binary format."""
+        TEST_RESPONSES = {
+            # https://github.com/mill1000/midea-ac-py/issues/204#issuecomment-2314705021
+            (150.4, .6, 279.5): bytes.fromhex("aa22ac00000000000803c1210144000005e00000000000000006000aeb000000487a5e"),
+
+            # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2218753545
+            (None, None, None): bytes.fromhex("aa20ac00000000000303c1210144000000000000000000000000000000000843bc"),
+        }
+
+        for power, response in TEST_RESPONSES.items():
+            resp = Response.construct(response)
+            self.assertIsNotNone(resp)
+
+            # Assert response is a state response
+            self.assertEqual(type(resp), EnergyUsageResponse)
+
+            # Create a dummy device and process the response
+            device = AC(0, 0, 0)
+
+            # Switch to binary format
+            device.use_alternate_energy_format = True
+
+            # Update state with response
+            device._update_state(resp)
+
+            total, current, real_time = power
+
+            # Assert state is expected
+            self.assertEqual(device.total_energy_usage, total)
+            self.assertEqual(device.current_energy_usage, current)
+            self.assertEqual(device.real_time_power_usage, real_time)
+
     def test_humidity_response(self) -> None:
         """Test parsing of HumidityResponses into device state."""
         TEST_RESPONSES = {

@@ -5,7 +5,7 @@ import math
 import struct
 from collections import namedtuple
 from enum import IntEnum
-from typing import Any, Callable, Collection, Mapping, Optional, Union
+from typing import Any, Callable, Collection, Mapping, Optional, Tuple, Union
 
 import msmart.crc8 as crc8
 from msmart.const import DeviceType, FrameType
@@ -1004,6 +1004,10 @@ class EnergyUsageResponse(Response):
         self.current_energy = None
         self.real_time_power = None
 
+        self.total_energy_binary = None
+        self.current_energy_binary = None
+        self.real_time_power_binary = None
+
         _LOGGER.debug("Energy response payload: %s", payload.hex())
 
         self._parse(payload)
@@ -1015,35 +1019,54 @@ class EnergyUsageResponse(Response):
         def decode_bcd(d: int) -> int:
             return 10 * (d >> 4) + (d & 0xF)
 
+        def parse_energy(d: bytes) -> Tuple[float, float]:
+            bcd = (10000 * decode_bcd(d[0]) +
+                   100 * decode_bcd(d[1]) +
+                   1 * decode_bcd(d[2]) +
+                   0.01 * decode_bcd(d[3]))
+            binary = ((d[0] << 24) +
+                      (d[1] << 16) +
+                      (d[2] << 8) +
+                      d[3]) / 10
+            return bcd, binary
+
+        def parse_power(d: bytes) -> Tuple[float, float]:
+            bcd = (1000 * decode_bcd(d[0]) +
+                   10 * decode_bcd(d[1]) +
+                   0.1 * decode_bcd(d[2]))
+            binary = ((d[0] << 16) +
+                      (d[1] << 8) +
+                      d[2]) / 10
+            return bcd, binary
+
         # Lua reference decodes real time power field in BCD and binary form
         # JS reference decodes multiple energy/power fields in BCD only.
 
-        # Total energy in bytes 4 - 8
-        total_energy = (10000 * decode_bcd(payload[4]) +
-                        100 * decode_bcd(payload[5]) +
-                        1 * decode_bcd(payload[6]) +
-                        0.01 * decode_bcd(payload[7]))
+        # Total energy in bytes 4 - 7
+        total_energy_bcd, total_energy_binary = parse_energy(
+            payload[4:8])
 
         # JS references decodes bytes 8 - 11 as "total running energy"
         # Older JS does not decode these bytes, and sample payloads contain bogus data
 
-        # Current run energy consumption bytes 12 - 16
-        current_energy = (10000 * decode_bcd(payload[12]) +
-                          100 * decode_bcd(payload[13]) +
-                          1 * decode_bcd(payload[14]) +
-                          0.01 * decode_bcd(payload[15]))
+        # Current run energy consumption bytes 12 - 15
+        current_energy_bcd, current_energy_binary = parse_energy(
+            payload[12:16])
 
         # Real time power usage bytes 16 - 18
-        real_time_power = (1000 * decode_bcd(payload[16]) +
-                           10 * decode_bcd(payload[17]) +
-                           0.1 * decode_bcd(payload[18]))
+        real_time_power_bcd, real_time_power_binary = parse_power(
+            payload[16:19])
 
-        # Assume energy monitory is valid if at least one stats is non zero
-        valid = total_energy or current_energy or real_time_power
+        # Assume energy monitory is valid if at least one stat is non zero
+        valid = total_energy_bcd or current_energy_bcd or real_time_power_bcd
 
-        self.total_energy = total_energy if valid else None
-        self.current_energy = current_energy if valid else None
-        self.real_time_power = real_time_power if valid else None
+        self.total_energy = total_energy_bcd if valid else None
+        self.current_energy = current_energy_bcd if valid else None
+        self.real_time_power = real_time_power_bcd if valid else None
+
+        self.total_energy_binary = total_energy_binary if valid else None
+        self.current_energy_binary = current_energy_binary if valid else None
+        self.real_time_power_binary = real_time_power_binary if valid else None
 
 
 class HumidityResponse(Response):
