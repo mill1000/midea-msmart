@@ -23,8 +23,8 @@ classifiers = [
   "Topic :: Home Automation"
 ]
 dependencies = [
-  "pycryptodome",
-  "httpx"
+  "httpx",
+  "pycryptodome"
 ]
 dynamic = ["version"]
 

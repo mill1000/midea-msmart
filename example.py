@@ -47,8 +47,8 @@ async def main():
         'operational_mode': device.operational_mode,
         'fan_speed': device.fan_speed,
         'swing_mode': device.swing_mode,
-        'eco_mode': device.eco_mode,
-        'turbo_mode': device.turbo_mode,
+        'eco': device.eco,
+        'turbo': device.turbo,
         'fahrenheit': device.fahrenheit,
         'indoor_temperature': device.indoor_temperature,
         'outdoor_temperature': device.outdoor_temperature
@@ -74,8 +74,8 @@ async def main():
         'operational_mode': device.operational_mode,
         'fan_speed': device.fan_speed,
         'swing_mode': device.swing_mode,
-        'eco_mode': device.eco_mode,
-        'turbo_mode': device.turbo_mode,
+        'eco': device.eco,
+        'turbo': device.turbo,
         'fahrenheit': device.fahrenheit,
         'indoor_temperature': device.indoor_temperature,
         'outdoor_temperature': device.outdoor_temperature

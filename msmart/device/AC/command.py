@@ -248,12 +248,12 @@ class SetStateCommand(Command):
         self.target_temperature = 25.0
         self.operational_mode = 0
         self.fan_speed = 0
-        self.eco_mode = True
+        self.eco = True
         self.swing_mode = 0
-        self.turbo_mode = False
+        self.turbo = False
         self.fahrenheit = True
-        self.sleep_mode = False
-        self.freeze_protection_mode = False
+        self.sleep = False
+        self.freeze_protection = False
         self.follow_me = False
         self.purifier = False
         self.target_humidity = 40
@@ -286,23 +286,23 @@ class SetStateCommand(Command):
         swing_mode = 0x30 | (self.swing_mode & 0x3F)
 
         # Build eco mode and purifier byte
-        eco_mode = 0x80 if self.eco_mode else 0
+        eco = 0x80 if self.eco else 0
         purifier = 0x20 if self.purifier else 0
 
         # Build sleep, turbo and fahrenheit byte
-        sleep = 0x01 if self.sleep_mode else 0
-        turbo = 0x02 if self.turbo_mode else 0
+        sleep = 0x01 if self.sleep else 0
+        turbo = 0x02 if self.turbo else 0
         fahrenheit = 0x04 if self.fahrenheit else 0
 
         # Build alternate turbo byte
-        turbo_alt = 0x20 if self.turbo_mode else 0
+        turbo_alt = 0x20 if self.turbo else 0
         follow_me = 0x80 if self.follow_me else 0
 
         # Build target humidity byte
         humidity = self.target_humidity & 0x7F
 
         # Build freeze protection byte
-        freeze_protect = 0x80 if self.freeze_protection_mode else 0
+        freeze_protect = 0x80 if self.freeze_protection else 0
 
         return super().tobytes(bytes([
             # Set state
@@ -320,7 +320,7 @@ class SetStateCommand(Command):
             # Follow me and alternate turbo mode
             follow_me | turbo_alt,
             # ECO mode and purifier/anion
-            eco_mode | purifier,
+            eco | purifier,
             # Sleep mode, turbo mode and fahrenheit
             sleep | turbo | fahrenheit,
             # Unknown
@@ -512,6 +512,11 @@ class CapabilitiesResponse(Response):
             CapabilityId.BREEZELESS: reader("breezeless", get_value(1)),
             CapabilityId.BUZZER:  reader("buzzer", get_value(1)),
             CapabilityId.DISPLAY_CONTROL: reader("display_control", lambda v: v in [1, 2, 100]),
+            CapabilityId.ENERGY: [
+                reader("energy_stats", lambda v: v in [2, 3, 4, 5]),
+                reader("energy_setting", lambda v: v in [3, 5]),
+                reader("energy_bcd", lambda v: v in [2, 3]),
+            ],
             CapabilityId.FAHRENHEIT: reader("fahrenheit", get_value(0)),
             CapabilityId.FAN_SPEED_CONTROL: [
                 reader("fan_silent", get_value(6)),
@@ -530,20 +535,15 @@ class CapabilitiesResponse(Response):
                 reader("humidity_auto_set", lambda v: v in [1, 2]),
                 reader("humidity_manual_set", lambda v: v in [2, 3]),
             ],
-            CapabilityId.PRESET_IECO: reader("ieco", get_value(1)),
             CapabilityId.MODES: [
                 reader("heat_mode", lambda v: v in [1, 2, 4, 6, 7, 9]),
                 reader("cool_mode", lambda v: v != 2),
                 reader("dry_mode", lambda v: v in [0, 1, 5, 6, 9]),
                 reader("auto_mode", lambda v: v in [0, 1, 2, 7, 8, 9]),
             ],
-            CapabilityId.ENERGY: [
-                reader("energy_stats", lambda v: v in [2, 3, 4, 5]),
-                reader("energy_setting", lambda v: v in [3, 5]),
-                reader("energy_bcd", lambda v: v in [2, 3]),
-            ],
-            CapabilityId.PRESET_ECO: reader("eco_mode", lambda v: v in [1, 2]),
+            CapabilityId.PRESET_ECO: reader("eco", lambda v: v in [1, 2]),
             CapabilityId.PRESET_FREEZE_PROTECTION: reader("freeze_protection", get_value(1)),
+            CapabilityId.PRESET_IECO: reader("ieco", get_value(1)),
             CapabilityId.PRESET_TURBO:  [
                 reader("turbo_heat", lambda v: v in [1, 3]),
                 reader("turbo_cool", lambda v: v < 2),
@@ -742,20 +742,20 @@ class CapabilitiesResponse(Response):
         return self._capabilities.get("auto_mode", False)
 
     @property
-    def eco_mode(self) -> bool:
-        return self._capabilities.get("eco_mode", False)
+    def eco(self) -> bool:
+        return self._capabilities.get("eco", False)
 
     @property
-    def ieco_mode(self) -> bool:
+    def ieco(self) -> bool:
         return self._capabilities.get("ieco", False)
 
     @property
-    def turbo_mode(self) -> bool:
+    def turbo(self) -> bool:
         return (self._capabilities.get("turbo_heat", False)
                 or self._capabilities.get("turbo_cool", False))
 
     @property
-    def freeze_protection_mode(self) -> bool:
+    def freeze_protection(self) -> bool:
         return self._capabilities.get("freeze_protection", False)
 
     @property
@@ -816,15 +816,15 @@ class StateResponse(Response):
         self.operational_mode = None
         self.fan_speed = None
         self.swing_mode = None
-        self.turbo_mode = None
-        self.eco_mode = None
-        self.sleep_mode = None
+        self.turbo = None
+        self.eco = None
+        self.sleep = None
         self.fahrenheit = None
         self.indoor_temperature = None
         self.outdoor_temperature = None
         self.filter_alert = None
         self.display_on = None
-        self.freeze_protection_mode = None
+        self.freeze_protection = None
         self.follow_me = None
         self.purifier = None
         self.target_humidity = None
@@ -872,19 +872,19 @@ class StateResponse(Response):
         # self.cozy_sleep = payload[8] & 0x03
         # self.save = (payload[8] & 0x08) > 0
         # self.low_frequency_fan = (payload[8] & 0x10) > 0
-        self.turbo_mode = bool(payload[8] & 0x20)
+        self.turbo = bool(payload[8] & 0x20)
         self.follow_me = bool(payload[8] & 0x80)
 
-        self.eco_mode = bool(payload[9] & 0x10)
+        self.eco = bool(payload[9] & 0x10)
         self.purifier = bool(payload[9] & 0x20)
-        # self.child_sleep_mode = (payload[9] & 0x01) > 0
+        # self.child_sleep = (payload[9] & 0x01) > 0
         # self.exchange_air = (payload[9] & 0x02) > 0
         # self.dry_clean = (payload[9] & 0x04) > 0
         # self.aux_heat = (payload[9] & 0x08) > 0
         # self.temp_unit = (payload[9] & 0x80) > 0
 
-        self.sleep_mode = bool(payload[10] & 0x1)
-        self.turbo_mode |= bool(payload[10] & 0x2)
+        self.sleep = bool(payload[10] & 0x1)
+        self.turbo |= bool(payload[10] & 0x2)
         self.fahrenheit = bool(payload[10] & 0x4)
         # self.catch_cold = (payload[10] & 0x08) > 0
         # self.night_light = (payload[10] & 0x10) > 0
@@ -926,7 +926,7 @@ class StateResponse(Response):
         if len(payload) < 22:
             return
 
-        self.freeze_protection_mode = bool(payload[21] & 0x80)
+        self.freeze_protection = bool(payload[21] & 0x80)
 
 
 class PropertiesResponse(Response):
