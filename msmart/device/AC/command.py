@@ -923,8 +923,8 @@ class StateResponse(Response):
         def decode_temp(d: int) -> Optional[float]:
             return ((d - 50)/2 if d != 0xFF else None)
 
-        self.indoor_temperature = decode_temp(payload[11])
-        self.outdoor_temperature = decode_temp(payload[12])
+        self.indoor_temperature = int(decode_temp(payload[11]))
+        self.outdoor_temperature = int(decode_temp(payload[12]))
 
         # Decode alternate target temperature
         target_temperature_alt = payload[13] & 0x1F
