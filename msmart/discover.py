@@ -7,8 +7,7 @@ import xml.etree.ElementTree as ET
 from typing import Any, Optional, Type, cast
 
 from msmart.cloud import Cloud, CloudError
-from msmart.const import (DEVICE_INFO_MSG, DISCOVERY_MSG,
-                          OPEN_MIDEA_APP_ACCOUNT, OPEN_MIDEA_APP_PASSWORD,
+from msmart.const import (CLOUD_CREDENTIALS, DEVICE_INFO_MSG, DISCOVERY_MSG,
                           DeviceType)
 from msmart.device import AirConditioner, Device
 from msmart.lan import AuthenticationError, Security
@@ -135,8 +134,8 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 class Discover:
     """Discover Midea smart devices on the local network."""
 
-    _account = OPEN_MIDEA_APP_ACCOUNT
-    _password = OPEN_MIDEA_APP_PASSWORD
+    _account = CLOUD_CREDENTIALS["US"]
+    _password = CLOUD_CREDENTIALS["US"]
     _lock = None
     _cloud = None
     _auto_connect = False

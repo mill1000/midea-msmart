@@ -6,13 +6,16 @@ from typing import NoReturn
 
 from msmart import __version__
 from msmart.cloud import Cloud, CloudError
-from msmart.const import OPEN_MIDEA_APP_ACCOUNT, OPEN_MIDEA_APP_PASSWORD
+from msmart.const import CLOUD_CREDENTIALS
 from msmart.device import AirConditioner as AC
 from msmart.discover import Discover
 from msmart.lan import AuthenticationError
 from msmart.utils import MideaIntEnum
 
 _LOGGER = logging.getLogger(__name__)
+
+
+DEFAULT_CLOUD_ACCOUNT, DEFAULT_CLOUD_PASSWORD = CLOUD_CREDENTIALS["US"]
 
 
 async def _discover(args) -> None:
@@ -270,7 +273,7 @@ def _run(args) -> NoReturn:
         logging.getLogger("httpcore").setLevel(logging.WARNING)
 
     # Validate common arguments
-    if args.china and (args.account == OPEN_MIDEA_APP_ACCOUNT or args.password == OPEN_MIDEA_APP_PASSWORD):
+    if args.china and (args.account == DEFAULT_CLOUD_ACCOUNT or args.password == DEFAULT_CLOUD_PASSWORD):
         _LOGGER.error(
             "Account (phone number) and password of 美的美居 is required to use --china option.")
         exit(1)
@@ -301,10 +304,10 @@ def main() -> NoReturn:
                                help="Enable debug logging.", action="store_true")
     common_parser.add_argument("--account",
                                help="MSmartHome or 美的美居 username for discovery and automatic authentication",
-                               default=OPEN_MIDEA_APP_ACCOUNT)
+                               default=DEFAULT_CLOUD_ACCOUNT)
     common_parser.add_argument("--password",
                                help="MSmartHome or 美的美居 password for discovery and automatic authentication.",
-                               default=OPEN_MIDEA_APP_PASSWORD)
+                               default=DEFAULT_CLOUD_PASSWORD)
     common_parser.add_argument("--china",
                                help="Use China server for discovery and automatic authentication.",
                                action="store_true")
@@ -404,9 +407,9 @@ def _legacy_main() -> NoReturn:
     parser.add_argument(
         "-d", "--debug", help="Enable debug logging.", action="store_true")
     parser.add_argument(
-        "-a", "--account", help="MSmartHome or 美的美居 account username.", default=OPEN_MIDEA_APP_ACCOUNT)
+        "-a", "--account", help="MSmartHome or 美的美居 account username.", default=DEFAULT_CLOUD_ACCOUNT)
     parser.add_argument(
-        "-p", "--password", help="MSmartHome or 美的美居 account password.", default=OPEN_MIDEA_APP_PASSWORD)
+        "-p", "--password", help="MSmartHome or 美的美居 account password.", default=DEFAULT_CLOUD_PASSWORD)
     parser.add_argument(
         "-i", "--ip", help="IP address of a device. Useful if broadcasts don't work, or to query a single device.")
     parser.add_argument(

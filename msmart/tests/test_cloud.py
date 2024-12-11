@@ -1,14 +1,16 @@
 import unittest
 
 from msmart.cloud import ApiError, Cloud, CloudError
-from msmart.const import OPEN_MIDEA_APP_ACCOUNT, OPEN_MIDEA_APP_PASSWORD
+from msmart.const import CLOUD_CREDENTIALS
+
+CLOUD_ACCOUNT, CLOUD_PASSWORD = CLOUD_CREDENTIALS["US"]
 
 
 class TestCloud(unittest.IsolatedAsyncioTestCase):
     # pylint: disable=protected-access
 
-    async def _login(self, account: str = OPEN_MIDEA_APP_ACCOUNT,
-                     password: str = OPEN_MIDEA_APP_PASSWORD) -> Cloud:
+    async def _login(self, account: str = CLOUD_ACCOUNT,
+                     password: str = CLOUD_PASSWORD) -> Cloud:
         client = Cloud(account, password)
         await client.login()
 
@@ -53,7 +55,7 @@ class TestCloud(unittest.IsolatedAsyncioTestCase):
     async def test_connect_exception(self) -> None:
         """Test that an exception is thrown when the cloud connection fails."""
 
-        client = Cloud(OPEN_MIDEA_APP_ACCOUNT, OPEN_MIDEA_APP_PASSWORD)
+        client = Cloud(CLOUD_ACCOUNT, CLOUD_PASSWORD)
 
         # Override URL to an invalid domain
         client._base_url = "https://fake_server.invalid."
