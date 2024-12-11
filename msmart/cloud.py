@@ -7,7 +7,7 @@ import os
 from asyncio import Lock
 from datetime import datetime, timezone
 from secrets import token_hex, token_urlsafe
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 import httpx
 from Crypto.Cipher import AES
@@ -92,7 +92,7 @@ class Cloud:
 
         raise ApiError(body["msg"], code=response_code)
 
-    async def _post_request(self, url: str, headers: Dict[str, Any],
+    async def _post_request(self, url: str, headers: dict[str, Any],
                             contents: str, retries: int = RETRIES) -> Optional[dict]:
         """Post a request to the API."""
 
@@ -114,7 +114,7 @@ class Cloud:
                 except httpx.RequestError as e:
                     raise CloudError("Request failed.") from e
 
-    async def _api_request(self, endpoint: str, body: Dict[str, Any]) -> Optional[dict]:
+    async def _api_request(self, endpoint: str, body: dict[str, Any]) -> Optional[dict]:
         """Make a request to the Midea cloud return the results."""
 
         # Encode body as JSON
@@ -138,7 +138,7 @@ class Cloud:
         async with self._api_lock:
             return await self._post_request(url, headers, contents)
 
-    def _build_request_body(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_request_body(self, data: dict[str, Any]) -> dict[str, Any]:
         """Build a request body."""
 
         # Set up the initial body
@@ -214,7 +214,7 @@ class Cloud:
         self._access_token = response["mdata"]["accessToken"]
         _LOGGER.debug("Received accessToken: %s", self._access_token)
 
-    async def get_token(self, udpid: str) -> Tuple[str, str]:
+    async def get_token(self, udpid: str) -> tuple[str, str]:
         """Get token and key for the provided udpid."""
 
         response = await self._api_request(
@@ -232,7 +232,7 @@ class Cloud:
         # No matching udpId in the tokenlist
         raise CloudError(f"No token/key found for udpid {udpid}.")
 
-    async def get_protocol_lua(self, device_type: DeviceType, sn: str) -> Tuple[str, str]:
+    async def get_protocol_lua(self, device_type: DeviceType, sn: str) -> tuple[str, str]:
         """Fetch and decode the protocol Lua file."""
 
         response = await self._api_request(
@@ -264,7 +264,7 @@ class Cloud:
             encrypted_data).decode("UTF-8")
         return (file_name, file_data)
 
-    async def get_plugin(self, device_type: DeviceType, sn: str) -> Tuple[str, bytes]:
+    async def get_plugin(self, device_type: DeviceType, sn: str) -> tuple[str, bytes]:
         """Request and download the device plugin."""
 
         response = await self._api_request(
@@ -364,7 +364,7 @@ class _Security:
 
         return sha.hexdigest()
 
-    def _get_app_key_and_iv(self) -> Tuple[bytes, bytes]:
+    def _get_app_key_and_iv(self) -> tuple[bytes, bytes]:
         hash = hashlib.sha256(self.APP_KEY.encode()).hexdigest()
         return (hash[:16].encode(), hash[16:32].encode())
 

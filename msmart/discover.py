@@ -4,7 +4,7 @@ import ipaddress
 import logging
 import socket
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, Optional, Type, cast
 
 from msmart.cloud import Cloud, CloudError
 from msmart.const import (DEVICE_INFO_MSG, DISCOVERY_MSG,
@@ -152,7 +152,7 @@ class Discover:
         account=None,
         password=None,
         auto_connect=True
-    ) -> List[Device]:
+    ) -> list[Device]:
         """Discover devices via broadcast."""
 
         # Create lock if nonexistent within the context of the current loop
@@ -263,7 +263,7 @@ class Discover:
         raise DiscoverError()
 
     @classmethod
-    async def _get_device_info(cls, ip: str, version: int, data: bytes) -> Dict[str, Any]:
+    async def _get_device_info(cls, ip: str, version: int, data: bytes) -> dict[str, Any]:
         """Get device information. 
 
         V2/V3 devices return sufficient information in their discovery response.

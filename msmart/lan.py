@@ -5,7 +5,7 @@ import struct
 from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 from hashlib import md5, sha256
-from typing import AsyncGenerator, List, Optional, Tuple, Union, cast
+from typing import AsyncGenerator, Optional, Union, cast
 
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
@@ -65,7 +65,7 @@ class _LanProtocol(asyncio.Protocol):
 
         return True
 
-    def _format_socket_name(self, sockname: Tuple[str, int]) -> str:
+    def _format_socket_name(self, sockname: tuple[str, int]) -> str:
         return f"{sockname[0]}:{sockname[1]}"
 
     def connection_made(self, transport) -> None:
@@ -572,7 +572,7 @@ class LAN:
         except asyncio.QueueEmpty:
             pass
 
-    async def send(self, data: bytes, retries: int = RETRIES) -> List[bytes]:
+    async def send(self, data: bytes, retries: int = RETRIES) -> list[bytes]:
         """Send data via the LAN protocol. Connecting to the peer if necessary."""
 
         # Connect if protocol doesn't exist or is dead

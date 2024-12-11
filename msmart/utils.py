@@ -4,7 +4,7 @@ from __future__ import annotations
 import functools
 import logging
 from enum import IntEnum
-from typing import Any, Callable, List, Optional, cast
+from typing import Any, Callable, Optional, cast
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ class MideaIntEnum(IntEnum):
     """Helper class to convert IntEnums to/from strings."""
 
     @classmethod
-    def list(cls) -> List[MideaIntEnum]:
+    def list(cls) -> list[MideaIntEnum]:
         return list(cls)
 
     @classmethod

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, List, Optional, Union, cast
+from typing import Any, Optional, Union, cast
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
@@ -120,11 +120,11 @@ class AirConditioner(Device):
 
         # Support all known modes initially
         self._supported_op_modes = cast(
-            List[AirConditioner.OperationalMode], AirConditioner.OperationalMode.list())
+            list[AirConditioner.OperationalMode], AirConditioner.OperationalMode.list())
         self._supported_swing_modes = cast(
-            List[AirConditioner.SwingMode], AirConditioner.SwingMode.list())
+            list[AirConditioner.SwingMode], AirConditioner.SwingMode.list())
         self._supported_fan_speeds = cast(
-            List[AirConditioner.FanSpeed], AirConditioner.FanSpeed.list())
+            list[AirConditioner.FanSpeed], AirConditioner.FanSpeed.list())
         self._supports_custom_fan_speed = True
         self._supports_eco = True
         self._supports_turbo = True
@@ -364,7 +364,7 @@ class AirConditioner(Device):
         if res.ieco:
             self._supported_properties.add(PropertyId.IECO)
 
-    async def _send_command_get_responses(self, command) -> List[Response]:
+    async def _send_command_get_responses(self, command) -> list[Response]:
         """Send a command and return all valid responses."""
 
         responses = await super()._send_command(command)
@@ -615,7 +615,7 @@ class AirConditioner(Device):
         return self._outdoor_temperature
 
     @property
-    def supported_operation_modes(self) -> List[OperationalMode]:
+    def supported_operation_modes(self) -> list[OperationalMode]:
         return self._supported_op_modes
 
     @property
@@ -627,7 +627,7 @@ class AirConditioner(Device):
         self._operational_mode = mode
 
     @property
-    def supported_fan_speeds(self) -> List[FanSpeed]:
+    def supported_fan_speeds(self) -> list[FanSpeed]:
         return self._supported_fan_speeds
 
     @property
@@ -698,7 +698,7 @@ class AirConditioner(Device):
             else PropertyId.BREEZELESS)
 
     @property
-    def supported_swing_modes(self) -> List[SwingMode]:
+    def supported_swing_modes(self) -> list[SwingMode]:
         return self._supported_swing_modes
 
     @property
@@ -885,7 +885,7 @@ class AirConditioner(Device):
         return self._self_clean_active
 
     @property
-    def supported_rate_selects(self) -> List[RateSelect]:
+    def supported_rate_selects(self) -> list[RateSelect]:
         return self._supported_rate_selects
 
     @property
