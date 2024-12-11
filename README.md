@@ -151,16 +151,16 @@ A docker image is available on ghcr.io at `ghcr.io/mill1000/msmart-ng`. The cont
 
 ```shell
 $ docker run --network=host ghcr.io/mill1000/msmart-ng:latest --help
-usage: msmart-ng [-h] [-v] {discover,query} ...
+usage: msmart-ng [-h] [-v] {discover,query,control,download} ...
 
 Command line utility for msmart-ng.
 
 options:
-  -h, --help        show this help message and exit
-  -v, --version     show program's version number and exit
+  -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
 
 Command:
-  {discover,query}
+  {discover,query,control,download}
 ```
 
 ## Gratitude
