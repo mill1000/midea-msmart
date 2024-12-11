@@ -13,7 +13,7 @@ import httpx
 from Crypto.Cipher import AES
 from Crypto.Util import Padding
 
-from msmart.const import DeviceType, CLOUD_CREDENTIALS
+from msmart.const import CLOUD_CREDENTIALS, DEFAULT_CLOUD_REGION, DeviceType
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class Cloud:
     RETRIES = 3
 
     def __init__(self,
-                 region: str = "US",
+                 region: str = DEFAULT_CLOUD_REGION,
                  *,
                  account: Optional[str] = None,
                  password: Optional[str] = None,

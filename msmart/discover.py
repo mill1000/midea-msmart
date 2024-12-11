@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from typing import Any, Optional, Type, cast
 
 from msmart.cloud import Cloud, CloudError
-from msmart.const import (CLOUD_CREDENTIALS, DEVICE_INFO_MSG, DISCOVERY_MSG,
+from msmart.const import (DEFAULT_CLOUD_REGION, DEVICE_INFO_MSG, DISCOVERY_MSG,
                           DeviceType)
 from msmart.device import AirConditioner, Device
 from msmart.lan import AuthenticationError, Security
@@ -134,7 +134,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 class Discover:
     """Discover Midea smart devices on the local network."""
 
-    _region = "US"
+    _region = DEFAULT_CLOUD_REGION
     _account = None
     _password = None
     _lock = None
@@ -147,12 +147,12 @@ class Discover:
         *,
         target=_IPV4_BROADCAST,
         timeout=5,
-        discovery_packets:int=3,
+        discovery_packets: int = 3,
         interface=None,
-        region: str = "US",
+        region: str = DEFAULT_CLOUD_REGION,
         account: Optional[str] = None,
         password: Optional[str] = None,
-        auto_connect:bool =True
+        auto_connect: bool = True
     ) -> list[Device]:
         """Discover devices via broadcast."""
 
@@ -163,13 +163,7 @@ class Discover:
         # Always use a new cloud connection
         cls._cloud = None
 
-        # # Validate incoming credentials and region
-        # if (account is None and password is None) and region not in CLOUD_CREDENTIALS:
-        #     raise ValueError(f"Unknown cloud region '{region}'.")
-        # elif account or password:
-        #     raise ValueError("Account and password must be specified.")
-
-        # Save cloud credentials
+        # Save cloud region and credentials
         cls._region = region
         cls._account = account
         cls._password = password
@@ -231,7 +225,8 @@ class Discover:
         async with cls._lock:
             # Create cloud connection if nonexistent
             if cls._cloud is None:
-                cloud = Cloud(cls._region, account=cls._account, password=cls._password)
+                cloud = Cloud(cls._region, account=cls._account,
+                              password=cls._password)
                 try:
                     await cloud.login()
                     cls._cloud = cloud

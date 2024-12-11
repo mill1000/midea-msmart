@@ -22,7 +22,7 @@ DEVICE_INFO_MSG = bytes([
     0xb7, 0xe4, 0x2d, 0x53, 0x49, 0x47, 0x62, 0xbe
 ])
 
-
+DEFAULT_CLOUD_REGION = "US"
 CLOUD_CREDENTIALS = {
     "DE": ("midea_eu@mailinator.com", "das_ist_passwort1"),
     "KR": ("midea_sea@mailinator.com", "password_for_sea1"),

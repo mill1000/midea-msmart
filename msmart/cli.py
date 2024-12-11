@@ -6,7 +6,7 @@ from typing import NoReturn
 
 from msmart import __version__
 from msmart.cloud import Cloud, CloudError
-from msmart.const import CLOUD_CREDENTIALS
+from msmart.const import CLOUD_CREDENTIALS, DEFAULT_CLOUD_REGION
 from msmart.device import AirConditioner as AC
 from msmart.discover import Discover
 from msmart.lan import AuthenticationError
@@ -15,7 +15,7 @@ from msmart.utils import MideaIntEnum
 _LOGGER = logging.getLogger(__name__)
 
 
-DEFAULT_CLOUD_ACCOUNT, DEFAULT_CLOUD_PASSWORD = CLOUD_CREDENTIALS["US"]
+DEFAULT_CLOUD_ACCOUNT, DEFAULT_CLOUD_PASSWORD = CLOUD_CREDENTIALS[DEFAULT_CLOUD_REGION]
 
 
 async def _discover(args) -> None:
@@ -219,7 +219,7 @@ async def _download(args) -> None:
 
     # Use discovery to to find device information
     _LOGGER.info("Discovering %s on local network.", args.host)
-    device = await Discover.discover_single(args.host, region = args.region, account=args.account, password=args.password, auto_connect=False)
+    device = await Discover.discover_single(args.host, region=args.region, account=args.account, password=args.password, auto_connect=False)
 
     if device is None:
         _LOGGER.error("Device not found.")
@@ -235,7 +235,7 @@ async def _download(args) -> None:
         exit(1)
 
     # Get cloud connection
-    cloud = Cloud(args.region, account = args.account, password = args.password)
+    cloud = Cloud(args.region, account=args.account, password=args.password)
     try:
         await cloud.login()
     except CloudError as e:
@@ -305,7 +305,7 @@ def main() -> NoReturn:
     common_parser.add_argument("--region",
                                help="Country/region for built-in cloud credential selection.",
                                choices=CLOUD_CREDENTIALS.keys(),
-                               default="US")
+                               default=DEFAULT_CLOUD_REGION)
     common_parser.add_argument("--account",
                                help="Manually specify a MSmart username for cloud authentication.",
                                default=None)
