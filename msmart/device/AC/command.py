@@ -5,7 +5,7 @@ import math
 import struct
 from collections import namedtuple
 from enum import IntEnum
-from typing import Any, Callable, Collection, Mapping, Optional, Tuple, Union
+from typing import Any, Callable, Collection, Mapping, Optional, Union
 
 import msmart.crc8 as crc8
 from msmart.const import DeviceType, FrameType
@@ -1019,7 +1019,7 @@ class EnergyUsageResponse(Response):
         def decode_bcd(d: int) -> int:
             return 10 * (d >> 4) + (d & 0xF)
 
-        def parse_energy(d: bytes) -> Tuple[float, float]:
+        def parse_energy(d: bytes) -> tuple[float, float]:
             bcd = (10000 * decode_bcd(d[0]) +
                    100 * decode_bcd(d[1]) +
                    1 * decode_bcd(d[2]) +
@@ -1030,7 +1030,7 @@ class EnergyUsageResponse(Response):
                       d[3]) / 10
             return bcd, binary
 
-        def parse_power(d: bytes) -> Tuple[float, float]:
+        def parse_power(d: bytes) -> tuple[float, float]:
             bcd = (1000 * decode_bcd(d[0]) +
                    10 * decode_bcd(d[1]) +
                    0.1 * decode_bcd(d[2]))
