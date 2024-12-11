@@ -13,7 +13,7 @@ import httpx
 from Crypto.Cipher import AES
 from Crypto.Util import Padding
 
-from msmart.const import DeviceType
+from msmart.const import CLOUD_CREDENTIALS, DEFAULT_CLOUD_REGION, DeviceType
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,14 +54,28 @@ class Cloud:
     # Default number of request retries
     RETRIES = 3
 
-    def __init__(self, account: str, password: str,
-                 use_china_server: bool = False) -> None:
+    def __init__(self,
+                 region: str = DEFAULT_CLOUD_REGION,
+                 *,
+                 account: Optional[str] = None,
+                 password: Optional[str] = None,
+                 use_china_server: bool = False
+                 ) -> None:
         # Allow override Chia server from environment
         if os.getenv("MIDEA_CHINA_SERVER", "0") == "1":
             use_china_server = True
 
-        self._account = account
-        self._password = password
+        # Validate incoming credentials and region
+        if account and password:
+            self._account = account
+            self._password = password
+        elif account or password:
+            raise ValueError("Account and password must be specified.")
+        else:
+            try:
+                self._account, self._password = CLOUD_CREDENTIALS[region]
+            except KeyError:
+                raise ValueError(f"Unknown cloud region '{region}'.")
 
         # Attributes that holds the login information of the current user
         self._login_id = None

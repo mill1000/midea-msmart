@@ -7,8 +7,7 @@ import xml.etree.ElementTree as ET
 from typing import Any, Optional, Type, cast
 
 from msmart.cloud import Cloud, CloudError
-from msmart.const import (DEVICE_INFO_MSG, DISCOVERY_MSG,
-                          OPEN_MIDEA_APP_ACCOUNT, OPEN_MIDEA_APP_PASSWORD,
+from msmart.const import (DEFAULT_CLOUD_REGION, DEVICE_INFO_MSG, DISCOVERY_MSG,
                           DeviceType)
 from msmart.device import AirConditioner, Device
 from msmart.lan import AuthenticationError, Security
@@ -135,8 +134,9 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 class Discover:
     """Discover Midea smart devices on the local network."""
 
-    _account = OPEN_MIDEA_APP_ACCOUNT
-    _password = OPEN_MIDEA_APP_PASSWORD
+    _region = DEFAULT_CLOUD_REGION
+    _account = None
+    _password = None
     _lock = None
     _cloud = None
     _auto_connect = False
@@ -147,11 +147,12 @@ class Discover:
         *,
         target=_IPV4_BROADCAST,
         timeout=5,
-        discovery_packets=3,
+        discovery_packets: int = 3,
         interface=None,
-        account=None,
-        password=None,
-        auto_connect=True
+        region: str = DEFAULT_CLOUD_REGION,
+        account: Optional[str] = None,
+        password: Optional[str] = None,
+        auto_connect: bool = True
     ) -> list[Device]:
         """Discover devices via broadcast."""
 
@@ -162,8 +163,10 @@ class Discover:
         # Always use a new cloud connection
         cls._cloud = None
 
-        # Save cloud credentials
-        Discover._set_cloud_credentials(account, password)
+        # Save cloud region and credentials
+        cls._region = region
+        cls._account = account
+        cls._password = password
 
         # Save auto connect arg
         cls._auto_connect = auto_connect
@@ -213,16 +216,6 @@ class Discover:
         return None
 
     @classmethod
-    def _set_cloud_credentials(cls, account, password) -> None:
-        """Set credentials for cloud access."""
-
-        if account and password:
-            cls._account = account
-            cls._password = password
-        elif account or password:
-            raise ValueError("Both account and password must be specified.")
-
-    @classmethod
     async def _get_cloud(cls) -> Optional[Cloud]:
         """Return a cloud connection, creating it if necessary."""
 
@@ -232,7 +225,8 @@ class Discover:
         async with cls._lock:
             # Create cloud connection if nonexistent
             if cls._cloud is None:
-                cloud = Cloud(cls._account, cls._password)
+                cloud = Cloud(cls._region, account=cls._account,
+                              password=cls._password)
                 try:
                     await cloud.login()
                     cls._cloud = cloud

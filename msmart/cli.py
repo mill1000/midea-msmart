@@ -6,7 +6,7 @@ from typing import NoReturn
 
 from msmart import __version__
 from msmart.cloud import Cloud, CloudError
-from msmart.const import OPEN_MIDEA_APP_ACCOUNT, OPEN_MIDEA_APP_PASSWORD
+from msmart.const import CLOUD_CREDENTIALS, DEFAULT_CLOUD_REGION
 from msmart.device import AirConditioner as AC
 from msmart.discover import Discover
 from msmart.lan import AuthenticationError
@@ -15,16 +15,19 @@ from msmart.utils import MideaIntEnum
 _LOGGER = logging.getLogger(__name__)
 
 
+DEFAULT_CLOUD_ACCOUNT, DEFAULT_CLOUD_PASSWORD = CLOUD_CREDENTIALS[DEFAULT_CLOUD_REGION]
+
+
 async def _discover(args) -> None:
     """Discover Midea devices and print configuration information."""
 
     devices = []
     if args.host is None:
         _LOGGER.info("Discovering all devices on local network.")
-        devices = await Discover.discover(account=args.account, password=args.password, discovery_packets=args.count)
+        devices = await Discover.discover(region=args.region, account=args.account, password=args.password, discovery_packets=args.count)
     else:
         _LOGGER.info("Discovering %s on local network.", args.host)
-        dev = await Discover.discover_single(args.host, account=args.account, password=args.password, discovery_packets=args.count)
+        dev = await Discover.discover_single(args.host, region=args.region, account=args.account, password=args.password, discovery_packets=args.count)
         if dev:
             devices.append(dev)
 
@@ -52,7 +55,7 @@ async def _connect(args) -> AC:
     if args.auto:
         # Use discovery to automatically connect and authenticate with device
         _LOGGER.info("Discovering %s on local network.", args.host)
-        device = await Discover.discover_single(args.host, account=args.account, password=args.password)
+        device = await Discover.discover_single(args.host, region=args.region, account=args.account, password=args.password)
 
         if device is None:
             _LOGGER.error("Device not found.")
@@ -216,7 +219,7 @@ async def _download(args) -> None:
 
     # Use discovery to to find device information
     _LOGGER.info("Discovering %s on local network.", args.host)
-    device = await Discover.discover_single(args.host, account=args.account, password=args.password, auto_connect=False)
+    device = await Discover.discover_single(args.host, region=args.region, account=args.account, password=args.password, auto_connect=False)
 
     if device is None:
         _LOGGER.error("Device not found.")
@@ -232,7 +235,7 @@ async def _download(args) -> None:
         exit(1)
 
     # Get cloud connection
-    cloud = Cloud(args.account, args.password)
+    cloud = Cloud(args.region, account=args.account, password=args.password)
     try:
         await cloud.login()
     except CloudError as e:
@@ -270,7 +273,7 @@ def _run(args) -> NoReturn:
         logging.getLogger("httpcore").setLevel(logging.WARNING)
 
     # Validate common arguments
-    if args.china and (args.account == OPEN_MIDEA_APP_ACCOUNT or args.password == OPEN_MIDEA_APP_PASSWORD):
+    if args.china and (args.account is None or args.password is None):
         _LOGGER.error(
             "Account (phone number) and password of 美的美居 is required to use --china option.")
         exit(1)
@@ -299,14 +302,18 @@ def main() -> NoReturn:
     common_parser = argparse.ArgumentParser(add_help=False)
     common_parser.add_argument("-d", "--debug",
                                help="Enable debug logging.", action="store_true")
+    common_parser.add_argument("--region",
+                               help="Country/region for built-in cloud credential selection.",
+                               choices=CLOUD_CREDENTIALS.keys(),
+                               default=DEFAULT_CLOUD_REGION)
     common_parser.add_argument("--account",
-                               help="MSmartHome or 美的美居 username for discovery and automatic authentication",
-                               default=OPEN_MIDEA_APP_ACCOUNT)
+                               help="Manually specify a MSmart username for cloud authentication.",
+                               default=None)
     common_parser.add_argument("--password",
-                               help="MSmartHome or 美的美居 password for discovery and automatic authentication.",
-                               default=OPEN_MIDEA_APP_PASSWORD)
+                               help="Manually specify a MSmart password for cloud authentication.",
+                               default=None)
     common_parser.add_argument("--china",
-                               help="Use China server for discovery and automatic authentication.",
+                               help="Use China server for discovery and authentication. Username and password must be specified.",
                                action="store_true")
 
     # Setup discover parser
@@ -404,9 +411,9 @@ def _legacy_main() -> NoReturn:
     parser.add_argument(
         "-d", "--debug", help="Enable debug logging.", action="store_true")
     parser.add_argument(
-        "-a", "--account", help="MSmartHome or 美的美居 account username.", default=OPEN_MIDEA_APP_ACCOUNT)
+        "-a", "--account", help="MSmartHome or 美的美居 account username.", default=DEFAULT_CLOUD_ACCOUNT)
     parser.add_argument(
-        "-p", "--password", help="MSmartHome or 美的美居 account password.", default=OPEN_MIDEA_APP_PASSWORD)
+        "-p", "--password", help="MSmartHome or 美的美居 account password.", default=DEFAULT_CLOUD_PASSWORD)
     parser.add_argument(
         "-i", "--ip", help="IP address of a device. Useful if broadcasts don't work, or to query a single device.")
     parser.add_argument(
