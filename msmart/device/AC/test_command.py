@@ -844,7 +844,7 @@ class TestGroupDataResponse(_TestResponseBase):
         """Test we decode binary energy usage responses correctly."""
         TEST_RESPONSES = {
             # https://github.com/mill1000/midea-ac-py/issues/204#issuecomment-2314705021
-            (150.4, .6, 279.5): bytes.fromhex("aa22ac00000000000803c1210144000005e00000000000000006000aeb000000487a5e"),
+            (15.04, .06, 279.5): bytes.fromhex("aa22ac00000000000803c1210144000005e00000000000000006000aeb000000487a5e"),
 
             # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2218753545
             (None, None, None): bytes.fromhex("aa20ac00000000000303c1210144000000000000000000000000000000000843bc"),
