@@ -27,13 +27,13 @@ jobs:
   publish-package:
     needs: build-package
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Mandatory for trusted publishing
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          # repository-url: https://test.pypi.org/legacy/
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
+        # with:
+        #   repository-url: https://test.pypi.org/legacy/
