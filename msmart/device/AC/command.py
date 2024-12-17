@@ -923,8 +923,8 @@ class StateResponse(Response):
         def decode_temp(d: int) -> Optional[float]:
             return ((d - 50)/2 if d != 0xFF else None)
 
-        self.indoor_temperature = int(decode_temp(payload[11]))
-        self.outdoor_temperature = int(decode_temp(payload[12]))
+        self.indoor_temperature = decode_temp(payload[11])
+        self.outdoor_temperature = decode_temp(payload[12])
 
         # Decode alternate target temperature
         target_temperature_alt = payload[13] & 0x1F
@@ -939,10 +939,28 @@ class StateResponse(Response):
 
         # Decode additional temperature resolution
         if self.indoor_temperature:
-            self.indoor_temperature += (payload[15] & 0xF) / 10
+            indoor_decimals = (payload[15] & 0xF) / 10;
+
+            # Handle situation when temperature is retured rounded to 0.5 (ie 28.5) 
+            # and the decimals are returned as remainder of whole number (ie 0.9)
+            # Result should be 28.9, but original approach calculated 29.4
+            indoor_temperature_remainder = self.indoor_temperature % 1;
+            if(indoor_decimals >= 0.5 and indoor_temperature_remainder == 0.5):
+                self.indoor_temperature = int(self.indoor_temperature)
+            
+            self.indoor_temperature += indoor_decimals;
 
         if self.outdoor_temperature:
-            self.outdoor_temperature += (payload[15] >> 4) / 10
+            outdoor_decimals = (payload[15] >> 4) / 10;
+
+            # Handle situation when temperature is retured rounded to 0.5 (ie 28.5) 
+            # and the decimals are returned as remainder of whole number (ie 0.9)
+            # Result should be 28.9, but original approach calculated 29.4
+            outdoor_temperature_remainder = self.outdoor_temperature % 1;
+            if(outdoor_decimals >= 0.5 and outdoor_temperature_remainder == 0.5):
+                self.outdoor_temperature = int(self.outdoor_temperature)
+            
+            self.outdoor_temperature += outdoor_decimals
 
         # TODO Some payloads are shorter than expected. Unsure what, when or why
         # The lengths below were picked arbitrarily from user payload data
