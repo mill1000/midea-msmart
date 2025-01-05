@@ -1024,11 +1024,10 @@ class EnergyUsageResponse(Response):
                    100 * decode_bcd(d[1]) +
                    1 * decode_bcd(d[2]) +
                    0.01 * decode_bcd(d[3]))
-            # Scale binary energy by an extra power of 10. See mill1000/midea-msmart#174
             binary = ((d[0] << 24) +
                       (d[1] << 16) +
                       (d[2] << 8) +
-                      d[3]) / 100
+                      d[3]) / 10
             return bcd, binary
 
         def parse_power(d: bytes) -> tuple[float, float]:
