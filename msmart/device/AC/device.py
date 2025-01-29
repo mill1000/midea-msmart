@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from asyncio import Lock
 from typing import Any, Optional, Union, cast
 
 from msmart.base_device import Device
@@ -100,6 +101,8 @@ class AirConditioner(Device):
 
         super().__init__(ip=ip, port=port, device_id=device_id,
                          device_type=DeviceType.AIR_CONDITIONER, **kwargs)
+
+        self._refresh_lock = Lock()
 
         self._beep_on = False
         self._power_state = False
@@ -456,7 +459,7 @@ class AirConditioner(Device):
             PropertyId.SELF_CLEAN: True,
         })
 
-    async def refresh(self) -> None:
+    async def _refresh(self) -> None:
         """Refresh the local copy of the device state by sending a GetState command."""
 
         commands = []
@@ -480,6 +483,10 @@ class AirConditioner(Device):
         for cmd in commands:
             for response in await self._send_command_get_responses(cmd):
                 self._update_state(response)
+
+    async def refresh(self) -> None:
+        async with self._refresh_lock:
+            await self._refresh()
 
     async def _apply_properties(self, properties: dict[PropertyId, Union[int, bool]]) -> None:
         """Apply the provided properties to the device."""
