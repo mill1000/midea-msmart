@@ -168,7 +168,7 @@ class AirConditioner(Device):
 
         if isinstance(res, StateResponse):
             _LOGGER.debug("State response payload from device %s: %s",
-                          self.id, res.payload.hex())
+                          self.id, res)
 
             self._power_state = res.power_on
 
@@ -212,7 +212,7 @@ class AirConditioner(Device):
 
         elif isinstance(res, PropertiesResponse):
             _LOGGER.debug(
-                "Properties response payload from device %s: %s", self.id, res.payload.hex())
+                "Properties response payload from device %s: %s", self.id, res)
 
             if (angle := res.get_property(PropertyId.SWING_LR_ANGLE)) is not None:
                 self._horizontal_swing_angle = cast(
@@ -250,7 +250,7 @@ class AirConditioner(Device):
 
         elif isinstance(res, EnergyUsageResponse):
             _LOGGER.debug("Energy response payload from device %s: %s",
-                          self.id, res.payload.hex())
+                          self.id, res)
 
             self._total_energy_usage = res.total_energy_binary if self._use_binary_energy else res.total_energy
             self._current_energy_usage = res.current_energy_binary if self._use_binary_energy else res.current_energy
@@ -258,13 +258,13 @@ class AirConditioner(Device):
 
         elif isinstance(res, HumidityResponse):
             _LOGGER.debug(
-                "Humidity response payload from device %s: %s", self.id, res.payload.hex())
+                "Humidity response payload from device %s: %s", self.id, res)
 
             self._indoor_humidity = res.humidity
 
         else:
             _LOGGER.debug("Ignored unknown response from device %s: %s",
-                          self.id, res.payload.hex())
+                          self.id, res)
 
     def _update_capabilities(self, res: CapabilitiesResponse) -> None:
         # Build list of supported operation modes
@@ -412,7 +412,7 @@ class AirConditioner(Device):
                 return response
 
             _LOGGER.debug("Ignored response with ID %d from device %s: %s",
-                          response.id, self.id, response.payload.hex())
+                          response.id, self.id, response)
 
         return None
 
@@ -430,7 +430,7 @@ class AirConditioner(Device):
             return
 
         _LOGGER.debug("Capabilities response payload from device %s: %s",
-                      self.id, response.payload.hex())
+                      self.id, response)
         # _LOGGER.debug("Raw capabilities: %s", self._capabilities)
 
         # Send 2nd capabilities request if needed
@@ -442,7 +442,7 @@ class AirConditioner(Device):
 
             if additional_response:
                 _LOGGER.debug(
-                    "Additional capabilities response payload from device %s: %s", self.id, response.payload.hex())
+                    "Additional capabilities response payload from device %s: %s", self.id, response)
 
                 # Merge additional capabilities
                 response.merge(additional_response)

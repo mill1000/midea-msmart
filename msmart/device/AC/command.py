@@ -420,6 +420,9 @@ class Response():
         self._id = payload[0]
         self._payload = bytes(payload)
 
+    def __str__(self) -> str:
+        return self.payload.hex()
+
     @property
     def id(self) -> int:
         return self._id
