@@ -258,6 +258,7 @@ class SetStateCommand(Command):
         self.purifier = False
         self.target_humidity = 40
         self.aux_heat = False
+        self.force_aux_heat = False
         self.independent_aux_heat = False
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
@@ -291,6 +292,7 @@ class SetStateCommand(Command):
         eco = 0x80 if self.eco else 0
         purifier = 0x20 if self.purifier else 0
         aux_heat = 0x08 if self.aux_heat else 0
+        force_aux_heat = 0x10 if self.force_aux_heat else 0
 
         # Build sleep, turbo and fahrenheit byte
         sleep = 0x01 if self.sleep else 0
@@ -326,7 +328,7 @@ class SetStateCommand(Command):
             # Follow me and alternate turbo mode
             follow_me | turbo_alt,
             # ECO mode, purifier/anion, and aux heat
-            eco | purifier | aux_heat,
+            eco | purifier | force_aux_heat | aux_heat,
             # Sleep mode, turbo mode and fahrenheit
             sleep | turbo | fahrenheit,
             # Unknown
