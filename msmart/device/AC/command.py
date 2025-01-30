@@ -420,6 +420,9 @@ class Response():
         self._id = payload[0]
         self._payload = bytes(payload)
 
+    def __str__(self) -> str:
+        return self.payload.hex()
+
     @property
     def id(self) -> int:
         return self._id
@@ -487,11 +490,11 @@ class CapabilitiesResponse(Response):
         self._capabilities = {}
         self._additional_capabilities = False
 
-        _LOGGER.debug("Capabilities response payload: %s", payload.hex())
-
         self._parse_capabilities(payload)
 
-        _LOGGER.debug("Raw capabilities: %s", self._capabilities)
+    @property
+    def raw_capabilities(self) -> Mapping[str, Any]:
+        return self._capabilities
 
     def _parse_capabilities(self, payload: memoryview) -> None:
         # Clear existing capabilities
@@ -656,8 +659,6 @@ class CapabilitiesResponse(Response):
     def merge(self, other: CapabilitiesResponse) -> None:
         # Add other's capabilities to ours
         self._capabilities.update(other._capabilities)
-
-        _LOGGER.debug("Merged raw capabilities: %s", self._capabilities)
 
     @property
     def additional_capabilities(self) -> bool:
@@ -829,8 +830,6 @@ class StateResponse(Response):
         self.purifier = None
         self.target_humidity = None
 
-        _LOGGER.debug("State response payload: %s", payload.hex())
-
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
@@ -937,8 +936,6 @@ class PropertiesResponse(Response):
 
         self._properties = {}
 
-        _LOGGER.debug("Properties response payload: %s", payload.hex())
-
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
@@ -1008,8 +1005,6 @@ class EnergyUsageResponse(Response):
         self.current_energy_binary = None
         self.real_time_power_binary = None
 
-        _LOGGER.debug("Energy response payload: %s", payload.hex())
-
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
@@ -1076,8 +1071,6 @@ class HumidityResponse(Response):
         super().__init__(payload)
 
         self.humidity = None
-
-        _LOGGER.debug("Humidity response payload: %s", payload.hex())
 
         self._parse(payload)
 

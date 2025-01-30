@@ -167,6 +167,9 @@ class AirConditioner(Device):
         """Update the local state from a device state response."""
 
         if isinstance(res, StateResponse):
+            _LOGGER.debug("State response payload from device %s: %s",
+                          self.id, res)
+
             self._power_state = res.power_on
 
             self._target_temperature = res.target_temperature
@@ -208,6 +211,9 @@ class AirConditioner(Device):
             self._target_humidity = res.target_humidity
 
         elif isinstance(res, PropertiesResponse):
+            _LOGGER.debug(
+                "Properties response payload from device %s: %s", self.id, res)
+
             if (angle := res.get_property(PropertyId.SWING_LR_ANGLE)) is not None:
                 self._horizontal_swing_angle = cast(
                     AirConditioner.SwingAngle,
@@ -243,16 +249,22 @@ class AirConditioner(Device):
                 self._ieco = value
 
         elif isinstance(res, EnergyUsageResponse):
+            _LOGGER.debug("Energy response payload from device %s: %s",
+                          self.id, res)
+
             self._total_energy_usage = res.total_energy_binary if self._use_binary_energy else res.total_energy
             self._current_energy_usage = res.current_energy_binary if self._use_binary_energy else res.current_energy
             self._real_time_power_usage = res.real_time_power_binary if self._use_binary_energy else res.real_time_power
 
         elif isinstance(res, HumidityResponse):
+            _LOGGER.debug(
+                "Humidity response payload from device %s: %s", self.id, res)
+
             self._indoor_humidity = res.humidity
 
         else:
-            _LOGGER.debug("Ignored unknown response from %s:%d: %s",
-                          self.ip, self.port, res.payload.hex())
+            _LOGGER.debug("Ignored unknown response from device %s: %s",
+                          self.id, res)
 
     def _update_capabilities(self, res: CapabilitiesResponse) -> None:
         # Build list of supported operation modes
@@ -399,8 +411,8 @@ class AirConditioner(Device):
             if response.id == response_id:
                 return response
 
-            _LOGGER.debug("Ignored response with ID %d from %s:%d: %s",
-                          response.id, self.ip, self.port, response.payload.hex())
+            _LOGGER.debug("Ignored response with ID %d from device %s: %s",
+                          response.id, self.id, response)
 
         return None
 
@@ -414,8 +426,12 @@ class AirConditioner(Device):
 
         if response is None:
             _LOGGER.error(
-                "Failed to query capabilities from %s:%d.", self.ip, self.port)
+                "Failed to query capabilities from device %s.", self.id)
             return
+
+        _LOGGER.debug("Capabilities response payload from device %s: %s",
+                      self.id, response)
+        _LOGGER.debug("Raw capabilities: %s", response.raw_capabilities)
 
         # Send 2nd capabilities request if needed
         if response.additional_capabilities:
@@ -425,11 +441,18 @@ class AirConditioner(Device):
                 CapabilitiesResponse, additional_response)
 
             if additional_response:
+                _LOGGER.debug(
+                    "Additional capabilities response payload from device %s: %s", self.id, response)
+
                 # Merge additional capabilities
                 response.merge(additional_response)
+
+                _LOGGER.debug("Merged raw capabilities: %s",
+                              response.raw_capabilities)
+
             else:
                 _LOGGER.warning(
-                    "Failed to query additional capabilities from %s:%d.", self.ip, self.port)
+                    "Failed to query additional capabilities from device %s.", self.id)
 
         # Update device capabilities
         self._update_capabilities(response)
@@ -438,7 +461,8 @@ class AirConditioner(Device):
         """Toggle the device display if the device supports it."""
 
         if not self._supports_display_control:
-            _LOGGER.warning("Device is not capable of display control.")
+            _LOGGER.warning(
+                "Device %s is not capable of display control.", self.id)
 
         cmd = ToggleDisplayCommand()
         cmd.beep_on = self._beep_on
@@ -486,7 +510,8 @@ class AirConditioner(Device):
 
         # Warn if attempting to update a property that isn't supported
         for prop in (properties.keys() - self._supported_properties):
-            _LOGGER.warning("Device is not capable of property %r.", prop)
+            _LOGGER.warning(
+                "Device %s is not capable of property %r.", self.id, prop)
 
         # Always add buzzer property
         properties[PropertyId.BUZZER] = self._beep_on
@@ -502,29 +527,30 @@ class AirConditioner(Device):
         # Warn if trying to apply unsupported modes
         if self._operational_mode not in self._supported_op_modes:
             _LOGGER.warning(
-                "Device is not capable of operational mode %r.", self._operational_mode)
+                "Device %s is not capable of operational mode %r.",  self.id, self._operational_mode)
 
         if (self._fan_speed not in self._supported_fan_speeds
                 and not self._supports_custom_fan_speed):
             _LOGGER.warning(
-                "Device is not capable of fan speed %r.", self._fan_speed)
+                "Device %s is not capable of fan speed %r.",  self.id, self._fan_speed)
 
         if self._swing_mode not in self._supported_swing_modes:
             _LOGGER.warning(
-                "Device is not capable of swing mode %r.", self._swing_mode)
+                "Device %s is not capable of swing mode %r.",  self.id, self._swing_mode)
 
         if self._turbo and not self._supports_turbo:
-            _LOGGER.warning("Device is not capable of turbo mode.")
+            _LOGGER.warning("Device %s is not capable of turbo mode.", self.id)
 
         if self._eco and not self._supports_eco:
-            _LOGGER.warning("Device is not capable of eco mode.")
+            _LOGGER.warning("Device %s is not capable of eco mode.",  self.id)
 
         if self._freeze_protection and not self._supports_freeze_protection:
-            _LOGGER.warning("Device is not capable of freeze protection.")
+            _LOGGER.warning(
+                "Device %s is not capable of freeze protection.", self.id)
 
         if self._rate_select != AirConditioner.RateSelect.OFF and self._rate_select not in self._supported_rate_selects:
             _LOGGER.warning(
-                "Device is not capable of rate select %r.", self._rate_select)
+                "Device %s is not capable of rate select %r.",  self.id, self._rate_select)
 
         # Define function to return value or a default if value is None
         def or_default(v, d) -> Any: return v if v is not None else d
