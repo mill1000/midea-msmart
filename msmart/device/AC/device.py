@@ -431,7 +431,7 @@ class AirConditioner(Device):
 
         _LOGGER.debug("Capabilities response payload from device %s: %s",
                       self.id, response)
-        # _LOGGER.debug("Raw capabilities: %s", self._capabilities)
+        _LOGGER.debug("Raw capabilities: %s", response.raw_capabilities)
 
         # Send 2nd capabilities request if needed
         if response.additional_capabilities:
@@ -447,7 +447,8 @@ class AirConditioner(Device):
                 # Merge additional capabilities
                 response.merge(additional_response)
 
-                # _LOGGER.debug("Merged raw capabilities: %s", self._capabilities)
+                _LOGGER.debug("Merged raw capabilities: %s",
+                              response.raw_capabilities)
 
             else:
                 _LOGGER.warning(

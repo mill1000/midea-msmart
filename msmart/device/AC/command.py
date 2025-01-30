@@ -492,6 +492,10 @@ class CapabilitiesResponse(Response):
 
         self._parse_capabilities(payload)
 
+    @property
+    def raw_capabilities(self) -> Mapping[str, Any]:
+        return self._capabilities
+
     def _parse_capabilities(self, payload: memoryview) -> None:
         # Clear existing capabilities
         self._capabilities.clear()
