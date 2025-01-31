@@ -134,6 +134,7 @@ class AirConditioner(Device):
         self._supports_purifier = True
         self._supports_humidity = False
         self._supports_target_humidity = False
+        self._supports_electric_aux_heat = False
         self._min_target_temperature = 16
         self._max_target_temperature = 30
 
@@ -308,6 +309,8 @@ class AirConditioner(Device):
         self._supports_display_control = res.display_control
         self._supports_filter_reminder = res.filter_reminder
         self._supports_purifier = res.anion
+
+        self._supports_electric_aux_heat = res.aux_electric_heat
 
         self._min_target_temperature = res.min_temperature
         self._max_target_temperature = res.max_temperature

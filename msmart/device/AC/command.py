@@ -760,6 +760,11 @@ class CapabilitiesResponse(Response):
     @property
     def aux_mode(self) -> bool:
         return self._capabilities.get("aux_mode", False)
+    
+    @property
+    def aux_electric_heat(self) -> bool:
+        # TODO How does electric aux heat differ from aux mode?
+        return self._capabilities.get("aux_electric_heat", False)
 
     @property
     def eco(self) -> bool:
