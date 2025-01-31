@@ -550,8 +550,8 @@ class CapabilitiesResponse(Response):
                 reader("cool_mode", lambda v: v != 2),
                 reader("dry_mode", lambda v: v in [0, 1, 5, 6, 9]),
                 reader("auto_mode", lambda v: v in [0, 1, 2, 7, 8, 9]),
-                reader("heat_aux_mode", lambda v: v == 9), # Heat & Aux
-                reader("aux_mode", lambda v: v == 9), # Aux only
+                reader("heat_aux_mode", lambda v: v == 9),  # Heat & Aux
+                reader("aux_mode", lambda v: v == 9),  # Aux only
             ],
             CapabilityId.PRESET_ECO: reader("eco", lambda v: v in [1, 2]),
             CapabilityId.PRESET_FREEZE_PROTECTION: reader("freeze_protection", get_value(1)),
