@@ -546,12 +546,12 @@ class CapabilitiesResponse(Response):
                 reader("humidity_manual_set", lambda v: v in [2, 3]),
             ],
             CapabilityId.MODES: [
-                reader("heat_mode", lambda v: v in [1, 2, 4, 6, 7, 9]),
-                reader("cool_mode", lambda v: v != 2),
-                reader("dry_mode", lambda v: v in [0, 1, 5, 6, 9]),
-                reader("auto_mode", lambda v: v in [0, 1, 2, 7, 8, 9]),
+                reader("heat_mode", lambda v: v in [1, 2, 4, 6, 7, 9, 10, 11, 12, 13]),
+                reader("cool_mode", lambda v: v not in [2, 10, 12]),
+                reader("dry_mode", lambda v: v in [0, 1, 5, 6, 9, 11, 13]),
+                reader("auto_mode", lambda v: v in [0, 1, 2, 7, 8, 9, 13]),
                 reader("heat_aux_mode", lambda v: v == 9),  # Heat & Aux
-                reader("aux_mode", lambda v: v == 9),  # Aux only
+                reader("aux_mode", lambda v: v in [9, 10, 11, 13]),  # Aux only
             ],
             CapabilityId.PRESET_ECO: reader("eco", lambda v: v in [1, 2]),
             CapabilityId.PRESET_FREEZE_PROTECTION: reader("freeze_protection", get_value(1)),
