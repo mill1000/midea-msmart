@@ -546,7 +546,8 @@ class CapabilitiesResponse(Response):
                 reader("humidity_manual_set", lambda v: v in [2, 3]),
             ],
             CapabilityId.MODES: [
-                reader("heat_mode", lambda v: v in [1, 2, 4, 6, 7, 9, 10, 11, 12, 13]),
+                reader("heat_mode", lambda v: v in [
+                       1, 2, 4, 6, 7, 9, 10, 11, 12, 13]),
                 reader("cool_mode", lambda v: v not in [2, 10, 12]),
                 reader("dry_mode", lambda v: v in [0, 1, 5, 6, 9, 11, 13]),
                 reader("auto_mode", lambda v: v in [0, 1, 2, 7, 8, 9, 13]),
