@@ -288,7 +288,7 @@ class SetStateCommand(Command):
         # Build swing mode byte
         swing_mode = 0x30 | (self.swing_mode & 0x3F)
 
-        # Build eco mode and purifier byte
+        # Build eco mode, purifier, and aux heat byte
         eco = 0x80 if self.eco else 0
         purifier = 0x20 if self.purifier else 0
         aux_heat = 0x08 if self.aux_heat else 0
@@ -550,7 +550,7 @@ class CapabilitiesResponse(Response):
                 reader("cool_mode", lambda v: v not in [2, 10, 12]),
                 reader("dry_mode", lambda v: v in [0, 1, 5, 6, 9, 11, 13]),
                 reader("auto_mode", lambda v: v in [0, 1, 2, 7, 8, 9, 13]),
-                reader("heat_aux_mode", lambda v: v == 9),  # Heat & Aux
+                reader("aux_heat_mode", lambda v: v == 9),  # Heat & Aux
                 reader("aux_mode", lambda v: v in [9, 10, 11, 13]),  # Aux only
             ],
             CapabilityId.PRESET_ECO: reader("eco", lambda v: v in [1, 2]),
@@ -754,13 +754,13 @@ class CapabilitiesResponse(Response):
         return self._capabilities.get("auto_mode", False)
 
     @property
-    def heat_aux_mode(self) -> bool:
-        return self._capabilities.get("heat_aux_mode", False)
+    def aux_heat_mode(self) -> bool:
+        return self._capabilities.get("aux_heat_mode", False)
 
     @property
     def aux_mode(self) -> bool:
         return self._capabilities.get("aux_mode", False)
-    
+
     @property
     def aux_electric_heat(self) -> bool:
         # TODO How does electric aux heat differ from aux mode?
