@@ -550,7 +550,7 @@ class AirConditioner(Device):
             _LOGGER.warning(
                 "Device is not capable of rate select %r.", self._rate_select)
 
-        if self._aux_mode != AirConditioner.AuxHeatMode.AUX_ONLY and self._aux_mode not in self._supported_aux_modes:
+        if self._aux_mode != AirConditioner.AuxHeatMode.OFF and self._aux_mode not in self._supported_aux_modes:
             _LOGGER.warning(
                 "Device is not capable of aux mode %r.", self._aux_mode)
 
