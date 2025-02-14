@@ -967,6 +967,7 @@ class AirConditioner(Device):
             "current_energy_usage": self.current_energy_usage,
             "real_time_power_usage": self.real_time_power_usage,
             "rate_select": self.rate_select,
+            "aux_mode": self.aux_mode,
         }}
 
     # Deprecated methods and properties
