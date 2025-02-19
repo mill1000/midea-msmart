@@ -495,6 +495,29 @@ class TestCapabilities(unittest.TestCase):
         self.assertEqual(device.supports_breeze_mild, False)
         self.assertEqual(device.supports_breezeless, True)
 
+    def test_aux_heat(self) -> None:
+        """Test aux heat mode capabilities."""
+
+        # https://github.com/mill1000/midea-ac-py/issues/297#issuecomment-2622720960
+        CAPABILITIES_PAYLOAD_0 = bytes.fromhex(
+            "b50514020109150201021a020101250207203c203c203c00340201010100")
+        CAPABILITIES_PAYLOAD_1 = bytes.fromhex(
+            "b508100201051f0201003000010013020100190201013900010093000101940001010000")
+
+        # Create a dummy device and process the response
+        device = AC(0, 0, 0)
+
+        # Parse capability payloads
+        with memoryview(CAPABILITIES_PAYLOAD_0) as payload0, memoryview(CAPABILITIES_PAYLOAD_1) as payload1:
+            resp0 = CapabilitiesResponse(payload0)
+            resp1 = CapabilitiesResponse(payload1)
+
+            resp0.merge(resp1)
+            device._update_capabilities(resp0)
+
+        self.assertEqual(device.supported_aux_modes, [
+                         AC.AuxHeatMode.OFF, AC.AuxHeatMode.AUX_HEAT, AC.AuxHeatMode.AUX_ONLY])
+
 
 class TestSetState(unittest.TestCase):
     """Test setting device state."""

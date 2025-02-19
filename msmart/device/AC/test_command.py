@@ -310,6 +310,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "eco": True,
             "freeze_protection": True, "heat_mode": True,
             "cool_mode": True, "dry_mode": True,
+            "aux_heat_mode": False, "aux_mode": False,
             "auto_mode": True,
             "swing_horizontal": True, "swing_vertical": True,
             "energy_stats": False, "energy_setting": False, "energy_bcd": False,
@@ -322,6 +323,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
         EXPECTED_CAPABILITIES = {
             "swing_horizontal": True, "swing_vertical": True, "swing_both": True,
             "dry_mode": True, "heat_mode": True, "cool_mode": True, "auto_mode": True,
+            "aux_heat_mode": False, "aux_mode": False,
             "eco": True, "turbo": True, "freeze_protection": True,
             "fan_custom": False, "fan_silent": False, "fan_low": True,
             "fan_medium": True,  "fan_high": True, "fan_auto": True,
@@ -355,6 +357,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
         EXPECTED_RAW_CAPABILITIES = {
             "eco": True, "breezeless": False,
             "heat_mode": True, "cool_mode": True, "dry_mode": True,
+            "aux_heat_mode": False, "aux_mode": False,
             "auto_mode": True, "swing_horizontal": True, "swing_vertical": True,
             "energy_stats": False, "energy_setting": False, "energy_bcd": False,
             "turbo_heat": True, "turbo_cool": True,
@@ -372,6 +375,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
         EXPECTED_CAPABILITIES = {
             "swing_horizontal": True, "swing_vertical": True, "swing_both": True,
             "dry_mode": True, "heat_mode": True, "cool_mode": True, "auto_mode": True,
+            "aux_heat_mode": False, "aux_mode": False,
             "eco": True, "turbo": True, "freeze_protection": False,
             "fan_custom": True, "fan_silent": True, "fan_low": True,
             "fan_medium": True,  "fan_high": True, "fan_auto": True,
@@ -398,6 +402,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
         EXPECTED_RAW_CAPABILITIES = {
             "eco": True, "heat_mode": False,
             "cool_mode": True, "dry_mode": True, "auto_mode": True,
+            "aux_heat_mode": False, "aux_mode": False,
             "swing_horizontal": False, "swing_vertical": False,
             "filter_notice": True, "filter_clean": False, "turbo_heat": False,
             "turbo_cool": False,
@@ -411,6 +416,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
         EXPECTED_CAPABILITIES = {
             "swing_horizontal": False, "swing_vertical": False, "swing_both": False,
             "dry_mode": True, "heat_mode": False, "cool_mode": True, "auto_mode": True,
+            "aux_heat_mode": False, "aux_mode": False,
             "eco": True, "turbo": False, "freeze_protection": False,
             "fan_custom": False, "fan_silent": False, "fan_low": True,
             "fan_medium": True,  "fan_high": True, "fan_auto": True,
@@ -437,6 +443,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
         EXPECTED_RAW_CAPABILITIES = {
             "eco": True, "freeze_protection": False,
             "heat_mode": False, "cool_mode": True, "dry_mode": True, "auto_mode": True,
+            "aux_heat_mode": False, "aux_mode": False,
             "swing_horizontal": False, "swing_vertical": True, "filter_notice": True,
             "filter_clean": False, "turbo_heat": False, "turbo_cool": True,
             "fan_custom": True, "fan_silent": False, "fan_low": False,
@@ -487,6 +494,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "eco": True,
             "breeze_control": True,
             "heat_mode": True, "cool_mode": True, "dry_mode": True, "auto_mode": True,
+            "aux_heat_mode": False, "aux_mode": False,
             "swing_horizontal": True, "swing_vertical": True,
             "energy_stats": False, "energy_setting": False, "energy_bcd": False,
             "turbo_heat": True, "turbo_cool": True,
@@ -531,6 +539,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "eco": True,
             "breeze_control": True,
             "heat_mode": True, "cool_mode": True, "dry_mode": True, "auto_mode": True,
+            "aux_heat_mode": False, "aux_mode": False,
             "swing_horizontal": True, "swing_vertical": True,
             "energy_stats": False, "energy_setting": False, "energy_bcd": False,
             "turbo_heat": True, "turbo_cool": True,
@@ -554,6 +563,110 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "dry_mode": True, "heat_mode": True, "cool_mode": True, "auto_mode": True,
             "eco": True, "turbo": True, "freeze_protection": True,
             "fan_custom": True, "fan_silent": True, "fan_low": True,
+            "fan_medium": True,  "fan_high": True, "fan_auto": True,
+            "min_temperature": 16, "max_temperature": 30,
+            "display_control": False, "filter_reminder": False,
+            "anion": True, "rate_select_levels": None
+        }
+        # Check capabilities properties match
+        for prop in self.EXPECTED_PROPERTIES:
+            self.assertEqual(getattr(resp, prop),
+                             EXPECTED_CAPABILITIES[prop], prop)
+
+    def test_capabilities_aux_heat(self) -> None:
+        self.maxDiff = None
+        """Test that we decode capabilities that include aux heating support."""
+        # https://github.com/mill1000/midea-ac-py/issues/297#issuecomment-2622720960
+        TEST_CAPABILITIES_RESPONSE = bytes.fromhex(
+            "aa29ac00000000000303b50514020109150201021a020101250207203c203c203c003402010101007b1d")
+
+        # Test case includes an unknown capability 0x40 that generates a log
+        with self.assertLogs("msmart", logging.DEBUG) as log:
+            resp = self._test_build_response(TEST_CAPABILITIES_RESPONSE)
+            resp = cast(CapabilitiesResponse, resp)
+
+            # Check debug message is generated for some unsupported capabilities
+            self.assertRegex("\n".join(log.output),
+                             "Unsupported capability <CapabilityId.BODY_CHECK: 564>, Size: 1.")
+
+        EXPECTED_RAW_CAPABILITIES = {
+            'heat_mode': True, 'cool_mode': True, 'dry_mode': True, 'auto_mode': True,
+            "aux_heat_mode": True, "aux_mode": True,
+            'swing_horizontal': False, 'swing_vertical': False,
+            'turbo_heat': True, 'turbo_cool': True,
+            'cool_min_temperature': 16.0,
+            'cool_max_temperature': 30.0,
+            'auto_min_temperature': 16.0,
+            'auto_max_temperature': 30.0,
+            'heat_min_temperature': 16.0,
+            'heat_max_temperature': 30.0,
+            'decimals': False
+        }
+        # Ensure raw decoded capabilities match
+        self.assertEqual(resp._capabilities, EXPECTED_RAW_CAPABILITIES)
+
+        # Check if there are additional capabilities
+        self.assertEqual(resp.additional_capabilities, True)
+
+        # Additional capabilities response
+        TEST_ADDITIONAL_CAPABILITIES_RESPONSE = bytes.fromhex(
+            "aa2fac00000000000303b508100201051f020100300001001302010019020101390001009300010194000101000095ca")
+
+        # Test case includes an unknown capability 0x40 that generates a log
+        with self.assertLogs("msmart", logging.DEBUG) as log:
+            additional_resp = self._test_build_response(
+                TEST_ADDITIONAL_CAPABILITIES_RESPONSE)
+            additional_resp = cast(CapabilitiesResponse, additional_resp)
+
+            # Check debug message is generated for some unsupported capabilities
+            self.assertRegex("\n".join(log.output),
+                             "Unsupported capability <CapabilityId.EMERGENT_HEAT_WIND: 147>, Size: 1.")
+
+            self.assertRegex("\n".join(log.output),
+                             "Unsupported capability <CapabilityId.HEAT_PTC_WIND: 148>, Size: 1.")
+
+        EXPECTED_ADDITIONAL_RAW_CAPABILITIES = {
+            'fan_silent': False, 'fan_low': True, 'fan_medium': True, 'fan_high': True, 'fan_auto': True, 'fan_custom': False,
+            'humidity_auto_set': False, 'humidity_manual_set': False,
+            'smart_eye': False, 'freeze_protection': False,
+            'aux_electric_heat': True, 'self_clean': False
+        }
+        # Ensure raw decoded capabilities match
+        self.assertEqual(additional_resp._capabilities,
+                         EXPECTED_ADDITIONAL_RAW_CAPABILITIES)
+
+        # Ensure the additional capabilities response doesn't also want more capabilities
+        self.assertEqual(additional_resp.additional_capabilities, False)
+
+        # Check that merging the capabilities produced expected results
+        resp.merge(additional_resp)
+
+        EXPECTED_MERGED_RAW_CAPABILITIES = {
+            'heat_mode': True, 'cool_mode': True, 'dry_mode': True, 'auto_mode': True,
+            "aux_heat_mode": True, "aux_mode": True,
+            'swing_horizontal': False, 'swing_vertical': False,
+            'turbo_heat': True, 'turbo_cool': True,
+            'cool_min_temperature': 16.0,
+            'cool_max_temperature': 30.0,
+            'auto_min_temperature': 16.0,
+            'auto_max_temperature': 30.0,
+            'heat_min_temperature': 16.0,
+            'heat_max_temperature': 30.0,
+            'decimals': False,
+            'fan_silent': False, 'fan_low': True, 'fan_medium': True, 'fan_high': True, 'fan_auto': True, 'fan_custom': False,
+            'humidity_auto_set': False, 'humidity_manual_set': False,
+            'smart_eye': False, 'freeze_protection': False,
+            'aux_electric_heat': True, 'self_clean': False
+        }
+        # Ensure raw decoded capabilities match
+        self.assertEqual(resp._capabilities, EXPECTED_MERGED_RAW_CAPABILITIES)
+
+        EXPECTED_CAPABILITIES = {
+            "swing_horizontal": False, "swing_vertical": False, "swing_both": False,
+            "dry_mode": True, "heat_mode": True, "cool_mode": True, "auto_mode": True,
+            "aux_heat_mode": True, "aux_mode": True,
+            "eco": False, "turbo": True, "freeze_protection": False,
+            "fan_custom": False, "fan_silent": False, "fan_low": True,
             "fan_medium": True,  "fan_high": True, "fan_auto": True,
             "min_temperature": 16, "max_temperature": 30,
             "display_control": False, "filter_reminder": False,

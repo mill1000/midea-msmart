@@ -257,6 +257,9 @@ class SetStateCommand(Command):
         self.follow_me = False
         self.purifier = False
         self.target_humidity = 40
+        self.aux_heat = False
+        self.force_aux_heat = False
+        self.independent_aux_heat = False
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
         # Build beep and power status bytes
@@ -285,9 +288,11 @@ class SetStateCommand(Command):
         # Build swing mode byte
         swing_mode = 0x30 | (self.swing_mode & 0x3F)
 
-        # Build eco mode and purifier byte
+        # Build eco mode, purifier, and aux heat byte
         eco = 0x80 if self.eco else 0
         purifier = 0x20 if self.purifier else 0
+        aux_heat = 0x08 if self.aux_heat else 0
+        force_aux_heat = 0x10 if self.force_aux_heat else 0
 
         # Build sleep, turbo and fahrenheit byte
         sleep = 0x01 if self.sleep else 0
@@ -304,6 +309,9 @@ class SetStateCommand(Command):
         # Build freeze protection byte
         freeze_protect = 0x80 if self.freeze_protection else 0
 
+        # Build independent aux heat
+        independent_aux_heat = 0x08
+
         return super().tobytes(bytes([
             # Set state
             0x40,
@@ -319,8 +327,8 @@ class SetStateCommand(Command):
             swing_mode,
             # Follow me and alternate turbo mode
             follow_me | turbo_alt,
-            # ECO mode and purifier/anion
-            eco | purifier,
+            # ECO mode, purifier/anion, and aux heat
+            eco | purifier | force_aux_heat | aux_heat,
             # Sleep mode, turbo mode and fahrenheit
             sleep | turbo | fahrenheit,
             # Unknown
@@ -334,8 +342,10 @@ class SetStateCommand(Command):
             0x00,
             # Frost/freeze protection
             freeze_protect,
+            # Independent aux heat
+            independent_aux_heat,
             # Unknown
-            0x00, 0x00,
+            0x00,
         ]))
 
 
@@ -539,10 +549,13 @@ class CapabilitiesResponse(Response):
                 reader("humidity_manual_set", lambda v: v in [2, 3]),
             ],
             CapabilityId.MODES: [
-                reader("heat_mode", lambda v: v in [1, 2, 4, 6, 7, 9]),
-                reader("cool_mode", lambda v: v != 2),
-                reader("dry_mode", lambda v: v in [0, 1, 5, 6, 9]),
-                reader("auto_mode", lambda v: v in [0, 1, 2, 7, 8, 9]),
+                reader("heat_mode", lambda v: v in [
+                       1, 2, 4, 6, 7, 9, 10, 11, 12, 13]),
+                reader("cool_mode", lambda v: v not in [2, 10, 12]),
+                reader("dry_mode", lambda v: v in [0, 1, 5, 6, 9, 11, 13]),
+                reader("auto_mode", lambda v: v in [0, 1, 2, 7, 8, 9, 13]),
+                reader("aux_heat_mode", lambda v: v == 9),  # Heat & Aux
+                reader("aux_mode", lambda v: v in [9, 10, 11, 13]),  # Aux only
             ],
             CapabilityId.PRESET_ECO: reader("eco", lambda v: v in [1, 2]),
             CapabilityId.PRESET_FREEZE_PROTECTION: reader("freeze_protection", get_value(1)),
@@ -743,6 +756,19 @@ class CapabilitiesResponse(Response):
         return self._capabilities.get("auto_mode", False)
 
     @property
+    def aux_heat_mode(self) -> bool:
+        return self._capabilities.get("aux_heat_mode", False)
+
+    @property
+    def aux_mode(self) -> bool:
+        return self._capabilities.get("aux_mode", False)
+
+    @property
+    def aux_electric_heat(self) -> bool:
+        # TODO How does electric aux heat differ from aux mode?
+        return self._capabilities.get("aux_electric_heat", False)
+
+    @property
     def eco(self) -> bool:
         return self._capabilities.get("eco", False)
 
@@ -829,6 +855,8 @@ class StateResponse(Response):
         self.follow_me = None
         self.purifier = None
         self.target_humidity = None
+        self.aux_heat = None
+        self.independent_aux_heat = None
 
         self._parse(payload)
 
@@ -872,6 +900,7 @@ class StateResponse(Response):
         # self.save = (payload[8] & 0x08) > 0
         # self.low_frequency_fan = (payload[8] & 0x10) > 0
         self.turbo = bool(payload[8] & 0x20)
+        self.independent_aux_heat = bool(payload[8] & 0x40)
         self.follow_me = bool(payload[8] & 0x80)
 
         self.eco = bool(payload[9] & 0x10)
@@ -879,7 +908,7 @@ class StateResponse(Response):
         # self.child_sleep = (payload[9] & 0x01) > 0
         # self.exchange_air = (payload[9] & 0x02) > 0
         # self.dry_clean = (payload[9] & 0x04) > 0
-        # self.aux_heat = (payload[9] & 0x08) > 0
+        self.aux_heat = bool(payload[9] & 0x08)
         # self.temp_unit = (payload[9] & 0x80) > 0
 
         self.sleep = bool(payload[10] & 0x1)

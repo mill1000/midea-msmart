@@ -83,6 +83,11 @@ class AirConditioner(Device):
 
         DEFAULT = OFF
 
+    class AuxHeatMode(MideaIntEnum):
+        OFF = 0
+        AUX_HEAT = 1
+        AUX_ONLY = 2
+
     # Create a dict to map attributes to property values
     _PROPERTY_MAP = {
         PropertyId.BREEZE_AWAY: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZE_AWAY,
@@ -163,6 +168,9 @@ class AirConditioner(Device):
 
         self._ieco = False
 
+        self._aux_mode = AirConditioner.AuxHeatMode.OFF
+        self._supported_aux_modes = [AirConditioner.AuxHeatMode.OFF]
+
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
 
@@ -209,6 +217,13 @@ class AirConditioner(Device):
             self._purifier = res.purifier
 
             self._target_humidity = res.target_humidity
+
+            if res.independent_aux_heat:
+                self._aux_mode = AirConditioner.AuxHeatMode.AUX_ONLY
+            elif res.aux_heat:
+                self._aux_mode = AirConditioner.AuxHeatMode.AUX_HEAT
+            else:
+                self._aux_mode = AirConditioner.AuxHeatMode.OFF
 
         elif isinstance(res, PropertiesResponse):
             _LOGGER.debug(
@@ -320,6 +335,15 @@ class AirConditioner(Device):
         self._supports_display_control = res.display_control
         self._supports_filter_reminder = res.filter_reminder
         self._supports_purifier = res.anion
+
+        # Build list of supported aux heating modes
+        aux_modes = [AirConditioner.AuxHeatMode.OFF]
+        if res.aux_electric_heat or res.aux_heat_mode:
+            aux_modes.append(AirConditioner.AuxHeatMode.AUX_HEAT)
+        if res.aux_mode:
+            aux_modes.append(AirConditioner.AuxHeatMode.AUX_ONLY)
+
+        self._supported_aux_modes = aux_modes
 
         self._min_target_temperature = res.min_temperature
         self._max_target_temperature = res.max_temperature
@@ -552,6 +576,10 @@ class AirConditioner(Device):
             _LOGGER.warning(
                 "Device %s is not capable of rate select %r.",  self.id, self._rate_select)
 
+        if self._aux_mode != AirConditioner.AuxHeatMode.OFF and self._aux_mode not in self._supported_aux_modes:
+            _LOGGER.warning(
+                "Device is not capable of aux mode %r.", self._aux_mode)
+
         # Define function to return value or a default if value is None
         def or_default(v, d) -> Any: return v if v is not None else d
 
@@ -571,6 +599,8 @@ class AirConditioner(Device):
         cmd.follow_me = or_default(self._follow_me, False)
         cmd.purifier = or_default(self._purifier, False)
         cmd.target_humidity = or_default(self._target_humidity, 40)
+        cmd.aux_heat = self._aux_mode == AirConditioner.AuxHeatMode.AUX_HEAT
+        cmd.independent_aux_heat = self._aux_mode == AirConditioner.AuxHeatMode.AUX_ONLY
 
         # Process any state responses from the device
         for response in await self._send_command_get_responses(cmd):
@@ -923,6 +953,18 @@ class AirConditioner(Device):
         self._rate_select = rate
         self._updated_properties.add(PropertyId.RATE_SELECT)
 
+    @property
+    def supported_aux_modes(self) -> list[AuxHeatMode]:
+        return self._supported_aux_modes
+
+    @property
+    def aux_mode(self) -> AuxHeatMode:
+        return self._aux_mode
+
+    @aux_mode.setter
+    def aux_mode(self, mode: AuxHeatMode) -> None:
+        self._aux_mode = mode
+
     def to_dict(self) -> dict:
         return {**super().to_dict(), **{
             "power": self.power_state,
@@ -951,6 +993,7 @@ class AirConditioner(Device):
             "current_energy_usage": self.current_energy_usage,
             "real_time_power_usage": self.real_time_power_usage,
             "rate_select": self.rate_select,
+            "aux_mode": self.aux_mode,
         }}
 
     # Deprecated methods and properties
