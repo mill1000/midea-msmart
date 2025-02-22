@@ -26,82 +26,45 @@ class TestDeviceEnums(unittest.TestCase):
             self.assertEqual(e_from_value, enum)
             self.assertIsInstance(e_from_value, enum_cls)
 
-    def test_fan_speed(self) -> None:
-        """Test FanSpeed enum conversion from value/name."""
-
-        # Test enum members
-        self._test_enum_members(AC.FanSpeed)
-
-        # Test fall back behavior to "AUTO"
-        enum = AC.FanSpeed.get_from_name("THIS_IS_FAKE")
-        self.assertEqual(enum, AC.FanSpeed.AUTO)
-        self.assertIsInstance(enum, AC.FanSpeed)
-
-        # Test fall back behavior to "AUTO"
-        enum = AC.FanSpeed.get_from_value(77777)
-        self.assertEqual(enum, AC.FanSpeed.AUTO)
-        self.assertIsInstance(enum, AC.FanSpeed)
-
-    def test_operational_mode(self) -> None:
-        """Test OperationalMode enum conversion from value/name."""
-
-        # Test enum members
-        self._test_enum_members(AC.OperationalMode)
-
-        # Test fall back behavior to "FAN_ONLY"
-        enum = AC.OperationalMode.get_from_name("SOME_BOGUS_NAME")
-        self.assertEqual(enum, AC.OperationalMode.FAN_ONLY)
-        self.assertIsInstance(enum, AC.OperationalMode)
-
-        # Test fall back behavior to "FAN_ONLY"
-        enum = AC.OperationalMode.get_from_value(0xDEADBEAF)
-        self.assertEqual(enum, AC.OperationalMode.FAN_ONLY)
-        self.assertIsInstance(enum, AC.OperationalMode)
-
-    def test_swing_mode(self) -> None:
-        """Test SwingMode enum conversion from value/name."""
-
-        # Test enum members
-        self._test_enum_members(AC.SwingMode)
+    def _test_enum_fallback(self, enum_cls) -> None:
+        """Test enum fallback behavior"""
 
         # Test fall back behavior to "OFF"
-        enum = AC.SwingMode.get_from_name("NOT_A_SWING_MODE")
-        self.assertEqual(enum, AC.SwingMode.OFF)
-        self.assertIsInstance(enum, AC.SwingMode)
+        enum = enum_cls.get_from_name("INVALID_NAME")
+        self.assertEqual(enum, enum_cls.DEFAULT)
+        self.assertIsInstance(enum, enum_cls)
 
         # Test fall back behavior to "OFF"
-        enum = AC.SwingMode.get_from_value(1234567)
-        self.assertEqual(enum, AC.SwingMode.OFF)
-        self.assertIsInstance(enum, AC.SwingMode)
-
-    def test_swing_angle(self) -> None:
-        """Test SwingAngle enum conversion from value/name."""
-
-        # Test enum members
-        self._test_enum_members(AC.SwingAngle)
-
-        # Test fall back behavior to "OFF"
-        enum = AC.SwingAngle.get_from_name("INVALID_NAME")
-        self.assertEqual(enum, AC.SwingAngle.OFF)
-        self.assertIsInstance(enum, AC.SwingAngle)
-
-        # Test fall back behavior to "OFF"
-        enum = AC.SwingAngle.get_from_value(1234567)
-        self.assertEqual(enum, AC.SwingAngle.OFF)
-        self.assertIsInstance(enum, AC.SwingAngle)
+        enum = enum_cls.get_from_value(1234567)
+        self.assertEqual(enum, enum_cls.DEFAULT)
+        self.assertIsInstance(enum, enum_cls)
 
         # Test that converting from None works
-        enum = AC.SwingAngle.get_from_value(None)
-        self.assertEqual(enum, AC.SwingAngle.OFF)
-        self.assertIsInstance(enum, AC.SwingAngle)
+        enum = enum_cls.get_from_value(None)
+        self.assertEqual(enum, enum_cls.DEFAULT)
+        self.assertIsInstance(enum, enum_cls)
 
-        enum = AC.SwingAngle.get_from_name(None)
-        self.assertEqual(enum, AC.SwingAngle.OFF)
-        self.assertIsInstance(enum, AC.SwingAngle)
+        enum = enum_cls.get_from_name(None)
+        self.assertEqual(enum, enum_cls.DEFAULT)
+        self.assertIsInstance(enum, enum_cls)
 
-        enum = AC.SwingAngle.get_from_name("")
-        self.assertEqual(enum, AC.SwingAngle.OFF)
-        self.assertIsInstance(enum, AC.SwingAngle)
+        enum = enum_cls.get_from_name("")
+        self.assertEqual(enum, enum_cls.DEFAULT)
+        self.assertIsInstance(enum, enum_cls)
+
+    def test_device_enums(self) -> None:
+        """Test AuxHeatMode enum conversion from value/name."""
+
+        ENUM_CLASSES = [AC.AuxHeatMode, AC.BreezeMode,
+                        AC.FanSpeed, AC.OperationalMode,
+                        AC.RateSelect, AC.SwingAngle, AC.SwingMode]
+
+        for enum_cls in ENUM_CLASSES:
+            # Test conversion to/from enum members
+            self._test_enum_members(enum_cls)
+
+            # Test default fallback
+            self._test_enum_fallback(enum_cls)
 
 
 class TestUpdateStateFromResponse(unittest.TestCase):
