@@ -88,6 +88,8 @@ class AirConditioner(Device):
         AUX_HEAT = 1
         AUX_ONLY = 2
 
+        DEFAULT = OFF
+
     # Create a dict to map attributes to property values
     _PROPERTY_MAP = {
         PropertyId.BREEZE_AWAY: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZE_AWAY,
