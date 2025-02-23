@@ -25,7 +25,7 @@ class Device():
         self._supported = False
         self._online = False
 
-    async def _send_command(self, command: Frame) -> Optional[list[bytes]]:
+    async def _send_command(self, command: Frame) -> list[bytes]:
         """Send a command to the device and return any responses."""
 
         data = command.tobytes()
@@ -33,24 +33,23 @@ class Device():
                       self.ip, self.port, data.hex())
 
         start = time.time()
-        responses = None
+        responses = []
         try:
             responses = await self._lan.send(data)
         except ProtocolError as e:
             _LOGGER.error("Network error %s:%d: %s", self.ip, self.port, e)
-            return None
+            return []
         except TimeoutError as e:
             _LOGGER.warning("Network timeout %s:%d: %s", self.ip, self.port, e)
         finally:
             response_time = round(time.time() - start, 2)
 
-        if responses is None:
+        if len(responses) == 0:
             _LOGGER.warning("No response from %s:%d in %f seconds.",
                             self.ip, self.port, response_time)
-            return None
-
-        _LOGGER.debug("Response from %s:%d in %f seconds.",
-                      self.ip, self.port, response_time)
+        else:
+            _LOGGER.debug("Response from %s:%d in %f seconds.",
+                          self.ip, self.port, response_time)
 
         return responses
 

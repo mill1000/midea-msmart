@@ -1,9 +1,10 @@
 import logging
 import unittest
+from unittest.mock import patch
 
 from .command import (CapabilitiesResponse, EnergyUsageResponse,
-                      HumidityResponse, PropertiesResponse, Response,
-                      StateResponse)
+                      GetStateCommand, HumidityResponse, PropertiesResponse,
+                      Response, StateResponse)
 from .device import AirConditioner as AC
 from .device import PropertyId
 
@@ -552,6 +553,97 @@ class TestSetState(unittest.TestCase):
         # Assert correct property is being updated
         self.assertIn(PropertyId.BREEZE_AWAY, device._updated_properties)
         self.assertNotIn(PropertyId.BREEZE_CONTROL, device._updated_properties)
+
+
+class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
+    # pylint: disable=protected-access
+
+    async def test_refresh_no_response(self) -> None:
+        """Test that a refresh() with no response marks a device as offline."""
+
+        # Create a dummy device
+        device = AC(0, 0, 0)
+
+        # Patch _send_command to return no responses
+        with patch("msmart.base_device.Device._send_command", return_value=[]) as patched_method:
+
+            # Force device online
+            device._online = True
+            self.assertEqual(device.online, True)
+
+            # Refresh device
+            await device.refresh()
+
+            # Assert patch method was awaited
+            patched_method.assert_awaited()
+
+            # Assert device is now offline
+            self.assertEqual(device.online, False)
+
+    async def test_refresh_valid_response(self) -> None:
+        """Test that a refresh() with any response marks a device as online."""
+        TEST_RESPONSE = bytes.fromhex(
+            "aa23ac00000000000303c00145660000003c0010045c6b20000000000000000000020d79")
+
+        # Create a dummy device
+        device = AC(0, 0, 0)
+
+        # Patch _send_command to return a valid state response
+        with patch("msmart.base_device.Device._send_command", return_value=[TEST_RESPONSE]) as patched_method:
+
+            # Assert device is offline and unsupported
+            self.assertEqual(device.online, False)
+            self.assertEqual(device.supported, False)
+
+            # Refresh device
+            await device.refresh()
+
+            # Assert patch method was awaited
+            patched_method.assert_awaited()
+
+            # Assert device is now online and supported
+            self.assertEqual(device.online, True)
+            self.assertEqual(device.supported, True)
+
+    async def test_refresh_one_response(self) -> None:
+        """Test that a refresh() with only one response stays online."""
+        TEST_RESPONSE = bytes.fromhex(
+            "aa23ac00000000000303c00145660000003c0010045c6b20000000000000000000020d79")
+
+        # Create a dummy device
+        device = AC(0, 0, 0)
+
+        # Dummy method to only respond to state commands
+        packet_count = 0
+
+        async def _get_responses_sometimes(self, command) -> list[bytes]:
+            nonlocal packet_count
+
+            packet_count += 1
+            if isinstance(command, GetStateCommand):
+                return [TEST_RESPONSE]
+            else:
+                return []
+
+        # Patch _send_command to return test responses
+        with patch("msmart.base_device.Device._send_command", new=_get_responses_sometimes):
+
+            # Force device online
+            device._online = True
+            self.assertEqual(device.online, True)
+
+            # Force additional features so refresh() sends multuple requests are sent
+            device._request_energy_usage = True
+            device._supports_humidity = True
+
+            # Refresh device
+            await device.refresh()
+
+            # Assert expected number of packets was sent
+            self.assertEqual(packet_count, 3)
+
+            # Assert device is still online
+            self.assertEqual(device.online, True)
 
 
 if __name__ == "__main__":

@@ -407,14 +407,6 @@ class AirConditioner(Device):
 
         responses = await super()._send_command(command)
 
-        # No response from device
-        if responses is None:
-            self._online = False
-            return []
-
-        # Device is online if we received any response
-        self._online = True
-
         valid_responses = []
         for data in responses:
             try:
@@ -424,10 +416,10 @@ class AirConditioner(Device):
                 _LOGGER.error(e)
                 continue
 
-            # Device is supported if we can process a response
-            self._supported = True
-
             valid_responses.append(response)
+
+        # Device is supported if we can process any response
+        self._supported = len(valid_responses) > 0
 
         return valid_responses
 
@@ -526,10 +518,19 @@ class AirConditioner(Device):
         if len(self._supported_properties):
             commands.append(GetPropertiesCommand(self._supported_properties))
 
-        # Send commands and process any responses
-        for cmd in commands:
-            for response in await self._send_command_get_responses(cmd):
-                self._update_state(response)
+        # Send all commands and collect responses
+        responses = [
+            resp
+            for cmd in commands
+            for resp in await self._send_command_get_responses(cmd)
+        ]
+
+        # Device is online if any response received
+        self._online = len(responses) > 0
+
+        # Update state from responses
+        for response in responses:
+            self._update_state(response)
 
     async def _apply_properties(self, properties: dict[PropertyId, Union[int, bool]]) -> None:
         """Apply the provided properties to the device."""
