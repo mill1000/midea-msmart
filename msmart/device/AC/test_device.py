@@ -663,7 +663,7 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
                 return []
 
         # Patch _send_command to return test responses
-        with patch("msmart.base_device.Device._send_command", new=_get_responses_sometimes) as patched_method:
+        with patch("msmart.base_device.Device._send_command", new=_get_responses_sometimes):
 
             # Force device online
             device._online = True
