@@ -310,7 +310,7 @@ class SetStateCommand(Command):
         freeze_protect = 0x80 if self.freeze_protection else 0
 
         # Build independent aux heat
-        independent_aux_heat = 0x08
+        independent_aux_heat = 0x08 if self.independent_aux_heat else 0
 
         return super().tobytes(bytes([
             # Set state
