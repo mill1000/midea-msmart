@@ -60,8 +60,8 @@ class Cloud:
                  account: Optional[str] = None,
                  password: Optional[str] = None,
                  use_china_server: bool = False,
-                 get_async_client: Optional[Callable[[
-                     Any], httpx.AsyncClient]] = None,
+                 get_async_client: Optional[
+                     Callable[[Any], httpx.AsyncClient]] = None,
                  ) -> None:
         # Allow override Chia server from environment
         if os.getenv("MIDEA_CHINA_SERVER", "0") == "1":
