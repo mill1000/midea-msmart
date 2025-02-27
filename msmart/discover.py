@@ -4,7 +4,9 @@ import ipaddress
 import logging
 import socket
 import xml.etree.ElementTree as ET
-from typing import Any, Optional, Type, cast
+from typing import Any, Callable, Optional, Type, cast
+
+import httpx
 
 from msmart.cloud import Cloud, CloudError
 from msmart.const import (DEFAULT_CLOUD_REGION, DEVICE_INFO_MSG, DISCOVERY_MSG,
@@ -152,7 +154,9 @@ class Discover:
         region: str = DEFAULT_CLOUD_REGION,
         account: Optional[str] = None,
         password: Optional[str] = None,
-        auto_connect: bool = True
+        auto_connect: bool = True,
+        get_async_client: Optional[
+            Callable[..., httpx.AsyncClient]] = None
     ) -> list[Device]:
         """Discover devices via broadcast."""
 
@@ -162,6 +166,7 @@ class Discover:
 
         # Always use a new cloud connection
         cls._cloud = None
+        cls._get_async_client = get_async_client
 
         # Save cloud region and credentials
         cls._region = region
@@ -225,8 +230,11 @@ class Discover:
         async with cls._lock:
             # Create cloud connection if nonexistent
             if cls._cloud is None:
-                cloud = Cloud(cls._region, account=cls._account,
-                              password=cls._password)
+                cloud = Cloud(cls._region,
+                              account=cls._account,
+                              password=cls._password,
+                              get_async_client=cls._get_async_client
+                              )
                 try:
                     await cloud.login()
                     cls._cloud = cloud
