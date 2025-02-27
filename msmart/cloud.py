@@ -61,7 +61,7 @@ class Cloud:
                  password: Optional[str] = None,
                  use_china_server: bool = False,
                  get_async_client: Optional[
-                     Callable[[Any], httpx.AsyncClient]] = None,
+                     Callable[..., httpx.AsyncClient]] = None,
                  ) -> None:
         # Allow override Chia server from environment
         if os.getenv("MIDEA_CHINA_SERVER", "0") == "1":
@@ -89,13 +89,11 @@ class Cloud:
 
         self._base_url = Cloud.BASE_URL_CHINA if use_china_server else Cloud.BASE_URL
 
+        # Setup method for getting a client
         self._get_async_client = get_async_client if get_async_client else httpx.AsyncClient
 
         _LOGGER.info("Using Midea cloud server: %s (China: %s).",
                      self._base_url, use_china_server)
-
-    def _get_client(self, *args, **kwargs) -> httpx.AsyncClient:
-        return self._get_async_client(*args, **kwargs)
 
     def _timestamp(self) -> str:
         """Format a timestamp for the API."""
@@ -117,7 +115,7 @@ class Cloud:
                             contents: str, retries: int = RETRIES) -> Optional[dict]:
         """Post a request to the API."""
 
-        async with self._get_client() as client:
+        async with self._get_async_client() as client:
             while retries > 0:
                 try:
                     # Post request and handle bad status code
@@ -272,7 +270,7 @@ class Cloud:
 
         file_name = response["fileName"]
         url = response["url"]
-        async with self._get_client() as client:
+        async with self._get_async_client() as client:
             try:
                 # Get file from server
                 r = await client.get(url, timeout=10.0)
@@ -310,7 +308,7 @@ class Cloud:
 
         file_name = result["title"]
         url = result["url"]
-        async with self._get_client(verify=False) as client:
+        async with self._get_async_client(verify=False) as client:
             try:
                 # Get file from server
                 r = await client.get(url, timeout=10.0)

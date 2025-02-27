@@ -156,7 +156,7 @@ class Discover:
         password: Optional[str] = None,
         auto_connect: bool = True,
         get_async_client: Optional[
-            Callable[[Any], httpx.AsyncClient]] = None
+            Callable[..., httpx.AsyncClient]] = None
     ) -> list[Device]:
         """Discover devices via broadcast."""
 
