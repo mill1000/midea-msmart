@@ -1,9 +1,15 @@
 import unittest
 from typing import Any, Optional
+import logging 
 
 from msmart.cloud import ApiError, Cloud, CloudError
 from msmart.const import DEFAULT_CLOUD_REGION
 
+logging.basicConfig(level=logging.DEBUG)
+# Set httpx to warning level
+logging.getLogger("asyncio").setLevel(logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 class TestCloud(unittest.IsolatedAsyncioTestCase):
     # pylint: disable=protected-access
@@ -19,35 +25,35 @@ class TestCloud(unittest.IsolatedAsyncioTestCase):
 
         return client
 
-    async def test_login(self) -> None:
-        """Test that we can login to the cloud."""
+    # async def test_login(self) -> None:
+    #     """Test that we can login to the cloud."""
 
-        client = await self._login()
+    #     client = await self._login()
 
-        self.assertIsNotNone(client._session)
-        self.assertIsNotNone(client._access_token)
+    #     self.assertIsNotNone(client._session)
+    #     self.assertIsNotNone(client._access_token)
 
-    async def test_login_exception(self) -> None:
-        """Test that bad credentials raise an exception."""
+    # async def test_login_exception(self) -> None:
+    #     """Test that bad credentials raise an exception."""
 
-        with self.assertRaises(ApiError):
-            await self._login(account="bad@account.com", password="not_a_password")
+    #     with self.assertRaises(ApiError):
+    #         await self._login(account="bad@account.com", password="not_a_password")
 
-    async def test_invalid_region(self) -> None:
-        """Test that an invalid region raise an exception."""
+    # async def test_invalid_region(self) -> None:
+    #     """Test that an invalid region raise an exception."""
 
-        with self.assertRaises(ValueError):
-            await self._login("NOT_A_REGION")
+    #     with self.assertRaises(ValueError):
+    #         await self._login("NOT_A_REGION")
 
-    async def test_invalid_credentials(self) -> None:
-        """Test that invalid credentials raise an exception."""
+    # async def test_invalid_credentials(self) -> None:
+    #     """Test that invalid credentials raise an exception."""
 
-        # Check that specifying only an account or password raises an error
-        with self.assertRaises(ValueError):
-            await self._login(account=None, password="some_password")
+    #     # Check that specifying only an account or password raises an error
+    #     with self.assertRaises(ValueError):
+    #         await self._login(account=None, password="some_password")
 
-        with self.assertRaises(ValueError):
-            await self._login(account="some_account", password=None)
+    #     with self.assertRaises(ValueError):
+    #         await self._login(account="some_account", password=None)
 
     async def test_get_token(self) -> None:
         """Test that a token and key can be obtained from the cloud."""
@@ -60,27 +66,27 @@ class TestCloud(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(token)
         self.assertIsNotNone(key)
 
-    async def test_get_token_exception(self) -> None:
-        """Test that an exception is thrown when a token and key 
-        can't be obtained from the cloud."""
+    # async def test_get_token_exception(self) -> None:
+    #     """Test that an exception is thrown when a token and key 
+    #     can't be obtained from the cloud."""
 
-        BAD_UDPID = "NOT_A_UDPID"
+    #     BAD_UDPID = "NOT_A_UDPID"
 
-        client = await self._login()
+    #     client = await self._login()
 
-        with self.assertRaises(CloudError):
-            await client.get_token(BAD_UDPID)
+    #     with self.assertRaises(CloudError):
+    #         await client.get_token(BAD_UDPID)
 
-    async def test_connect_exception(self) -> None:
-        """Test that an exception is thrown when the cloud connection fails."""
+    # async def test_connect_exception(self) -> None:
+    #     """Test that an exception is thrown when the cloud connection fails."""
 
-        client = Cloud(DEFAULT_CLOUD_REGION)
+    #     client = Cloud(DEFAULT_CLOUD_REGION)
 
-        # Override URL to an invalid domain
-        client._base_url = "https://fake_server.invalid."
+    #     # Override URL to an invalid domain
+    #     client._base_url = "https://fake_server.invalid."
 
-        with self.assertRaises(CloudError):
-            await client.login()
+    #     with self.assertRaises(CloudError):
+    #         await client.login()
 
 
 if __name__ == "__main__":

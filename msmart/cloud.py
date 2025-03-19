@@ -43,13 +43,16 @@ class Cloud:
     CLIENT_TYPE = 1  # Android
     FORMAT = 2  # JSON
     LANGUAGE = "en_US"
-    APP_ID = "1010"
-    SRC = "1010"
+    APP_ID = "1017"
+    SRC = "1017"
     DEVICE_ID = token_hex(8)  # Random device ID
 
     # Base URLs
-    BASE_URL = "https://mp-prod.appsmb.com"
+    # BASE_URL = "https://mp-prod.appsmb.com/mas/v5/app/proxy?alias="
     BASE_URL_CHINA = "https://mp-prod.smartmidea.net"
+
+    # NetHome Plus
+    BASE_URL = "https://mapp.appsmb.com"
 
     # Default number of request retries
     RETRIES = 3
@@ -83,6 +86,7 @@ class Cloud:
         self._login_id = None
         self._access_token = ""
         self._session = {}
+        self._session_id = ""
 
         self._api_lock = Lock()
         self._security = _Security(use_china_server)
@@ -105,9 +109,9 @@ class Cloud:
         _LOGGER.debug("API response: %s", response.text)
         body = json.loads(response.text)
 
-        response_code = int(body["code"])
+        response_code = int(body["errorCode"])
         if response_code == 0:
-            return body["data"]
+            return body["result"]
 
         raise ApiError(body["msg"], code=response_code)
 
@@ -115,11 +119,11 @@ class Cloud:
                             contents: str, retries: int = RETRIES) -> Optional[dict]:
         """Post a request to the API."""
 
-        async with self._get_async_client() as client:
+        async with self._get_async_client(verify=False) as client:
             while retries > 0:
                 try:
                     # Post request and handle bad status code
-                    r = await client.post(url, headers=headers, content=contents, timeout=10.0)
+                    r = await client.post(url, headers=headers, data=contents, timeout=10.0)
                     r.raise_for_status()
 
                     # Parse the response
@@ -137,25 +141,26 @@ class Cloud:
         """Make a request to the Midea cloud return the results."""
 
         # Encode body as JSON
-        contents = json.dumps(body)
+        # contents = json.dumps(body)
         random = token_hex(16)
 
         # Sign the contents and add it to the header
-        sign = self._security.sign(contents, random)
-        headers = {
-            "Content-Type": "application/json",
-            "secretVersion": "1",
-            "sign": sign,
-            "random": random,
-            "accessToken": self._access_token
-        }
-
+        sign = self._security.sign_oem(endpoint, body)
+        headers = None
+        # headers = {
+        #     "Content-Type": "application/json",
+        #     "secretVersion": "1",
+        #     "sign": sign,
+        #     "random": random,
+        #     "accessToken": self._access_token
+        # }
+        body["sign"] = sign
         # Build complete request URL
-        url = f"{self._base_url}/mas/v5/app/proxy?alias={endpoint}"
+        url = f"{self._base_url}{endpoint}"
 
         # Lock the API and post the request
         async with self._api_lock:
-            return await self._post_request(url, headers, contents)
+            return await self._post_request(url, headers, body)
 
     def _build_request_body(self, data: dict[str, Any]) -> dict[str, Any]:
         """Build a request body."""
@@ -169,7 +174,8 @@ class Cloud:
             "src": Cloud.SRC,
             "stamp": self._timestamp(),
             "deviceId": Cloud.DEVICE_ID,
-            "reqId": token_hex(16),
+            # "reqId": token_hex(16),
+            "sessionId": self._session_id
         }
 
         # Add additional fields to the body
@@ -204,33 +210,40 @@ class Cloud:
             self._login_id = await self._get_login_id()
             _LOGGER.debug("Received loginId: %s", self._login_id)
 
-        # Build the login data
-        body = {
-            "data": {
-                "platform": Cloud.FORMAT,
-                "deviceId": Cloud.DEVICE_ID,
-            },
-            "iotData": {
-                "appId": Cloud.APP_ID,
-                "clientType": Cloud.CLIENT_TYPE,
-                "iampwd": self._security.encrypt_iam_password(self._login_id, self._password),
-                "loginAccount": self._account,
-                "password": self._security.encrypt_password(self._login_id, self._password),
-                "pushToken": token_urlsafe(120),
-                "reqId": token_hex(16),
-                "src": Cloud.SRC,
-                "stamp": self._timestamp(),
-            },
-        }
+        # # Build the login data
+        # body = {
+        #     "data": {
+        #         "platform": Cloud.FORMAT,
+        #         "deviceId": Cloud.DEVICE_ID,
+        #     },
+        #     "iotData": {
+        #         "appId": Cloud.APP_ID,
+        #         "clientType": Cloud.CLIENT_TYPE,
+        #         "iampwd": self._security.encrypt_iam_password(self._login_id, self._password),
+        #         "loginAccount": self._account,
+        #         "password": self._security.encrypt_password(self._login_id, self._password),
+        #         "pushToken": token_urlsafe(120),
+        #         "reqId": token_hex(16),
+        #         "src": Cloud.SRC,
+        #         "stamp": self._timestamp(),
+        #     },
+        # }
 
         # Login and store the session
-        response = await self._api_request("/mj/user/login", body)
+        response = await self._api_request("/v1/user/login", 
+            self._build_request_body(
+                {
+                    "loginAccount": self._account,
+                    "password": self._security.encrypt_password(self._login_id, self._password),
+                }
+            ))
 
         # Assert response is not None since we should throw on errors
         assert response is not None
 
         self._session = response
-        self._access_token = response["mdata"]["accessToken"]
+        self._access_token = response["accessToken"]
+        self._session_id = response["sessionId"]
         _LOGGER.debug("Received accessToken: %s", self._access_token)
 
     async def get_token(self, udpid: str) -> tuple[str, str]:
@@ -332,7 +345,10 @@ class _Security:
     LOGIN_KEY_CHINA = "ad0ee21d48a64bf49f4fb583ab76e799"
 
     # MSmartHome
-    APP_KEY = "ac21b9f9cbfe4ca5a88562ef25e2b768"
+    # APP_KEY = "ac21b9f9cbfe4ca5a88562ef25e2b768"
+
+    # NetHome PLus
+    APP_KEY = "3742e9e5842d4ad59c2db887e12449f9"
 
     def __init__(self, use_china_server=False):
         self._use_china_server = use_china_server
@@ -354,6 +370,19 @@ class _Security:
         sign = hmac.new(self.HMAC_KEY.encode("ASCII"),
                         msg.encode("ASCII"), hashlib.sha256)
         return sign.hexdigest()
+    
+    def sign_oem(self, url: str, data: str) -> str:
+        from urllib.parse import unquote_plus, urlencode, urlparse
+
+        path = urlparse(url).path
+
+        query  = sorted(data.items(), key=lambda x: x[0])
+        query_str = unquote_plus(urlencode(query))
+
+        msg = path + query_str + self.APP_KEY
+
+        sign = hashlib.sha256( msg.encode("ASCII"))
+        return sign.hexdigest()
 
     def encrypt_password(self, login_id: str, password: str) -> str:
         """Encrypt the password for cloud API password."""
@@ -361,7 +390,7 @@ class _Security:
         m1 = hashlib.sha256(password.encode("ASCII"))
 
         # Create the login hash with the loginID + password hash + loginKey, then hash it all AGAIN
-        login_hash = login_id + m1.hexdigest() + self._login_key
+        login_hash = login_id + m1.hexdigest() + self.APP_KEY
         m2 = hashlib.sha256(login_hash.encode("ASCII"))
 
         return m2.hexdigest()
