@@ -147,27 +147,27 @@ class TestSmartHomeCloud(TestCloud):
         with self.assertRaises(ValueError):
             await self._login(account="some_account", password=None)
 
-    # async def test_get_token(self) -> None:
-    #     """Test that a token and key can be obtained from the cloud."""
+    async def test_get_token(self) -> None:
+        """Test that a token and key can be obtained from the cloud."""
+        # Get token tests disabled until we can solve the broken API
+        # DUMMY_UDPID = "4fbe0d4139de99dd88a0285e14657045"
 
-    #     DUMMY_UDPID = "4fbe0d4139de99dd88a0285e14657045"
+        # client = await self._login()
+        # token, key = await client.get_token(DUMMY_UDPID)
 
-    #     client = await self._login()
-    #     token, key = await client.get_token(DUMMY_UDPID)
+        # self.assertIsNotNone(token)
+        # self.assertIsNotNone(key)
 
-    #     self.assertIsNotNone(token)
-    #     self.assertIsNotNone(key)
+    async def test_get_token_exception(self) -> None:
+        """Test that an exception is thrown when a token and key
+        can't be obtained from the cloud."""
+        # Get token tests disabled until we can solve the broken API
+        # BAD_UDPID = "NOT_A_UDPID"
 
-    # async def test_get_token_exception(self) -> None:
-    #     """Test that an exception is thrown when a token and key
-    #     can't be obtained from the cloud."""
+        # client = await self._login()
 
-    #     BAD_UDPID = "NOT_A_UDPID"
-
-    #     client = await self._login()
-
-    #     with self.assertRaises(CloudError):
-    #         await client.get_token(BAD_UDPID)
+        # with self.assertRaises(CloudError):
+        #     await client.get_token(BAD_UDPID)
 
     async def test_connect_exception(self) -> None:
         """Test that an exception is thrown when the cloud connection fails."""
