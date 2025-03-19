@@ -14,7 +14,7 @@ import httpx
 from Crypto.Cipher import AES
 from Crypto.Util import Padding
 
-from msmart.const import CLOUD_CREDENTIALS, DEFAULT_CLOUD_REGION, DeviceType
+from msmart.const import DEFAULT_CLOUD_REGION, DeviceType
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -193,7 +193,11 @@ class SmartHomeCloud(BaseCloud):
     BASE_URL = "https://mp-prod.appsmb.com"
     BASE_URL_CHINA = "https://mp-prod.smartmidea.net"
 
-    CLOUD_CREDENTIALS = CLOUD_CREDENTIALS
+    CLOUD_CREDENTIALS = {
+        "DE": ("midea_eu@mailinator.com", "das_ist_passwort1"),
+        "KR": ("midea_sea@mailinator.com", "password_for_sea1"),
+        "US": ("midea@mailinator.com", "this_is_a_password1")
+    }
 
     def __init__(self,
                  region: str = DEFAULT_CLOUD_REGION,
@@ -456,7 +460,11 @@ class NetHomePlusCloud(BaseCloud):
 
     BASE_URL = "https://mapp.appsmb.com"
 
-    CLOUD_CREDENTIALS = CLOUD_CREDENTIALS
+    CLOUD_CREDENTIALS = {
+        "DE": ("nethome+de@mailinator.com", "password1"),
+        "KR": ("nethome+sea@mailinator.com", "password1"),
+        "US": ("nethome+us@mailinator.com", "password1")
+    }
 
     def __init__(self,
                  region: str = DEFAULT_CLOUD_REGION,

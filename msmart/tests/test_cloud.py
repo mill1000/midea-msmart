@@ -18,8 +18,8 @@ class TestCloud(unittest.IsolatedAsyncioTestCase):
 
     async def _login(self,
                      class_name,
-                     region: str = DEFAULT_CLOUD_REGION,
                      *,
+                     region: str = DEFAULT_CLOUD_REGION,
                      account: Optional[str] = None,
                      password: Optional[str] = None
                      ) -> BaseCloud:
@@ -44,6 +44,22 @@ class TestNetHomePlusCloud(TestCloud):
         self.assertIsNotNone(client._session)
         self.assertIsNotNone(client._session_id)
 
+    async def test_login_de(self) -> None:
+        """Test that we can login to the cloud with the DE region."""
+
+        client = await self._login(region="DE")
+
+        self.assertIsNotNone(client._session)
+        self.assertIsNotNone(client._session_id)
+
+    async def test_login_kr(self) -> None:
+        """Test that we can login to the cloud with the KR region."""
+
+        client = await self._login(region="KR")
+
+        self.assertIsNotNone(client._session)
+        self.assertIsNotNone(client._session_id)
+
     async def test_login_exception(self) -> None:
         """Test that bad credentials raise an exception."""
 
@@ -54,7 +70,7 @@ class TestNetHomePlusCloud(TestCloud):
         """Test that an invalid region raise an exception."""
 
         with self.assertRaises(ValueError):
-            await self._login("NOT_A_REGION")
+            await self._login(region="NOT_A_REGION")
 
     async def test_invalid_credentials(self) -> None:
         """Test that invalid credentials raise an exception."""
@@ -125,7 +141,7 @@ class TestSmartHomeCloud(TestCloud):
         """Test that an invalid region raise an exception."""
 
         with self.assertRaises(ValueError):
-            await self._login("NOT_A_REGION")
+            await self._login(region="NOT_A_REGION")
 
     async def test_invalid_credentials(self) -> None:
         """Test that invalid credentials raise an exception."""
