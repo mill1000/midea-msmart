@@ -5,7 +5,7 @@ import logging
 from typing import NoReturn
 
 from msmart import __version__
-from msmart.cloud import Cloud, CloudError
+from msmart.cloud import CloudError, SmartHomeCloud
 from msmart.const import CLOUD_CREDENTIALS, DEFAULT_CLOUD_REGION
 from msmart.device import AirConditioner as AC
 from msmart.discover import Discover
@@ -235,7 +235,11 @@ async def _download(args) -> None:
         exit(1)
 
     # Get cloud connection
-    cloud = Cloud(args.region, account=args.account, password=args.password)
+    cloud = SmartHomeCloud(
+        args.region,
+        account=args.account,
+        password=args.password
+    )
     try:
         await cloud.login()
     except CloudError as e:

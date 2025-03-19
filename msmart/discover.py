@@ -8,7 +8,7 @@ from typing import Any, Callable, Optional, Type, cast
 
 import httpx
 
-from msmart.cloud import Cloud, CloudError
+from msmart.cloud import CloudError, NetHomePlusCloud
 from msmart.const import (DEFAULT_CLOUD_REGION, DEVICE_INFO_MSG, DISCOVERY_MSG,
                           DeviceType)
 from msmart.device import AirConditioner, Device
@@ -221,7 +221,7 @@ class Discover:
         return None
 
     @classmethod
-    async def _get_cloud(cls) -> Optional[Cloud]:
+    async def _get_cloud(cls) -> Optional[NetHomePlusCloud]:
         """Return a cloud connection, creating it if necessary."""
 
         # Lock should exist by now
@@ -230,11 +230,12 @@ class Discover:
         async with cls._lock:
             # Create cloud connection if nonexistent
             if cls._cloud is None:
-                cloud = Cloud(cls._region,
-                              account=cls._account,
-                              password=cls._password,
-                              get_async_client=cls._get_async_client
-                              )
+                cloud = NetHomePlusCloud(
+                    cls._region,
+                    account=cls._account,
+                    password=cls._password,
+                    get_async_client=cls._get_async_client
+                )
                 try:
                     await cloud.login()
                     cls._cloud = cloud
