@@ -6,12 +6,6 @@ from msmart.cloud import (ApiError, BaseCloud, CloudError, NetHomePlusCloud,
                           SmartHomeCloud)
 from msmart.const import DEFAULT_CLOUD_REGION
 
-# logging.basicConfig(level=logging.DEBUG)
-# # Set httpx to warning level
-# logging.getLogger("asyncio").setLevel(logging.INFO)
-# logging.getLogger("httpx").setLevel(logging.WARNING)
-# logging.getLogger("httpcore").setLevel(logging.WARNING)
-
 
 class TestCloud(unittest.IsolatedAsyncioTestCase):
     # pylint: disable=protected-access
