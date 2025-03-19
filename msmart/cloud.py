@@ -99,7 +99,7 @@ class BaseCloud:
                             ) -> Optional[dict]:
         """Post a request to the cloud."""
 
-        async with self._get_async_client(verify=False) as client:
+        async with self._get_async_client() as client:
             while retries > 0:
                 try:
                     # Post request and handle bad status code
@@ -363,7 +363,7 @@ class SmartHomeCloud(BaseCloud):
 
         file_name = result["title"]
         url = result["url"]
-        async with self._get_async_client(verify=False) as client:
+        async with self._get_async_client() as client:
             try:
                 # Get file from server
                 r = await client.get(url, timeout=10.0)
