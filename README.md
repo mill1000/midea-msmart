@@ -1,10 +1,11 @@
 # msmart-ng
-A Python library for local control of Midea (and associated brands) smart air conditioners.
+A Python library for local control of Midea (and associated brands) smart air conditioners. Designed for ease of integration, with async support and minimal dependencies.
 
 [![Code Quality Checks](https://github.com/mill1000/midea-msmart/actions/workflows/checks.yml/badge.svg)](https://github.com/mill1000/midea-msmart/actions/workflows/checks.yml)
 [![PyPI](https://img.shields.io/pypi/v/msmart-ng?logo=PYPI)](https://pypi.org/project/msmart-ng/)
 
-If a devices uses one of the following apps it is likely supported:
+## Supported Devices
+This library supports air conditioners from Midea and several associated brands that use the following Android apps or their iOS equivalents:
 * Artic King (com.arcticking.ac)
 * Midea Air (com.midea.aircondition.obm)
 * NetHome Plus (com.midea.aircondition)
@@ -12,13 +13,11 @@ If a devices uses one of the following apps it is likely supported:
 * Toshiba AC NA (com.midea.toshiba)
 * 美的美居 (com.midea.ai.appliances)
   
-__Note: Only air conditioner devices (type 0xAC) are supported.__ 
-
-See [usage](#usage) to determine if a device is supported.
+__Note: Only air conditioners (type 0xAC) are supported. See the [usage](#usage) section for how to check compatibility.__ 
 
 ## Features
 #### Async Support
-The device, LAN and cloud classes have all been rewritten to support async/await syntax.
+The library fully supports async/await, allowing non-blocking communication with devices.
 
 ```python
 from msmart.device import AirConditioner as AC
@@ -34,9 +33,7 @@ await device.refresh()
 ```
 
 #### Device Discovery
-A new discovery module can discover and return ready-to-use device objects from the network. A single device can be discovered by IP or hostname with the `discover_single` method.
-
-__Note: V3 devices are automatically authenticated via the Midea cloud.__
+Automatically discover devices on the local network or an individual device by IP or hostname.
 
 ```python
 from msmart.discover import Discover
@@ -48,18 +45,19 @@ devices = await Discover.discover()
 device = await Discover.discover_single(DEVICE_IP)
 ```
 
-#### Less Dependencies
-Some external dependencies have been replaced with standard Python modules.
+__Note: V3 devices are automatically authenticated via the NetHome Plus cloud.__
 
-#### Code Quality
-- The majority of the code is now type annotated.
-- Code style and import sorting are enforced by autopep8 and isort via Github Actions.
-- Unit tests are implemented and executed by Github Actions.
-- A number of unused methods and modules have been removed from the code.
+#### Reduced Dependencies
+Many external dependencies have been replaced with standard Python modules.
+
+#### Code Quality Improvements
+- Type annotated for clarity.
+- Code style and import sorting enforced by autopep8 and isort.
+- Unit tests validated by Github Actions.
 - Naming conventions follow PEP8.
 
 ## Installing
-Use pip, remove the old `msmart` package if necessary, and install this fork `msmart-ng`.
+To install, use pip to install `msmart-ng`, and remove the old `msmart` package if necessary.
 
 ```shell
 pip uninstall msmart
@@ -67,66 +65,57 @@ pip install msmart-ng
 ```
 
 ## Usage
-### CLI
-A simple command line interface is provided to discover, query and contorl devices. 
+### Command Line Interface (CLI)
+Interact with devices using a simple command-line tool that supports device discovery, querying, and control.
 
 ```shell
 $ msmart-ng --help
 usage: msmart-ng [-h] [-v] {discover,query,control,download} ...
-
-Command line utility for msmart-ng.
-
-options:
-  -h, --help            show this help message and exit
-  -v, --version         show program's version number and exit
-
-Command:
-  {discover,query,control,download}
 ```
 
-Each subcommand has additional help available. e.g. `msmart-ng discover --help`
+For more details on each subcommand and its available options, run `msmart-ng <command> --help`
 
 #### Discover
-Discover all devices on the LAN with the `msmart-ng discover` subcommand. 
+Discover devices on the local network with the `msmart-ng discover` subcommand. 
 
 ```shell
 $ msmart-ng discover
 INFO:msmart.cli:Discovering all devices on local network.
 ...
-INFO:msmart.cli:Found 2 devices.
+INFO:msmart.cli:Found 1 devices.
 INFO:msmart.cli:Found device:
 {'ip': '10.100.1.140', 'port': 6444, 'id': 15393162840672, 'online': True, 'supported': True, 'type': <DeviceType.AIR_CONDITIONER: 172>, 'name': 'net_ac_F7B4', 'sn': '000000P0000000Q1F0C9D153F7B40000', 'key': None, 'token': None}
-INFO:msmart.cli:Found device:
-{'ip': '10.100.1.239', 'port': 6444, 'id': 147334558165565, 'online': True, 'supported': True, 'type': <DeviceType.AIR_CONDITIONER: 172>, 'name': 'net_ac_63BA', 'sn': '000000P0000000Q1B88C29C963BA0000', 'key': '3a13f53f335042f9ae5fd266a6bd779459ed7ee7e09842f1a0e03c024890fc96', 'token': '56a72747cef14d55e17e69b46cd98deae80607e318a7b55cb86bb98974501034c657e39e4a4032e3c8cc9a3cab00fd3ec0bab4a816a57f68b8038977406b7431'}
 ```
 
-Check the output to ensure the type is 0xAC and the `supported` property is True.
+Ensure the device type is 0xAC and the `supported` property is True.
 
 Save the device ID, IP address, and port. Version 3 devices will also require the `token` and `key` fields to control the device.
 
+#### Warning: V3 Device Users
+For V3 devices, it's highly recommended to save your token and key values in a secure place. In the event that the cloud become unavailable, having these on hand will allow you to continue controlling your device locally.
+
 ##### Note: V1 Device Owners
-Users with V1 devices will see the following error:
+Owners of V1 devices might encounter the following error:
 
 ```
 ERROR:msmart.discover:V1 device not supported yet.
 ```
 
-I don't have any V1 devices to test with so please create an issue with the output of `msmart-ng discover --debug`.
+Please report this error with the output of `msmart-ng discover --debug` to help improve support.
 
 #### Query
 Query device state and capabilities with the `msmart-ng query` subcommand.
 
-**Note:** Version 3 devices need to specify either the `--auto` argument or the `--token`, `--key` and `--id` arguments to make a connection.
-
 ```shell
 $ msmart-ng query <HOST>
-
 ```
 
-Device capabilities can be queried with the `--capabilities` argument.
+Add `--capabilities` to list available capabilities of the device.
+
+**Note:** Version 3 devices need to specify either the `--auto` argument or the `--token`, `--key` and `--id` arguments to make a connection.
 
 #### Control
-Control device state with the `msmart-ng control` subcommand. The command takes a space seperated list of key-value pairs of settings to control.
+Control a device with the `msmart-ng control` subcommand. The command takes key-value pairs of settings to control.
 
 Enumerated settings like `operational_mode`, `fan_speed`, and `swing_mode` can accept integer or string values. e.g. `operational_mode=cool`, `fan_speed=100` or `swing_mode=both`.
 
@@ -134,34 +123,30 @@ Number settings like `target_temperature` can accept floating point or integer v
 
 Boolean settings like `display_on` and `beep` can accept integer or string values. e.g. `display_on=True` or `beep=0`.
 
-**Note:** Version 3 devices need to specify either the `--auto` argument or the `--token`, `--key` and `--id` arguments to make a connection.
-
 ```shell
 $ msmart-ng control <HOST> operational_mode=cool target_temperature=20.5 fan_speed=100 display_on=True beep=0
 ```
 
+**Note:** Version 3 devices need to specify either the `--auto` argument or the `--token`, `--key` and `--id` arguments to make a connection.
+
 ### Home Assistant
-Use [this fork](https://github.com/mill1000/midea-ac-py) of midea-ac-py to control devices from Home Assistant.
+To control your Midea AC units via Home Assistant, use this [midea-ac-py](https://github.com/mill1000/midea-ac-py) fork.
 
 ### Python
-See the included [example](example.py) for controlling devices from a script.
+To control devices programmatically, see the included Python [example](example.py).
 
 ## Docker
-A docker image is available on ghcr.io at `ghcr.io/mill1000/msmart-ng`. The container should be run with `--network=host` to allow broadcast packets to reach devices on the local network. Additional arguments to the container are passed to the `msmart-ng` CLI.
+A docker image is available on ghcr.io at `ghcr.io/mill1000/msmart-ng`. Ensure the container is run with `--network=host` to allow device discovery on the local network via broadcast.
 
 ```shell
 $ docker run --network=host ghcr.io/mill1000/msmart-ng:latest --help
 usage: msmart-ng [-h] [-v] {discover,query,control,download} ...
-
-Command line utility for msmart-ng.
-
-options:
-  -h, --help            show this help message and exit
-  -v, --version         show program's version number and exit
-
-Command:
-  {discover,query,control,download}
 ```
+
+## Troubleshooting
+* If devices are not being discovered, ensure your devices are on the same subnet as your computer.
+* If a cloud connection can not be made, try using a credentials from a different region with the `--region` argument or manually specifying a NetHome Plus account.
+
 
 ## Gratitude
 This project is a fork of [mac-zhou/midea-msmart](https://github.com/mac-zhou/midea-msmart), and builds upon the work of
