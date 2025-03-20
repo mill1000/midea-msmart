@@ -240,7 +240,7 @@ class Discover:
                     await cloud.login()
                     cls._cloud = cloud
                 except CloudError as e:
-                    raise DiscoverError(
+                    raise CloudError(
                         f"Failed to login to cloud. {e}") from e
 
         return cls._cloud
@@ -369,7 +369,7 @@ class Discover:
         # Get cloud connection
         try:
             cloud = await Discover._get_cloud()
-        except DiscoverError as e:
+        except CloudError as e:
             _LOGGER.error("Could not establish cloud connection. Error: %s", e)
             raise e
 
