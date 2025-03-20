@@ -5,8 +5,8 @@ import logging
 from typing import NoReturn
 
 from msmart import __version__
-from msmart.cloud import CloudError, SmartHomeCloud
-from msmart.const import CLOUD_CREDENTIALS, DEFAULT_CLOUD_REGION
+from msmart.cloud import CloudError, NetHomePlusCloud, SmartHomeCloud
+from msmart.const import DEFAULT_CLOUD_REGION
 from msmart.device import AirConditioner as AC
 from msmart.discover import Discover
 from msmart.lan import AuthenticationError
@@ -14,6 +14,8 @@ from msmart.utils import MideaIntEnum
 
 _LOGGER = logging.getLogger(__name__)
 
+# Use NetHome Plus cloud as default
+CLOUD_CREDENTIALS = NetHomePlusCloud.CLOUD_CREDENTIALS
 
 DEFAULT_CLOUD_ACCOUNT, DEFAULT_CLOUD_PASSWORD = CLOUD_CREDENTIALS[DEFAULT_CLOUD_REGION]
 
