@@ -393,41 +393,5 @@ def main() -> NoReturn:
     _run(parser.parse_args())
 
 
-def _legacy_main() -> NoReturn:
-    """Main entry point for legacy midea-discover command."""
-
-    async def _wrap_discover(args) -> None:
-        """Wrapper method to mimic legacy behavior."""
-        # Map old args to new names as needed
-        args.host = args.ip
-
-        # Output legacy information
-        _LOGGER.info("msmart version: %s", __version__)
-        _LOGGER.info(
-            "Only supports AC devices. Only supports MSmartHome and 美的美居.")
-
-        await _discover(args)
-
-    parser = argparse.ArgumentParser(
-        description="Discover Midea devices and print device information.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        "-d", "--debug", help="Enable debug logging.", action="store_true")
-    parser.add_argument(
-        "-a", "--account", help="MSmartHome or 美的美居 account username.", default=DEFAULT_CLOUD_ACCOUNT)
-    parser.add_argument(
-        "-p", "--password", help="MSmartHome or 美的美居 account password.", default=DEFAULT_CLOUD_PASSWORD)
-    parser.add_argument(
-        "-i", "--ip", help="IP address of a device. Useful if broadcasts don't work, or to query a single device.")
-    parser.add_argument(
-        "-c", "--count", help="Number of broadcast packets to send.", default=3, type=int)
-    parser.add_argument("--china", help="Use China server.",
-                        action="store_true")
-    parser.set_defaults(func=_wrap_discover)
-
-    # Run with args
-    _run(parser.parse_args())
-
-
 if __name__ == "__main__":
     main()
