@@ -23,11 +23,6 @@ DEVICE_INFO_MSG = bytes([
 ])
 
 DEFAULT_CLOUD_REGION = "US"
-CLOUD_CREDENTIALS = {
-    "DE": ("midea_eu@mailinator.com", "das_ist_passwort1"),
-    "KR": ("midea_sea@mailinator.com", "password_for_sea1"),
-    "US": ("midea@mailinator.com", "this_is_a_password1")
-}
 
 
 class DeviceType(IntEnum):
