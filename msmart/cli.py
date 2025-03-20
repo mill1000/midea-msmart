@@ -300,7 +300,7 @@ def main() -> NoReturn:
         description="Command line utility for msmart-ng."
     )
     parser.add_argument("-v", "--version",
-                        action="version", version=f"msmart version: {__version__}")
+                        action="version", version=f"msmart-ng version: {__version__}")
     subparsers = parser.add_subparsers(title="Command", dest="command",
                                        required=True)
 
@@ -313,14 +313,11 @@ def main() -> NoReturn:
                                choices=CLOUD_CREDENTIALS.keys(),
                                default=DEFAULT_CLOUD_REGION)
     common_parser.add_argument("--account",
-                               help="Manually specify a MSmart username for cloud authentication.",
+                               help="Manually specify a username for cloud authentication.",
                                default=None)
     common_parser.add_argument("--password",
-                               help="Manually specify a MSmart password for cloud authentication.",
+                               help="Manually specify a password for cloud authentication.",
                                default=None)
-    common_parser.add_argument("--china",
-                               help="Use China server for discovery and authentication. Username and password must be specified.",
-                               action="store_true")
 
     # Setup discover parser
     discover_parser = subparsers.add_parser("discover",
