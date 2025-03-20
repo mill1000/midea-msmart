@@ -508,8 +508,15 @@ class LAN:
                 return bytes.fromhex(x) if isinstance(x, str) else x
 
             # Ensure passed token and key are in byte form
-            token = convert(token)
-            key = convert(key)
+            try:
+                token = convert(token)
+            except ValueError as e:
+                raise AuthenticationError(f"Invalid token format. {e}") from e
+            
+            try:
+                key = convert(key)
+            except ValueError as e:
+                raise AuthenticationError(f"Invalid key format. {e}") from e
 
         # Create a connection if not alive or protocol isn't V3
         if (not self._alive or not isinstance(self._protocol, _LanProtocolV3)):
