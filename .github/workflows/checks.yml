@@ -10,6 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  GH_USE_GEOIP: 1
+
 jobs:
   check-autopep8-isort:
     runs-on: ubuntu-latest
