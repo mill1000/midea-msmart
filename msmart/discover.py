@@ -225,7 +225,7 @@ class Discover:
         """Return a cloud connection, creating it if necessary."""
 
         # Lock should exist by now
-        assert (cls._lock)
+        assert cls._lock
 
         async with cls._lock:
             # Create cloud connection if nonexistent
@@ -240,7 +240,8 @@ class Discover:
                     await cloud.login()
                     cls._cloud = cloud
                 except CloudError as e:
-                    _LOGGER.error("Failed to login to cloud. Error: %s", e)
+                    raise CloudError(
+                        f"Failed to login to cloud. {e}") from e
 
         return cls._cloud
 
@@ -366,15 +367,18 @@ class Discover:
         """Attempt to authenticate a V3 device."""
 
         # Get cloud connection
-        cloud = await Discover._get_cloud()
-        if cloud is None:
-            _LOGGER.error("Could not establish cloud connection.")
-            return False
+        try:
+            cloud = await Discover._get_cloud()
+        except CloudError as e:
+            _LOGGER.error("Could not establish cloud connection. Error: %s", e)
+            raise e
+
+        assert cloud
 
         # Try authenticating with udpids generated from both endians
         for endian in ["little", "big"]:
-            udpid = Security.udpid(dev.id.to_bytes(
-                6, endian)).hex()  # type: ignore
+            udpid = Security.udpid(
+                dev.id.to_bytes(6, endian)).hex()  # type: ignore
 
             _LOGGER.debug(
                 "Fetching token and key for udpid '%s' (%s).", udpid, endian)

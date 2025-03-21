@@ -114,8 +114,8 @@ class BaseCloud:
                         retries -= 1
                     else:
                         raise CloudError("No response from server.") from e
-                except httpx.RequestError as e:
-                    raise CloudError("Request failed.") from e
+                except httpx.HTTPError as e:
+                    raise CloudError(f"HTTP request failed: {e}") from e
 
     async def _api_request(self, endpoint: str, body: dict[str, Any]) -> Optional[dict]:
         """Make a request to the cloud and return the results."""
