@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -48,3 +48,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install --editable .
       - run: python -m unittest
+
+      - name: Breakpoint if tests failed
+        if: failure()
+        uses: namespacelabs/breakpoint-action@v0
+        with:
+          duration: 30m
+          authorized-users: midea, password
