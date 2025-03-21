@@ -1,7 +1,8 @@
 import asyncio
+import os
 import random
 import unittest
-from typing import Any, Optional, cast
+from typing import Optional, cast
 
 from msmart.cloud import (ApiError, BaseCloud, CloudError, NetHomePlusCloud,
                           SmartHomeCloud)
@@ -18,15 +19,20 @@ class TestCloud(unittest.IsolatedAsyncioTestCase):
                      account: Optional[str] = None,
                      password: Optional[str] = None
                      ) -> BaseCloud:
+        # Check if running on CI
+        ci = os.getenv("CI", "0") == "true"
+
         client = class_name(region, account=account, password=password)
-        
+
         # Delay a little to avoid rate limiting the API
-        await asyncio.sleep(random.random())
+        if ci:
+            await asyncio.sleep(random.random())
 
         await client.login()
 
         # Delay a little to avoid rate limiting the API
-        await asyncio.sleep(random.random())
+        if ci:
+            await asyncio.sleep(random.random())
 
         return client
 
