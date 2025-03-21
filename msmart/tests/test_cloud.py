@@ -1,7 +1,8 @@
-import unittest
-import httpx
 import os
+import unittest
 from typing import Optional, cast
+
+import httpx
 
 from msmart.cloud import (ApiError, BaseCloud, CloudError, NetHomePlusCloud,
                           SmartHomeCloud)
