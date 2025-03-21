@@ -1,4 +1,4 @@
-import logging
+import asyncio
 import unittest
 from typing import Any, Optional, cast
 
@@ -19,6 +19,8 @@ class TestCloud(unittest.IsolatedAsyncioTestCase):
                      ) -> BaseCloud:
         client = class_name(region, account=account, password=password)
         await client.login()
+
+        await asyncio.sleep(1)
 
         return client
 
