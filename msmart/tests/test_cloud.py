@@ -1,5 +1,4 @@
 import asyncio
-import random
 import unittest
 from typing import Any, Optional, cast
 
@@ -21,8 +20,7 @@ class TestCloud(unittest.IsolatedAsyncioTestCase):
         client = class_name(region, account=account, password=password)
         await client.login()
 
-        # Delay a little to avoid rate limiting the API
-        await asyncio.sleep(random.random())
+        await asyncio.sleep(1)
 
         return client
 
