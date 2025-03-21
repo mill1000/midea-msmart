@@ -1,8 +1,10 @@
 import unittest
+import unittest.mock as mock
+from unittest.mock import patch
 
-from msmart.const import DeviceType
+from msmart.const import DISCOVERY_MSG, DeviceType
 from msmart.device import AirConditioner as AC
-from msmart.discover import Discover
+from msmart.discover import _IPV4_BROADCAST, Discover
 
 
 class TestDiscover(unittest.IsolatedAsyncioTestCase):
@@ -75,6 +77,84 @@ class TestDiscover(unittest.IsolatedAsyncioTestCase):
         # Check that device can be built
         device = device_class(**info)
         self.assertIsNotNone(device)
+
+
+class TestDiscoverProtocol(unittest.IsolatedAsyncioTestCase):
+    # pylint: disable=protected-access
+
+    async def test_discover_broadcast(self) -> None:
+        """Test that Discover.discover sends broadcast packets."""
+        # Mock the underlying transport
+        mock_transport = mock.MagicMock()
+        protocol = None
+
+        def mock_create_datagram_endpoint(protocol_factory, **kwargs):
+            nonlocal protocol, mock_transport
+
+            # Build the protocol from the factory
+            protocol = protocol_factory()
+            # "Make" a connection
+            protocol.connection_made(mock_transport)
+
+            return (mock_transport, protocol)
+
+        with patch("asyncio.BaseEventLoop.create_datagram_endpoint", side_effect=mock_create_datagram_endpoint):
+            # Start discovery
+            devices = await Discover.discover(discovery_packets=1, timeout=1)
+
+            # Assert protocol and transport are assigned
+            self.assertIsNotNone(protocol)
+            self.assertEqual(protocol._transport, mock_transport)
+
+            # Assert that we tried to send discovery broadcasts
+            mock_transport.sendto.assert_has_calls([
+                mock.call(DISCOVERY_MSG, (_IPV4_BROADCAST, 6445)),
+                mock.call(DISCOVERY_MSG, (_IPV4_BROADCAST, 20086))
+            ])
+
+            # Check that transport is closed
+            mock_transport.close.assert_called_once()
+
+            # Assert no devices discovered
+            self.assertEqual(devices, [])
+
+    async def test_discover_single(self) -> None:
+        """Test that Discover.discover_single sends packets to a particular host."""
+        TARGET_HOST = "1.1.1.1"
+
+        # Mock the underlying transport
+        mock_transport = mock.MagicMock()
+        protocol = None
+
+        def mock_create_datagram_endpoint(protocol_factory, **kwargs):
+            nonlocal protocol, mock_transport
+
+            # Build the protocol from the factory
+            protocol = protocol_factory()
+            # "Make" a connection
+            protocol.connection_made(mock_transport)
+
+            return (mock_transport, protocol)
+
+        with patch("asyncio.BaseEventLoop.create_datagram_endpoint", side_effect=mock_create_datagram_endpoint):
+            # Start discovery
+            device = await Discover.discover_single(TARGET_HOST, discovery_packets=1, timeout=1)
+
+            # Assert protocol and transport are assigned
+            self.assertIsNotNone(protocol)
+            self.assertEqual(protocol._transport, mock_transport)
+
+            # Assert that we tried to send discovery broadcasts
+            mock_transport.sendto.assert_has_calls([
+                mock.call(DISCOVERY_MSG, (TARGET_HOST, 6445)),
+                mock.call(DISCOVERY_MSG, (TARGET_HOST, 20086))
+            ])
+
+            # Check that transport is closed
+            mock_transport.close.assert_called_once()
+
+            # Assert no devices discovered
+            self.assertEqual(device, None)
 
 
 if __name__ == "__main__":
