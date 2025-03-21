@@ -385,8 +385,8 @@ class Discover:
             try:
                 token, key = await cloud.get_token(udpid)
             except CloudError as e:
-                _LOGGER.error(e)
-                continue
+                _LOGGER.error("Failed to get token from cloud. Error: %s", e)
+                raise CloudError(f"Failed to get token from cloud. {e}")
 
             try:
                 await dev.authenticate(token, key)
