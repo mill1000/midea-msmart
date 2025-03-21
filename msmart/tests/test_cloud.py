@@ -1,6 +1,3 @@
-import asyncio
-import os
-import random
 import unittest
 from typing import Optional, cast
 
@@ -19,21 +16,8 @@ class TestCloud(unittest.IsolatedAsyncioTestCase):
                      account: Optional[str] = None,
                      password: Optional[str] = None
                      ) -> BaseCloud:
-        # Check if running on CI
-        ci = os.getenv("CI", "0") == "true"
-
         client = class_name(region, account=account, password=password)
-
-        # Delay a little to avoid rate limiting the API
-        if ci:
-            await asyncio.sleep(random.random())
-
         await client.login()
-
-        # Delay a little to avoid rate limiting the API
-        if ci:
-            await asyncio.sleep(random.random())
-
         return client
 
 
