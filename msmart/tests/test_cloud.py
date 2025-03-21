@@ -1,6 +1,5 @@
-import logging
 import unittest
-from typing import Any, Optional, cast
+from typing import Optional, cast
 
 from msmart.cloud import (ApiError, BaseCloud, CloudError, NetHomePlusCloud,
                           SmartHomeCloud)
@@ -19,7 +18,6 @@ class TestCloud(unittest.IsolatedAsyncioTestCase):
                      ) -> BaseCloud:
         client = class_name(region, account=account, password=password)
         await client.login()
-
         return client
 
 
