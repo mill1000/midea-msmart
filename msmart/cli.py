@@ -278,12 +278,6 @@ def _run(args) -> NoReturn:
         logging.getLogger("httpx").setLevel(logging.WARNING)
         logging.getLogger("httpcore").setLevel(logging.WARNING)
 
-    # Validate common arguments
-    if args.china and (args.account is None or args.password is None):
-        _LOGGER.error(
-            "Account (phone number) and password of 美的美居 is required to use --china option.")
-        exit(1)
-
     try:
         asyncio.run(args.func(args))
     except KeyboardInterrupt:
