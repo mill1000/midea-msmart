@@ -140,7 +140,8 @@ class TestDiscoverProtocol(unittest.IsolatedAsyncioTestCase):
             # Start discovery
             device = await Discover.discover_single(TARGET_HOST, discovery_packets=1, timeout=1)
 
-            # Assert transport is assigned
+            # Assert protocol and transport are assigned
+            self.assertIsNotNone(protocol)
             self.assertEqual(protocol._transport, mock_transport)
 
             # Assert that we tried to send discovery broadcasts
