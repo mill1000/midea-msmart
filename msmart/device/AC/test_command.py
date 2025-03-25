@@ -131,12 +131,12 @@ class TestStateResponse(_TestResponseBase):
         # Messages with additional temperature precision bits
         TEST_MESSAGES = {
             # https://github.com/mill1000/midea-msmart/issues/89#issuecomment-1783316836
-            (24.0, 25.1, 10.0): bytes.fromhex(
+            (24.0, 24.6, 9.5): bytes.fromhex(
                 "aa23ac00000000000203c00188647f7f000000000063450c0056190000000000000497c3"),
             # https://github.com/mill1000/midea-msmart/issues/89#issuecomment-1782352164
-            (24.0, 27.0, 10.2): bytes.fromhex(
+            (24.0, 26.5, 9.7): bytes.fromhex(
                 "aa23ac00000000000203c00188647f7f000000000067450c00750000000000000001a3b0"),
-            (24.0, 25.0, 10.0): bytes.fromhex(
+            (24.0, 25.0, 9.5): bytes.fromhex(
                 "aa23ac00000000000203c00188647f7f000080000064450c00501d00000000000001508e"),
         }
 
@@ -162,12 +162,12 @@ class TestStateResponse(_TestResponseBase):
             # Corrected target values from user reported values
             (16.0, 23.2, 18.4): bytes.fromhex("c00181667f7f003c00000060560400420000000000000048"),
             (16.5, 23.4, 18.4): bytes.fromhex("c00191667f7f003c00000060560400440000000000000049"),
-            (17.0, 24.1, 18.3): bytes.fromhex("c00181667f7f003c0000006156050036000000000000004a"),
-            (17.5, 24.3, 18.2): bytes.fromhex("c00191667f7f003c0000006156050028000000000000004b"),
-            (18.0, 24.3, 18.2): bytes.fromhex("c00182667f7f003c0000006156060028000000000000004c"),
-            (18.5, 24.3, 18.2): bytes.fromhex("c00192667f7f003c0000006156060028000000000000004d"),
-            (19.0, 24.3, 18.2): bytes.fromhex("c00183667f7f003c0000006156070028000000000000004e"),
-            (19.5, 24.0, 19.0): bytes.fromhex("c00193667f7f003c00000061570700550000000000000050"),
+            (17.0, 23.6, 18.3): bytes.fromhex("c00181667f7f003c0000006156050036000000000000004a"),
+            (17.5, 23.8, 18.2): bytes.fromhex("c00191667f7f003c0000006156050028000000000000004b"),
+            (18.0, 23.8, 18.2): bytes.fromhex("c00182667f7f003c0000006156060028000000000000004c"),
+            (18.5, 23.8, 18.2): bytes.fromhex("c00192667f7f003c0000006156060028000000000000004d"),
+            (19.0, 23.8, 18.2): bytes.fromhex("c00183667f7f003c0000006156070028000000000000004e"),
+            (19.5, 23.5, 18.5): bytes.fromhex("c00193667f7f003c00000061570700550000000000000050"),
         }
 
         for targets, payload in TEST_RESPONSES.items():
