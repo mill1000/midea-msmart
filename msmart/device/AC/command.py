@@ -860,7 +860,25 @@ class StateResponse(Response):
 
         self._parse(payload)
 
+    def _parse_temperature(self, data: int, decimals: float, fahrenheit: bool) -> Optional[float]:
+        """Parse a temperature value from the payload using additional precision bits as needed."""
+        if data == 0xFF:
+            return None
+
+        # Temperature parsing lifted from https://github.com/dudanov/MideaUART
+        temperature = (data - 50) / 2
+
+        # In Celcius, use additional precision from decimals if present
+        if not fahrenheit and decimals:
+            return int(temperature) + (decimals if temperature >= 0 else -decimals)
+
+        if decimals >= 0.5:
+            return int(temperature) + (0.5 if temperature >= 0 else -0.5)
+
+        return temperature
+
     def _parse(self, payload: memoryview) -> None:
+        """Parse the state response payload."""
 
         self.power_on = bool(payload[1] & 0x1)
         # self.imode_resume = payload[1] & 0x4
@@ -919,12 +937,11 @@ class StateResponse(Response):
         # self.peak_elec = (payload[10] & 0x20) > 0
         # self.natural_fan = (payload[10] & 0x40) > 0
 
-        # Define a local function to decode temperature values
-        def decode_temp(d: int) -> Optional[float]:
-            return ((d - 50)/2 if d != 0xFF else None)
-
-        self.indoor_temperature = decode_temp(payload[11])
-        self.outdoor_temperature = decode_temp(payload[12])
+        # Decode temperatures using additional precision bits
+        self.indoor_temperature = self._parse_temperature(
+            payload[11], (payload[15] & 0xF) / 10, self.fahrenheit)
+        self.outdoor_temperature = self._parse_temperature(
+            payload[12], (payload[15] >> 4) / 10, self.fahrenheit)
 
         # Decode alternate target temperature
         target_temperature_alt = payload[13] & 0x1F
@@ -937,15 +954,6 @@ class StateResponse(Response):
 
         self.display_on = (payload[14] != 0x70)
 
-        # Decode additional temperature resolution
-        if self.indoor_temperature:
-            self.indoor_temperature += (payload[15] & 0xF) / 10
-
-        if self.outdoor_temperature:
-            self.outdoor_temperature += (payload[15] >> 4) / 10
-
-        # TODO Some payloads are shorter than expected. Unsure what, when or why
-        # The lengths below were picked arbitrarily from user payload data
         if len(payload) < 20:
             return
 
