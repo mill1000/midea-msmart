@@ -82,6 +82,7 @@ class PropertyId(IntEnum):
     BREEZE_CONTROL = 0x0043  # AKA "FA No Wind Sense"
     RATE_SELECT = 0x0048
     FRESH_AIR = 0x004B
+    JET_COOL = 0x0067  # AKA "Flash Cool"
     IECO = 0x00E3
     ANION = 0x021E
 
@@ -94,6 +95,7 @@ class PropertyId(IntEnum):
             PropertyId.BREEZELESS,
             PropertyId.BUZZER,
             PropertyId.IECO,
+            PropertyId.JET_COOL,
             PropertyId.RATE_SELECT,
             PropertyId.SELF_CLEAN,
             PropertyId.SWING_LR_ANGLE,
@@ -105,7 +107,7 @@ class PropertyId(IntEnum):
         if not self._supported:
             raise NotImplementedError(f"{repr(self)} decode is not supported.")
 
-        if self in [PropertyId.BREEZELESS, PropertyId.SELF_CLEAN]:
+        if self in [PropertyId.BREEZELESS, PropertyId.JET_COOL, PropertyId.SELF_CLEAN,]:
             return bool(data[0])
         elif self == PropertyId.BREEZE_AWAY:
             return data[0] == 2
@@ -548,6 +550,7 @@ class CapabilitiesResponse(Response):
                 reader("humidity_auto_set", lambda v: v in [1, 2]),
                 reader("humidity_manual_set", lambda v: v in [2, 3]),
             ],
+            CapabilityId.JET_COOL: reader("jet_cool", get_value(1)),
             CapabilityId.MODES: [
                 reader("heat_mode", lambda v: v in [
                        1, 2, 4, 6, 7, 9, 10, 11, 12, 13]),
@@ -775,6 +778,10 @@ class CapabilitiesResponse(Response):
     @property
     def ieco(self) -> bool:
         return self._capabilities.get("ieco", False)
+
+    @property
+    def jet_cool(self) -> bool:
+        return self._capabilities.get("jet_cool", False)
 
     @property
     def turbo(self) -> bool:
