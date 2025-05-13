@@ -460,7 +460,7 @@ class AirConditioner(Device):
 
             if additional_response:
                 _LOGGER.debug(
-                    "Additional capabilities response payload from device %s: %s", self.id, response)
+                    "Additional capabilities response payload from device %s: %s", self.id, additional_response)
 
                 # Merge additional capabilities
                 response.merge(additional_response)
