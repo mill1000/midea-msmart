@@ -554,6 +554,22 @@ class TestSetState(unittest.TestCase):
         self.assertIn(PropertyId.BREEZE_AWAY, device._updated_properties)
         self.assertNotIn(PropertyId.BREEZE_CONTROL, device._updated_properties)
 
+    def test_properties_flash_cool(self) -> None:
+        """Test setting flash/jet cool property."""
+
+        # Create dummy device with jet fool
+        device = AC(0, 0, 0)
+        device._supported_properties.add(PropertyId.JET_COOL)
+
+        # Enable breezeless
+        device.flash_cool = True
+
+        # Assert state is expected
+        self.assertEqual(device.flash_cool, True)
+
+        # Assert correct property is being updated
+        self.assertIn(PropertyId.JET_COOL, device._updated_properties)
+
 
 class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
     # pylint: disable=protected-access
