@@ -96,6 +96,7 @@ class AirConditioner(Device):
         PropertyId.BREEZE_CONTROL: lambda s: s._breeze_mode,
         PropertyId.BREEZELESS: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZELESS,
         PropertyId.IECO: lambda s: s._ieco,
+        PropertyId.JET_COOL: lambda s: s._flash_cool,
         PropertyId.RATE_SELECT: lambda s: s._rate_select,
         PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
         PropertyId.SWING_UD_ANGLE: lambda s: s._vertical_swing_angle
@@ -169,6 +170,7 @@ class AirConditioner(Device):
         self._breeze_mode = AirConditioner.BreezeMode.OFF
 
         self._ieco = False
+        self._flash_cool = False
 
         self._aux_mode = AirConditioner.AuxHeatMode.OFF
         self._supported_aux_modes = [AirConditioner.AuxHeatMode.OFF]
@@ -264,6 +266,9 @@ class AirConditioner(Device):
 
             if (value := res.get_property(PropertyId.IECO)) is not None:
                 self._ieco = value
+
+            if (value := res.get_property(PropertyId.JET_COOL)) is not None:
+                self._flash_cool = value
 
         elif isinstance(res, EnergyUsageResponse):
             _LOGGER.debug("Energy response payload from device %s: %s",
@@ -401,6 +406,9 @@ class AirConditioner(Device):
 
         if res.ieco:
             self._supported_properties.add(PropertyId.IECO)
+
+        if res.jet_cool:
+            self._supported_properties.add(PropertyId.JET_COOL)
 
     async def _send_command_get_responses(self, command) -> list[Response]:
         """Send a command and return all valid responses."""
@@ -818,6 +826,19 @@ class AirConditioner(Device):
     def ieco(self, enabled: bool) -> None:
         self._ieco = enabled
         self._updated_properties.add(PropertyId.IECO)
+
+    @property
+    def supports_flash_cool(self) -> bool:
+        return PropertyId.JET_COOL in self._supported_properties
+
+    @property
+    def flash_cool(self) -> Optional[bool]:
+        return self._flash_cool
+
+    @flash_cool.setter
+    def flash_cool(self, enabled: bool) -> None:
+        self._flash_cool = enabled
+        self._updated_properties.add(PropertyId.JET_COOL)
 
     @property
     def supports_turbo(self) -> bool:
