@@ -608,7 +608,7 @@ class CapabilitiesResponse(Response):
             try:
                 capability_id = CapabilityId(raw_id)
             except ValueError:
-                _LOGGER.warning(
+                _LOGGER.info(
                     "Unknown capability ID: 0x%04X, Size: %d.", raw_id, size)
                 # Advanced to next capability
                 caps = caps[3+size:]
