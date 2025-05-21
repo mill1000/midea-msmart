@@ -175,7 +175,7 @@ keyT["KEY_DEGREE8_HEAT"] = "degree8_heat"
 ----------------JSON相关value值变量----------------
 local keyV = {}
 --版本号
-keyV["VALUE_VERSION"] = 41
+keyV["VALUE_VERSION"] = 51
 --功能开
 keyV["VALUE_FUNCTION_ON"] = "on"
 --功能关
@@ -385,7 +385,7 @@ local function init_keyP()
 	keyP["temperature_unit"] = nil
 	--美居之前就是默认开的
 	keyP["buzzerValue"] = 0x40 
-	keyP["errorCode"] = 0
+	keyP["errorCode"] = nil
 	--是否踢被子
 	keyP["kickQuilt"]= nil
 	--防着凉
@@ -527,6 +527,7 @@ local function init_keyP()
 	keyP["anion"] = nil
 	keyP["b5_anion"] = nil
 	keyP["machine_type"] = nil
+	keyP["product_type"] = nil
 	keyP["independent_ptc"] = nil
 	keyP["gen_mode"] = nil
 	keyP["b5_parent_control"] = nil
@@ -572,6 +573,16 @@ local function init_keyP()
 	keyP["cvp"] = nil
 	keyP["b5_cvp"] = nil
 	
+	keyP["b5_new_wind_sense"] = nil
+	keyP["new_wind_sense"] = nil
+	
+	keyP["in_code"] = nil
+	keyP["in_version"] = nil
+	keyP["out_code"] = nil
+	keyP["out_version"] = nil
+	keyP["comfort"] = nil
+	keyP["b5_air_ieco"] = nil
+	keyP["b5_end_ieco"] = nil
 end
 
 init_keyP()
@@ -1630,6 +1641,17 @@ local function  jsonToModel(jsonCmd,jsonType)
 		keyP["cvp"] = streams["cvp"]
     end
 	
+	--CB1新风感
+	if (jsonType == "control" and streams["new_wind_sense"] ~= nil) then 
+		keyP["propertyNumber"] = keyP["propertyNumber"] + 1
+		keyP["new_wind_sense"] = streams["new_wind_sense"]
+    end
+	--COMFORT
+	if (jsonType == "control" and streams["comfort"] ~= nil) then 
+		keyP["propertyNumber"] = keyP["propertyNumber"] + 1
+		keyP["comfort"] = streams["comfort"]
+    end
+	
 	
 	
 	--status中的属性协议不组，只组control中的属性协议
@@ -1746,8 +1768,9 @@ local function  binToModel(binData,deviceSN8)
 				keyP["fresh_filter_timeout"] = bit.rshift(bit.band(messageBytes[13], 0x40),6)
             --end
         end
-
-        keyP["errorCode"]=messageBytes[16]
+		if(dataType ~= 0x05) then
+			keyP["errorCode"]=messageBytes[16]
+		end
 		
 		--温度单位
 		if(dataType == 0x05) then
@@ -1824,6 +1847,7 @@ local function  binToModel(binData,deviceSN8)
     end
 	
 	if ((dataType==0xA0 and messageBytes[0] == 0x00)) then
+		keyP["product_type"] = messageBytes[2]
 		keyP["machine_type"] = messageBytes[3]
 	end
 	
@@ -2148,6 +2172,56 @@ local function  binToModel(binData,deviceSN8)
 				keyP["cvp"] = messageBytes[cursor + 4]
 				cursor = cursor + 5
 			end
+			if (messageBytes[cursor + 0] == 0xAA and messageBytes[cursor + 1] == 0x00) then
+				keyP["new_wind_sense"] = messageBytes[cursor + 4]
+				cursor = cursor + 5
+			end
+			if (messageBytes[cursor + 0] == 0xAD and messageBytes[cursor + 1] == 0x00) then
+				keyP["comfort"] = messageBytes[cursor + 4]
+				cursor = cursor + 5
+			end
+			if (messageBytes[cursor + 0] == 0xAB and messageBytes[cursor + 1] == 0x00) then
+				if(messageBytes[cursor + 2] == 0x11 or messageBytes[cursor + 2] == 0x10 or messageBytes[cursor + 3] == 0x00) then
+					cursor = cursor + 4
+				else
+					local inCodeString = ""
+					cursor = cursor + 12
+					for i= 0,15 do 
+						local stringChar = string.char(messageBytes[cursor + i])
+						inCodeString = inCodeString .. stringChar
+					end
+					keyP["in_code"] = inCodeString
+					cursor = cursor + 16
+					local inVersionString = ""
+					for i= 0,3 do 
+						local stringChar = string.char(messageBytes[cursor + i])
+						inVersionString = inVersionString .. stringChar
+					end
+					keyP["in_version"] = inVersionString
+					cursor = cursor + 4
+				end
+			end
+			if (messageBytes[cursor + 0] == 0xAC and messageBytes[cursor + 1] == 0x00) then
+				if(messageBytes[cursor + 2] == 0x11 or messageBytes[cursor + 2] == 0x10 or messageBytes[cursor + 3] == 0x00) then
+					cursor = cursor + 4
+				else
+					local outCodeString = ""
+					cursor = cursor + 12
+					for i= 0,15 do 
+						local stringChar = string.char(messageBytes[cursor + i])
+						outCodeString = outCodeString .. stringChar
+					end
+					keyP["out_code"] = outCodeString
+					cursor = cursor + 16
+					local outVersionString = ""
+					for i= 0,3 do 
+						local stringChar = string.char(messageBytes[cursor + i])
+						outVersionString = outVersionString .. stringChar
+					end
+					keyP["out_version"] = outVersionString
+					cursor = cursor + 4
+				end
+			end
 			
         end
 	end
@@ -2250,6 +2324,8 @@ local function  binToModel(binData,deviceSN8)
 				
 				keyP["dryValue"] = bit.band(messageBytes[cursor + 13], 0x04)
 				
+				keyP["temperature_unit"] = bit.rshift(bit.band(messageBytes[cursor + 13], 0x80),7)
+				
 				
 				keyP["swingLRValue"] = bit.band(messageBytes[cursor + 11], 0x03)
 			
@@ -2265,7 +2341,7 @@ local function  binToModel(binData,deviceSN8)
 				
 				
 				keyP["swingLRUnderSwitch"] = bit.band(messageBytes[cursor + 23], 0x80)	
-				keyP["errorCode"]=messageBytes[cursor + 20]
+				--keyP["errorCode"]=messageBytes[cursor + 20]
 				
 				
 				
@@ -2284,6 +2360,8 @@ local function  binToModel(binData,deviceSN8)
 					keyP["arom_old"] = bit.rshift(bit.band(messageBytes[cursor + 25], 0x80),7)
 
 				end
+				
+				
 
 				--舒省
 				keyP["comfortPowerSave"] = bit.band(messageBytes[cursor + 18], 0x01)
@@ -2532,10 +2610,7 @@ local function  binToModel(binData,deviceSN8)
 				keyP["b5_prevent_straight_wind_select"] = messageBytes[cursor + 3]
 				cursor = cursor + 4
 			end
-			if (messageBytes[cursor + 0] == 0xE3 and messageBytes[cursor + 1] == 0x00) then
-				keyP["b5_ieco_switch"] = messageBytes[cursor + 3]
-				cursor = cursor + 4
-			end
+			
 			if (messageBytes[cursor + 0] == 0x91 and messageBytes[cursor + 1] == 0x00) then
 				keyP["b5_has_icheck"] = messageBytes[cursor + 3]
 				cursor = cursor + 4
@@ -2551,6 +2626,33 @@ local function  binToModel(binData,deviceSN8)
 			if (messageBytes[cursor + 0] == 0x98 and messageBytes[cursor + 1] == 0x00) then
 				keyP["b5_cvp"] = messageBytes[cursor + 3]
 				cursor = cursor + 4
+			end
+			if (messageBytes[cursor + 0] == 0xAA and messageBytes[cursor + 1] == 0x00) then
+				keyP["b5_new_wind_sense"] = messageBytes[cursor + 3]
+				cursor = cursor + 4
+			end
+			if (messageBytes[cursor + 0] == 0x6D and messageBytes[cursor + 1] == 0x00) then
+				cursor = cursor + 4
+			end
+			if (messageBytes[cursor + 0] == 0xAD and messageBytes[cursor + 1] == 0x00) then
+				keyP["b5_comfort"] = messageBytes[cursor + 3]
+				cursor = cursor + 4
+			end
+			if (messageBytes[cursor + 0] == 0x4D and messageBytes[cursor + 1] == 0x00) then
+				cursor = cursor + 5
+			end
+			if (messageBytes[cursor + 0] == 0x1A and messageBytes[cursor + 1] == 0x00) then
+				cursor = cursor + 4
+			end
+			if (messageBytes[cursor + 0] == 0xE3 and messageBytes[cursor + 1] == 0x00) then
+				if(messageBytes[cursor + 2] == 1)then
+					keyP["b5_ieco_switch"] = messageBytes[cursor + 3]
+					cursor = cursor + 4
+				else
+					keyP["b5_ieco_switch"] = messageBytes[cursor + 3]
+					keyP["b5_end_ieco"] = messageBytes[cursor + 4]
+					cursor = cursor + 5
+				end
 			end
 		end
     end
@@ -2709,6 +2811,23 @@ function jsonToData(jsonCmd)
             infoM[9] = 0x03
             infoM[10] = 0xa0
             infoM[11] = 0xa7
+		elseif (queryType == "a0_query_long") then
+			for i = 1, 31 do
+                infoM[i] = 0
+            end
+			infoM[1] = 0xaa
+            infoM[2] = 0x1e
+            infoM[3] = 0xac
+            infoM[4] = 0x00
+            infoM[5] = 0x00
+            infoM[6] = 0x00
+            infoM[7] = 0x00
+            infoM[8] = 0x00
+            infoM[9] = 0x03
+            infoM[10] = 0xa0
+            --infoM[11] = 0xa7
+			infoM[31] = makeSum(infoM, 2, 30)
+		
         elseif (queryType == "all_first_frame") then
             infoM[1] = 0xaa
             infoM[2] = 0x0e
@@ -2726,7 +2845,7 @@ function jsonToData(jsonCmd)
             --infoM[14] = 0x4d
 			infoM[14] = crc8_854(infoM, 11, 13)
             infoM[15] = 0x3d
-			--infoM[15] = crc8_854(infoM, 11, 14)
+			--infoM[15] = makeSum(infoM, 2, 14)
         elseif (queryType == "all_second_frame") then
             infoM[1] = 0xaa
             infoM[2] = 0x0f
@@ -3083,6 +3202,26 @@ function jsonToData(jsonCmd)
 				end
 				if (queryType == "cvp") then
 					bodyBytes[1 + propertyNum * 2 + 1] = 0x98
+					bodyBytes[1 + propertyNum * 2 + 2] = 0x00
+					propertyNum = propertyNum + 1
+				end
+				if (queryType == "new_wind_sense") then
+					bodyBytes[1 + propertyNum * 2 + 1] = 0xAA
+					bodyBytes[1 + propertyNum * 2 + 2] = 0x00
+					propertyNum = propertyNum + 1
+				end
+				if (queryType == "in_code_query") then
+					bodyBytes[1 + propertyNum * 2 + 1] = 0xAB
+					bodyBytes[1 + propertyNum * 2 + 2] = 0x00
+					propertyNum = propertyNum + 1
+				end
+				if (queryType == "out_code_query") then
+					bodyBytes[1 + propertyNum * 2 + 1] = 0xAC
+					bodyBytes[1 + propertyNum * 2 + 2] = 0x00
+					propertyNum = propertyNum + 1
+				end
+				if (queryType == "comfort") then
+					bodyBytes[1 + propertyNum * 2 + 1] = 0xAD
 					bodyBytes[1 + propertyNum * 2 + 2] = 0x00
 					propertyNum = propertyNum + 1
 				end
@@ -3782,6 +3921,20 @@ function jsonToData(jsonCmd)
 				bodyBytes[cursor + 3] = keyP["cvp"]
 				cursor = cursor + 4
 			end
+			if(keyP["new_wind_sense"] ~= nil) then
+				bodyBytes[cursor + 0] = 0xAA
+				bodyBytes[cursor + 1] = 0x00
+				bodyBytes[cursor + 2] = 0x01
+				bodyBytes[cursor + 3] = keyP["new_wind_sense"]
+				cursor = cursor + 4
+			end
+			if(keyP["comfort"] ~= nil) then
+				bodyBytes[cursor + 0] = 0xAD
+				bodyBytes[cursor + 1] = 0x00
+				bodyBytes[cursor + 2] = 0x01
+				bodyBytes[cursor + 3] = keyP["comfort"]
+				cursor = cursor + 4
+			end
 		
 	        math.randomseed(tostring(os.time()*#bodyBytes):reverse():sub(1, 7))
 			math.random()
@@ -3855,6 +4008,9 @@ function jsonToData(jsonCmd)
 	keyP["b5_prevent_straight_wind_select"] = nil
 	keyP["cvp"] = nil
 	keyP["b5_cvp"] = nil
+	keyP["new_wind_sense"] = nil
+	keyP["b5_new_wind_sense"] = nil
+	keyP["comfort"] = nil
 	propertyPre = nil
 	
     --table 转换成 string 之后返回
@@ -4136,8 +4292,9 @@ function dataToJson(jsonCmd)
 			streams["temperature_unit"] = 0
 		end
 	end
-
-    streams[keyT["KEY_ERROR_CODE"]]=keyP["errorCode"]
+	if(keyP["errorCode"] ~= nil)then
+		streams[keyT["KEY_ERROR_CODE"]]=keyP["errorCode"]
+	end
 	
 	--是否踢被子
 	if(keyP["kickQuilt"] ~= nil) then
@@ -4252,6 +4409,9 @@ function dataToJson(jsonCmd)
 	end
 	if(keyP["machine_type"] ~= nil) then
 		streams["machine_type"] = keyP["machine_type"]
+	end
+	if(keyP["product_type"] ~= nil) then
+		streams["product_type"] = keyP["product_type"]
 	end
 
 	else
@@ -4784,6 +4944,36 @@ function dataToJson(jsonCmd)
 		if(keyP["b5_cvp"] ~= nil) then
 		    streams["b5_cvp"] = keyP["b5_cvp"]
 		end
+		if(keyP["new_wind_sense"] ~= nil) then
+		    streams["new_wind_sense"] = keyP["new_wind_sense"]
+		end
+		if(keyP["b5_new_wind_sense"] ~= nil) then
+		    streams["b5_new_wind_sense"] = keyP["b5_new_wind_sense"]
+		end
+		if(keyP["in_code"] ~= nil) then
+		    streams["in_code"] = keyP["in_code"]
+		end
+		if(keyP["in_version"] ~= nil) then
+		    streams["in_version"] = keyP["in_version"]
+		end
+		if(keyP["out_code"] ~= nil) then
+		    streams["out_code"] = keyP["out_code"]
+		end
+		if(keyP["out_version"] ~= nil) then
+		    streams["out_version"] = keyP["out_version"]
+		end
+		if(keyP["comfort"] ~= nil) then
+		    streams["comfort"] = keyP["comfort"]
+		end
+		if(keyP["b5_comfort"] ~= nil) then
+		    streams["b5_comfort"] = keyP["b5_comfort"]
+		end
+		if(keyP["b5_air_ieco"] ~= nil) then
+		    streams["b5_air_ieco"] = keyP["b5_air_ieco"]
+		end
+		if(keyP["b5_end_ieco"] ~= nil) then
+		    streams["b5_end_ieco"] = keyP["b5_end_ieco"]
+		end
 	end
 	keyP["propertyNumber"] = 0
 	keyP["prevent_super_cool"] = nil 
@@ -4904,6 +5094,7 @@ function dataToJson(jsonCmd)
 	keyP["b5_anion"] = nil
 	keyP["anion"] = nil
 	keyP["machine_type"] = nil
+	keyP["product_type"] = nil
 	keyP["independent_ptc"] = nil
 	keyP["fa_no_wind_sense"] = nil
 	keyP["b5_parent_control"] = nil
@@ -4940,6 +5131,16 @@ function dataToJson(jsonCmd)
 	keyP["b5_heat_ptc_wind"] = nil
 	keyP["cvp"] = nil
 	keyP["b5_cvp"] = nil
+	keyP["new_wind_sense"] = nil
+	keyP["b5_new_wind_sense"] = nil
+	keyP["in_code"] = nil
+	keyP["in_version"] = nil
+	keyP["out_code"] = nil
+	keyP["out_version"] = nil
+	keyP["comfort"] = nil
+	keyP["b5_comfort"] = nil
+	keyP["b5_air_ieco"] = nil
+	keyP["b5_end_ieco"] = nil
 	local retTable = {}
     retTable["status"] = streams
     local ret = encode(retTable)
