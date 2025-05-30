@@ -898,9 +898,9 @@ class StateResponse(Response):
         self.operational_mode = (payload[2] >> 5) & 0x7
 
         # Fan speed
-        # TODO Fan speed can be auto = 102, or value from 0 - 100
+        # Fan speed can be auto = 102, or value from 0 - 100
         # On my unit, Low == 40 (LED < 40), Med == 60 (LED < 60), High == 100 (LED < 100)
-        self.fan_speed = payload[3]
+        self.fan_speed = payload[3] & 0x7F
 
         # on_timer_value = payload[4]
         # on_timer_minutes = payload[6]
