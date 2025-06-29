@@ -250,7 +250,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
     EXPECTED_ATTRS = [
         "anion",
         "fan_silent", "fan_low", "fan_medium", "fan_high", "fan_auto", "fan_custom",
-        "breeze_away", "breeze_control", "breezeless",
+        "breeze_away", "breeze_control", "breezeless", "cascade",
         "swing_horizontal_angle", "swing_vertical_angle",
         "swing_horizontal", "swing_vertical", "swing_both",
         "dry_mode", "cool_mode", "heat_mode", "auto_mode",
@@ -349,7 +349,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": False, "breeze_away": False,
-            "breeze_control": False, "breezeless": False,
+            "breeze_control": False, "breezeless": False, "cascade": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": True, "swing_vertical": True,
             "swing_both": True,
@@ -411,7 +411,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": True, "breeze_away": False,
-            "breeze_control": False, "breezeless": False,
+            "breeze_control": False, "breezeless": False, "cascade": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": True, "swing_vertical": True,
             "swing_both": True,
@@ -462,7 +462,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": False, "breeze_away": False,
-            "breeze_control": False, "breezeless": False,
+            "breeze_control": False, "breezeless": False, "cascade": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": False, "swing_vertical": False,
             "swing_both": False,
@@ -515,7 +515,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": True, "breeze_away": False,
-            "breeze_control": False, "breezeless": False,
+            "breeze_control": False, "breezeless": False, "cascade": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": False, "swing_vertical": True,
             "swing_both": False,
@@ -628,7 +628,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": True, "breeze_away": False,
-            "breeze_control": True, "breezeless": False,
+            "breeze_control": True, "breezeless": False, "cascade": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": True, "swing_vertical": True,
             "swing_both": True,
@@ -743,7 +743,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": False, "breeze_away": False,
-            "breeze_control": False, "breezeless": False,
+            "breeze_control": False, "breezeless": False, "cascade": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": False, "swing_vertical": False,
             "swing_both": False,
@@ -855,7 +855,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": True, "breeze_away": False,
-            "breeze_control": False, "breezeless": False,
+            "breeze_control": False, "breezeless": False, "cascade": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": False, "swing_vertical": True,
             "swing_both": False,
@@ -920,6 +920,11 @@ class TestSetPropertiesCommand(unittest.TestCase):
             # IECO: 13 bytes ieco_frame, ieco_number, ieco_switch, ...
             (PropertyId.IECO, True): bytes([0, 1, 1]) + bytes(10),
             (PropertyId.IECO, False): bytes([0, 1, 0]) + bytes(10),
+
+            # Cascade: 2 bytes wind_around, wind_around_ud
+            (PropertyId.CASCADE, 0): bytes([0, 0]),
+            (PropertyId.CASCADE, 1): bytes([1, 1]),
+            (PropertyId.CASCADE, 2): bytes([1, 2]),
         }
 
         for (prop, value), expected_data in TEST_ENCODES.items():
@@ -979,6 +984,11 @@ class TestPropertiesResponse(_TestResponseBase):
             # IECO: 2 bytes
             (PropertyId.IECO, bytes([0x00, 0x00])): False,
             (PropertyId.IECO, bytes([0x00, 0x01])): True,
+
+            # Cascade: 2 bytes
+            (PropertyId.CASCADE, bytes([0x00, 0x00])): 0,
+            (PropertyId.CASCADE, bytes([0x01, 0x01])): 1,
+            (PropertyId.CASCADE, bytes([0x01, 0x02])): 2,
         }
 
         for (prop, data), expected_value in TEST_DECODES.items():
