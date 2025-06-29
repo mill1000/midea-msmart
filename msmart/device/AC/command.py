@@ -82,7 +82,7 @@ class PropertyId(IntEnum):
     BREEZE_CONTROL = 0x0043  # AKA "FA No Wind Sense"
     RATE_SELECT = 0x0048
     FRESH_AIR = 0x004B
-    CASCADE = 0x0059  # AKA "Cascade"
+    CASCADE = 0x0059  # AKA "Wind Around"
     JET_COOL = 0x0067  # AKA "Flash Cool"
     IECO = 0x00E3
     ANION = 0x021E
