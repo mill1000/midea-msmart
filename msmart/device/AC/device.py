@@ -59,6 +59,13 @@ class AirConditioner(Device):
 
         DEFAULT = OFF
 
+    class CascadeMode(MideaIntEnum):
+        OFF = 0
+        UPPER = 1
+        LOWER = 2
+
+        DEFAULT = OFF
+
     class RateSelect(MideaIntEnum):
         OFF = 100
 
@@ -99,7 +106,8 @@ class AirConditioner(Device):
         PropertyId.JET_COOL: lambda s: s._flash_cool,
         PropertyId.RATE_SELECT: lambda s: s._rate_select,
         PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
-        PropertyId.SWING_UD_ANGLE: lambda s: s._vertical_swing_angle
+        PropertyId.SWING_UD_ANGLE: lambda s: s._vertical_swing_angle,
+        PropertyId.CASCADE: lambda s: s._cascade_mode,
     }
 
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
@@ -161,6 +169,7 @@ class AirConditioner(Device):
 
         self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
+        self._cascade_mode = AirConditioner.CascadeMode.OFF
 
         self._self_clean_active = False
 
@@ -242,6 +251,11 @@ class AirConditioner(Device):
                 self._vertical_swing_angle = cast(
                     AirConditioner.SwingAngle,
                     AirConditioner.SwingAngle.get_from_value(angle))
+
+            if (cascade := res.get_property(PropertyId.CASCADE)) is not None:
+                self._cascade_mode = cast(
+                    AirConditioner.CascadeMode,
+                    AirConditioner.CascadeMode.get_from_value(cascade))
 
             if (value := res.get_property(PropertyId.SELF_CLEAN)) is not None:
                 self._self_clean_active = value
@@ -370,6 +384,9 @@ class AirConditioner(Device):
 
         if res.swing_horizontal_angle:
             self._supported_properties.add(PropertyId.SWING_LR_ANGLE)
+
+        if res.cascade:
+            self._supported_properties.add(PropertyId.CASCADE)
 
         if res.self_clean:
             self._supported_properties.add(PropertyId.SELF_CLEAN)
@@ -803,6 +820,19 @@ class AirConditioner(Device):
         self._updated_properties.add(PropertyId.SWING_UD_ANGLE)
 
     @property
+    def supports_cascade(self) -> bool:
+        return PropertyId.CASCADE in self._supported_properties
+
+    @property
+    def cascade_mode(self) -> CascadeMode:
+        return self._cascade_mode
+
+    @cascade_mode.setter
+    def cascade_mode(self, mode: CascadeMode) -> None:
+        self._cascade_mode = mode
+        self._updated_properties.add(PropertyId.CASCADE)
+
+    @property
     def supports_eco(self) -> bool:
         return self._supports_eco
 
@@ -997,6 +1027,7 @@ class AirConditioner(Device):
             "swing_mode": self.swing_mode,
             "horizontal_swing_angle": self.horizontal_swing_angle,
             "vertical_swing_angle": self.vertical_swing_angle,
+            "cascade_mode": self.cascade_mode,
             "target_temperature": self.target_temperature,
             "indoor_temperature": self.indoor_temperature,
             "outdoor_temperature": self.outdoor_temperature,

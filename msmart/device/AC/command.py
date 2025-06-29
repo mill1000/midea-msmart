@@ -41,7 +41,7 @@ class CapabilityId(IntEnum):
     FRESH_AIR = 0x004B
     PARENT_CONTROL = 0x0051  # ??
     PREVENT_STRAIGHT_WIND_SELECT = 0x0058  # ??
-    WIND_AROUND = 0x0059  # ??
+    CASCADE = 0x0059  # AKA "Wind Around"
     JET_COOL = 0x0067  # ??
     PRESET_IECO = 0x00E3
     ICHECK = 0x0091  # ??
@@ -82,6 +82,7 @@ class PropertyId(IntEnum):
     BREEZE_CONTROL = 0x0043  # AKA "FA No Wind Sense"
     RATE_SELECT = 0x0048
     FRESH_AIR = 0x004B
+    CASCADE = 0x0059  # AKA "Cascade"
     JET_COOL = 0x0067  # AKA "Flash Cool"
     IECO = 0x00E3
     ANION = 0x021E
@@ -94,6 +95,7 @@ class PropertyId(IntEnum):
             PropertyId.BREEZE_CONTROL,
             PropertyId.BREEZELESS,
             PropertyId.BUZZER,
+            PropertyId.CASCADE,
             PropertyId.IECO,
             PropertyId.JET_COOL,
             PropertyId.RATE_SELECT,
@@ -116,6 +118,9 @@ class PropertyId(IntEnum):
         elif self == PropertyId.IECO:
             # data[0] - ieco_number, data[1] - ieco_switch
             return bool(data[1])
+        elif self == PropertyId.CASCADE:
+            # data[0] - wind_around, data[1] - wind_around_ud
+            return data[1] if data[0] else 0
         else:
             return data[0]
 
@@ -129,6 +134,9 @@ class PropertyId(IntEnum):
         elif self == PropertyId.IECO:
             # ieco_frame, ieco_number, ieco_switch, ...
             return bytes([0, 1, args[0]]) + bytes(10)
+        elif self == PropertyId.CASCADE:
+            # data[0] - wind_around, data[1] - wind_around_ud
+            return bytes([1 if args[0] else 0, args[0]])
         else:
             return bytes(args[0:1])
 
@@ -526,6 +534,7 @@ class CapabilitiesResponse(Response):
             CapabilityId.BREEZE_CONTROL: reader("breeze_control", get_value(1)),
             CapabilityId.BREEZELESS: reader("breezeless", get_value(1)),
             CapabilityId.BUZZER:  reader("buzzer", get_value(1)),
+            CapabilityId.CASCADE:  reader("cascade", get_value(1)),
             CapabilityId.DISPLAY_CONTROL: reader("display_control", lambda v: v in [1, 2, 100]),
             CapabilityId.ENERGY: [
                 reader("energy_stats", lambda v: v in [2, 3, 4, 5]),
@@ -721,6 +730,10 @@ class CapabilitiesResponse(Response):
     @property
     def breezeless(self) -> bool:
         return self._capabilities.get("breezeless", False)
+
+    @property
+    def cascade(self) -> bool:
+        return self._capabilities.get("cascade", False)
 
     @property
     def swing_horizontal_angle(self) -> bool:
