@@ -108,6 +108,10 @@ async def _query(args) -> None:
             "min_target_temperature": device.min_target_temperature,
         }))
     else:
+        # Enable energy requests
+        if args.energy:
+            device._request_energy_usage = True
+
         _LOGGER.info("Querying device state.")
         await device.refresh()
 
@@ -346,6 +350,9 @@ def main() -> NoReturn:
     query_parser.add_argument("--key",
                               help="Authentication key for V3 devices.",
                               type=bytes.fromhex)
+    query_parser.add_argument("--energy",
+                              help="Request energy information along with state.",
+                              action="store_true")
     query_parser.set_defaults(func=_query)
 
     # Setup control parser
