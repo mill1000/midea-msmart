@@ -61,8 +61,8 @@ class AirConditioner(Device):
 
     class CascadeMode(MideaIntEnum):
         OFF = 0
-        UPPER = 1
-        LOWER = 2
+        UP = 1
+        DOWN = 2
 
         DEFAULT = OFF
 
