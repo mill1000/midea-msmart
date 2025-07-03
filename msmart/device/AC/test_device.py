@@ -570,6 +570,22 @@ class TestSetState(unittest.TestCase):
         # Assert correct property is being updated
         self.assertIn(PropertyId.JET_COOL, device._updated_properties)
 
+    def test_properties_cascade(self) -> None:
+        """Test setting cascade property."""
+
+        # Create dummy device with cascade
+        device = AC(0, 0, 0)
+        device._supported_properties.add(PropertyId.CASCADE)
+
+        # Enable a cascade mode
+        device.cascade_mode = AC.CascadeMode.LOWER
+
+        # Assert state is expected
+        self.assertEqual(device.cascade_mode, AC.CascadeMode.LOWER)
+
+        # Assert correct property is being updated
+        self.assertIn(PropertyId.CASCADE, device._updated_properties)
+
 
 class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
     # pylint: disable=protected-access
