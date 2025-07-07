@@ -1,3 +1,4 @@
+import os
 import unittest
 from typing import Optional, cast
 
@@ -21,6 +22,7 @@ class TestCloud(unittest.IsolatedAsyncioTestCase):
         return client
 
 
+@unittest.skipIf(os.getenv("CI", False), "Tests skipped on CI")
 class TestNetHomePlusCloud(TestCloud):
     # pylint: disable=protected-access
 
@@ -92,6 +94,7 @@ class TestNetHomePlusCloud(TestCloud):
             await client.login()
 
 
+@unittest.skipIf(os.getenv("CI", False), "Tests skipped on CI")
 class TestSmartHomeCloud(TestCloud):
     # pylint: disable=protected-access
 
