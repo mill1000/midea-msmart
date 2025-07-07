@@ -578,10 +578,10 @@ class TestSetState(unittest.TestCase):
         device._supported_properties.add(PropertyId.CASCADE)
 
         # Enable a cascade mode
-        device.cascade_mode = AC.CascadeMode.LOWER
+        device.cascade_mode = AC.CascadeMode.DOWN
 
         # Assert state is expected
-        self.assertEqual(device.cascade_mode, AC.CascadeMode.LOWER)
+        self.assertEqual(device.cascade_mode, AC.CascadeMode.DOWN)
 
         # Assert correct property is being updated
         self.assertIn(PropertyId.CASCADE, device._updated_properties)
