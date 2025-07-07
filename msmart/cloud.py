@@ -77,7 +77,7 @@ class BaseCloud:
         self._api_lock = Lock()
         self._base_url = base_url
         self._login_id = None
-        self._session = {}
+        self._session = None
 
         # Setup method for getting a client
         self._get_async_client = get_async_client if get_async_client else httpx.AsyncClient
@@ -214,7 +214,7 @@ class SmartHomeCloud(BaseCloud):
         base_url = SmartHomeCloud.BASE_URL_CHINA if use_china_server else SmartHomeCloud.BASE_URL
         super().__init__(base_url, region, account, password, **kwargs)
 
-        self._access_token = ""
+        self._access_token = None
         self._security = SmartHomeCloud._Security(use_china_server)
 
     def _parse_response(self, response) -> Any:
@@ -243,7 +243,7 @@ class SmartHomeCloud(BaseCloud):
             "secretVersion": "1",
             "sign": sign,
             "random": random,
-            "accessToken": self._access_token
+            "accessToken": self._access_token if self._access_token else ""
         }
 
         # Build complete request URL
@@ -476,7 +476,7 @@ class NetHomePlusCloud(BaseCloud):
 
         super().__init__(NetHomePlusCloud.BASE_URL, region, account, password, **kwargs)
 
-        self._session_id = ""
+        self._session_id = None
         self._security = NetHomePlusCloud._Security()
 
     def _parse_response(self, response) -> Any:
@@ -509,7 +509,7 @@ class NetHomePlusCloud(BaseCloud):
 
         # Set up the initial body
         body = super()._build_request_body({
-            "sessionId": self._session_id
+            "sessionId": self._session_id if self._session_id else ""
         })
 
         # Add additional fields to the body
