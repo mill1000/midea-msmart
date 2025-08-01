@@ -144,8 +144,9 @@ class TestProtocol(unittest.IsolatedAsyncioTestCase):
         # Test ProtocolErrors bubbled up with a disconnect
         lan._protocol.read.side_effect = ProtocolError
         lan._disconnect.reset_mock()
-        with self.assertRaises(ProtocolError):
-            await lan.send(bytes(0))
+        with self.assertLogs("msmart.lan", logging.WARNING):
+            with self.assertRaises(ProtocolError):
+                await lan.send(bytes(0))
 
         # Assert disconnect was called
         lan._disconnect.assert_called_once()
@@ -168,7 +169,7 @@ class TestProtocol(unittest.IsolatedAsyncioTestCase):
             await lan.authenticate(key=None, token=None)
 
         # Assert a disconnect->connect cycle occurred
-        lan._disconnect.assert_called_once()
+        self.assertEqual(lan._disconnect.call_count, 2)
         lan._connect.assert_awaited_once()
 
         # Assert that the expected protocol class was created
@@ -195,6 +196,28 @@ class TestProtocol(unittest.IsolatedAsyncioTestCase):
         lan._connect.side_effect = _mock_connect_timeout
         with self.assertRaisesRegex(TimeoutError, "No response from host."):
             await lan.authenticate(key=bytes(10), token=bytes(10))
+
+    async def test_read_unblocks_after_connection_lost(self) -> None:
+        """Test that a waiting read unblocks and raises after connection_lost."""
+        protocol = _LanProtocol()
+
+        # Start a read task in the background
+        read_task = asyncio.create_task(protocol.read())
+
+        # Give the task a chance to run and wait on the queue
+        await asyncio.sleep(0.01)
+
+        # Now, simulate connection loss
+        test_exception = ConnectionResetError()
+        with self.assertLogs("msmart.lan", logging.ERROR):
+            protocol.connection_lost(test_exception)
+
+        # The read_task should now complete and raise the exception
+        with self.assertRaises(ProtocolError) as cm:
+            await read_task
+
+        # Assert that the underlying exception is the one we passed
+        self.assertIs(cm.exception.__cause__, test_exception)
 
 
 if __name__ == "__main__":
