@@ -677,6 +677,27 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
             # Assert device is still online
             self.assertEqual(device.online, True)
 
+    async def test_get_capabilities_bad_response(self):
+        """Test that get_capabilities() with any invalid response outputs an error."""
+        TEST_RESPONSE = bytes.fromhex(
+            "aa1aac00000000000205b50310060101090001010a000101dcbcb4")
+
+        # Create a dummy device
+        device = AC(0, 0, 0)
+
+        # Patch _send_command to return a valid state response
+        with patch("msmart.base_device.Device._send_command", return_value=[TEST_RESPONSE]) as patched_method:
+
+            # Get device capabilities
+            with self.assertLogs("msmart", logging.ERROR) as log:
+                await device.get_capabilities()
+
+                self.assertRegex("\n".join(log.output),
+                                 "Unexpected response to capabilities request.*")
+
+            # Assert patch method was awaited
+            patched_method.assert_awaited()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -475,6 +475,7 @@ class AirConditioner(Device):
         if not isinstance(response, CapabilitiesResponse):
             _LOGGER.error(
                 "Unexpected response to capabilities request from device %s: %s.", self.id, response)
+            return
 
         _LOGGER.debug("Capabilities response payload from device %s: %s",
                       self.id, response)
@@ -488,19 +489,18 @@ class AirConditioner(Device):
                 CapabilitiesResponse, additional_response)
 
             if additional_response:
-                if not isinstance(additional_response, CapabilitiesResponse):
+                if isinstance(additional_response, CapabilitiesResponse):
+                    _LOGGER.debug(
+                        "Additional capabilities response payload from device %s: %s", self.id, additional_response)
+
+                    # Merge additional capabilities
+                    response.merge(additional_response)
+
+                    _LOGGER.debug("Merged raw capabilities: %s",
+                                  response.raw_capabilities)
+                else:
                     _LOGGER.error(
                         "Unexpected response to additional capabilities request from device %s: %s.", self.id, additional_response)
-
-                _LOGGER.debug(
-                    "Additional capabilities response payload from device %s: %s", self.id, additional_response)
-
-                # Merge additional capabilities
-                response.merge(additional_response)
-
-                _LOGGER.debug("Merged raw capabilities: %s",
-                              response.raw_capabilities)
-
             else:
                 _LOGGER.warning(
                     "Failed to query additional capabilities from device %s.", self.id)
