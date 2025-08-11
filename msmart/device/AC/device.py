@@ -491,7 +491,7 @@ class AirConditioner(Device):
                 if not isinstance(additional_response, CapabilitiesResponse):
                     _LOGGER.error(
                         "Unexpected response to additional capabilities request from device %s: %s.", self.id, additional_response)
-                    
+
                 _LOGGER.debug(
                     "Additional capabilities response payload from device %s: %s", self.id, additional_response)
 
