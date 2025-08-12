@@ -664,7 +664,7 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
             device._online = True
             self.assertEqual(device.online, True)
 
-            # Force additional features so refresh() sends multuple requests are sent
+            # Force additional features so refresh() sends multiple requests are sent
             device._request_energy_usage = True
             device._supports_humidity = True
 
@@ -676,6 +676,31 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
 
             # Assert device is still online
             self.assertEqual(device.online, True)
+
+    async def test_get_capabilities_bad_response(self):
+        """Test that get_capabilities() with any unexpected response outputs an error."""
+        # "Notify" response with the same ID as capabilities response
+        # https://github.com/mill1000/midea-msmart/issues/122#issue-2281252018
+        TEST_RESPONSE = bytes.fromhex(
+            "aa1aac00000000000205b50310060101090001010a000101dcbcb4")
+
+        # Create a dummy device
+        device = AC(0, 0, 0)
+
+        # Patch _send_command to return test response
+        with patch("msmart.base_device.Device._send_command", return_value=[TEST_RESPONSE]) as patched_method:
+            # Get device capabilities
+            with self.assertLogs("msmart", logging.DEBUG) as log:
+                await device.get_capabilities()
+
+                self.assertRegex("\n".join(log.output),
+                                 "Failed to query capabilities from device.*")
+
+                self.assertRegex("\n".join(log.output),
+                                 "Ignored response of type.*from device.*")
+
+            # Assert patch method was awaited
+            patched_method.assert_awaited()
 
 
 if __name__ == "__main__":
