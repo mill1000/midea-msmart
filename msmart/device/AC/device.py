@@ -448,14 +448,14 @@ class AirConditioner(Device):
 
         return valid_responses
 
-    async def _send_command_get_response_with_id(self, command, response_id: ResponseId) -> Optional[Response]:
-        """Send a command and return the first response with a matching ID."""
+    async def _send_command_get_response_with_class(self, command, response_class: type[Response]) -> Optional[Response]:
+        """Send a command and return the first response of the requested class."""
         for response in await self._send_command_get_responses(command):
-            if response.id == response_id:
+            if isinstance(response, response_class):
                 return response
 
-            _LOGGER.debug("Ignored response with ID %d from device %s: %s",
-                          response.id, self.id, response)
+            _LOGGER.debug("Ignored response of type %s from device %s: %s",
+                          type(response), self.id, response)
 
         return None
 
@@ -464,18 +464,13 @@ class AirConditioner(Device):
 
         # Send capabilities request and get a response
         cmd = GetCapabilitiesCommand()
-        response = await self._send_command_get_response_with_id(cmd, ResponseId.CAPABILITIES)
-        response = cast(CapabilitiesResponse, response)
-
+        response = await self._send_command_get_response_with_class(cmd, CapabilitiesResponse)
         if response is None:
             _LOGGER.error(
                 "Failed to query capabilities from device %s.", self.id)
             return
 
-        if not isinstance(response, CapabilitiesResponse):
-            _LOGGER.error(
-                "Unexpected response to capabilities request from device %s: %s.", self.id, response)
-            return
+        response = cast(CapabilitiesResponse, response)
 
         _LOGGER.debug("Capabilities response payload from device %s: %s",
                       self.id, response)
@@ -484,23 +479,19 @@ class AirConditioner(Device):
         # Send 2nd capabilities request if needed
         if response.additional_capabilities:
             cmd = GetCapabilitiesCommand(True)
-            additional_response = await self._send_command_get_response_with_id(cmd, ResponseId.CAPABILITIES)
-            additional_response = cast(
-                CapabilitiesResponse, additional_response)
-
+            additional_response = await self._send_command_get_response_with_class(cmd, CapabilitiesResponse)
             if additional_response:
-                if isinstance(additional_response, CapabilitiesResponse):
-                    _LOGGER.debug(
-                        "Additional capabilities response payload from device %s: %s", self.id, additional_response)
+                additional_response = cast(
+                    CapabilitiesResponse, additional_response)
 
-                    # Merge additional capabilities
-                    response.merge(additional_response)
+                _LOGGER.debug(
+                    "Additional capabilities response payload from device %s: %s", self.id, additional_response)
 
-                    _LOGGER.debug("Merged raw capabilities: %s",
-                                  response.raw_capabilities)
-                else:
-                    _LOGGER.error(
-                        "Unexpected response to additional capabilities request from device %s: %s.", self.id, additional_response)
+                # Merge additional capabilities
+                response.merge(additional_response)
+
+                _LOGGER.debug("Merged raw capabilities: %s",
+                              response.raw_capabilities)
             else:
                 _LOGGER.warning(
                     "Failed to query additional capabilities from device %s.", self.id)
