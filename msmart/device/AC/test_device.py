@@ -679,6 +679,8 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
 
     async def test_get_capabilities_bad_response(self):
         """Test that get_capabilities() with any unexpected response outputs an error."""
+        # "Notify" response with the same ID as capabilities response
+        # https://github.com/mill1000/midea-msmart/issues/122#issue-2281252018
         TEST_RESPONSE = bytes.fromhex(
             "aa1aac00000000000205b50310060101090001010a000101dcbcb4")
 
