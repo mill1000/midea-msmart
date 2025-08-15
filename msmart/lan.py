@@ -542,6 +542,7 @@ class LAN:
                         "Authentication timeout. Resending to %s.", self._protocol.peer)
                     retries -= 1
                 else:
+                    self._disconnect()
                     raise TimeoutError("No response from host.") from e
 
         # Protocol should be authenticated by now
