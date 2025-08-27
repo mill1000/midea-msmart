@@ -92,6 +92,7 @@ class _LanProtocol(asyncio.Protocol):
         """Log connection lost."""
         if exc:
             _LOGGER.error("Connection to %s lost. Error: %s", self.peer, exc)
+            self._queue.put_nowait(exc)
 
     def disconnect(self) -> None:
         """Disconnect from the peer."""
@@ -117,9 +118,14 @@ class _LanProtocol(asyncio.Protocol):
         """Read data from the receive queue."""
 
         if timeout == 0:
-            return self._queue.get_nowait()
+            item = self._queue.get_nowait()
+        else:
+            item = await asyncio.wait_for(self._queue.get(), timeout=timeout)
 
-        return await asyncio.wait_for(self._queue.get(), timeout=timeout)
+        if isinstance(item, Exception):
+            raise ProtocolError(item) from item
+
+        return item
 
     async def read(self, timeout: int = 2) -> bytes:
         """Asynchronously read data from the peer via the queue."""
@@ -527,12 +533,16 @@ class LAN:
             try:
                 await self._protocol.authenticate(token, key)
                 break
+            except AuthenticationError as e:
+                self._disconnect()
+                raise e
             except (TimeoutError, asyncio.TimeoutError) as e:
                 if retries > 1:
                     _LOGGER.debug(
                         "Authentication timeout. Resending to %s.", self._protocol.peer)
                     retries -= 1
                 else:
+                    self._disconnect()
                     raise TimeoutError("No response from host.") from e
 
         # Protocol should be authenticated by now
@@ -621,7 +631,8 @@ class LAN:
                     raise TimeoutError("No response from host.") from e
             except ProtocolError as e:
                 # Disconnect on protocol errors and reraise
-                # TODO could add a fatal flag to exception to trigger disconnect
+                _LOGGER.warning(
+                    "Send failed to %s. Error: %s", self._protocol.peer, e)
                 self._disconnect()
                 raise e
             except asyncio.CancelledError as e:

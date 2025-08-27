@@ -1,7 +1,9 @@
 import asyncio
 import logging
 import unittest
-import unittest.mock as mock
+from contextlib import contextmanager
+from typing import Generator, cast
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 from msmart.lan import (LAN, AuthenticationError, ProtocolError, _LanProtocol,
                         _LanProtocolV3, _Packet)
@@ -90,111 +92,240 @@ class TestEncodeDecode(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(rx_frame, FRAME)
 
 
-class TestProtocol(unittest.IsolatedAsyncioTestCase):
+class TestLan(unittest.IsolatedAsyncioTestCase):
     # pylint: disable=protected-access
 
-    async def test_send_exceptions(self) -> None:
-        """Test exception handling for send method."""
-        # Create a dummy LAN object to test
+    class MockLAN(LAN):
+        """Dummy class to suppress type errors"""
+        _protocol: MagicMock
+        _connect: AsyncMock  # type: ignore
+        _disconnect: MagicMock  # type: ignore
+
+    @contextmanager
+    def _mock_lan(self, alive: bool = True, spec_protocol=_LanProtocol) -> Generator[MockLAN, None, None]:
+        """Yield a LAN instance with a mock protocol for testing."""
         lan = LAN("0.0.0.0", 0, 0)
+        lan._protocol = MagicMock(spec=spec_protocol)
+        lan._connect = AsyncMock()
+        lan._disconnect = MagicMock()
 
-        # Mock the protocol object
-        lan._protocol = mock.MagicMock(spec=_LanProtocol)
-
-        # Mock the read_available method so call to send() will be reached
-        lan._read_available = mock.MagicMock()
+        # Mock the read_available method so calls to send() will be reached
+        lan._read_available = MagicMock()
         lan._read_available.__aiter__.return_value = None
 
-        # Mock the disconnect method to ensure it's called
-        lan._disconnect = mock.MagicMock()
+        # Patch _alive property to fake connection
+        with patch.object(LAN, '_alive', new_callable=PropertyMock(return_value=alive)):
+            yield cast(TestLan.MockLAN, lan)
 
-        # Test that both types of timeouts bubble up as TimeoutError
-        # Test asyncio.TimeoutError
-        lan._protocol.read.side_effect = asyncio.TimeoutError
-        lan._disconnect.reset_mock()
-        with self.assertRaisesRegex(TimeoutError, "No response from host."):
+    async def test_send_connect_flow_v2(self) -> None:
+        """Test the connect flow in the send method for V2 protocol."""
+        with self._mock_lan(alive=False) as lan:
+            # Mock additional methods
+            lan.authenticate = AsyncMock()
+            lan._protocol.write = MagicMock()
+            lan._read = AsyncMock()
+
+            # Send a packet
             await lan.send(bytes(0))
 
-        # Assert disconnect was called
-        lan._disconnect.assert_called_once()
+            # Assert a disconnect->connect cycle occurred
+            lan._disconnect.assert_called_once()
+            lan._connect.assert_awaited_once()
 
-        # Test TimeoutError
-        lan._protocol.read.side_effect = TimeoutError
-        lan._disconnect.reset_mock()
-        with self.assertRaisesRegex(TimeoutError, "No response from host."):
+            # Assert we didn't try to authenticate on a V2 protocol
+            lan.authenticate.assert_not_awaited()
+
+    async def test_send_connect_flow_v3(self) -> None:
+        """Test the connect & authenticate flow in the send method for V3 protocol."""
+        with self._mock_lan(alive=False, spec_protocol=_LanProtocolV3) as lan:
+            # Mock authentication
+            type(lan._protocol).authenticated = PropertyMock(return_value=False)
+
+            async def _authenticate(*args, **kwargs) -> None:
+                type(lan._protocol).authenticated = PropertyMock(
+                    return_value=True)
+
+            lan.authenticate = AsyncMock(side_effect=_authenticate)
+            lan._protocol.write = MagicMock()
+            lan._read = AsyncMock()
+
+            # Send a packet
             await lan.send(bytes(0))
 
-        lan._disconnect.assert_called_once()
+           # Assert a disconnect->connect cycle occurred
+            lan._disconnect.assert_called_once()
+            lan._connect.assert_awaited_once()
 
-        # Test cancelled exceptions log a warning and bubble up as TimeoutError
-        with self.assertLogs("msmart", logging.WARNING) as log:
+            # Assert that authenticate was called
+            lan.authenticate.assert_awaited_once()
 
-            lan._protocol.read.side_effect = asyncio.CancelledError
-            lan._disconnect.reset_mock()
-            with self.assertRaisesRegex(TimeoutError, "Read cancelled."):
+    async def test_send_read_timeouts(self) -> None:
+        """Test that both types of read timeouts are handled."""
+        with self._mock_lan() as lan:
+            # Test TimeoutError
+            lan._protocol.read = AsyncMock(side_effect=TimeoutError)
+            with self.assertRaisesRegex(TimeoutError, "No response from host."):
                 await lan.send(bytes(0))
 
             # Assert disconnect was called
             lan._disconnect.assert_called_once()
 
-            # Assert timeouts were logged
-            self.assertRegex(" ".join(log.output),
-                             ".*Read cancelled. Disconnecting.*")
+            # Test asyncio.TimeoutError
+            lan._protocol.read.side_effect = asyncio.TimeoutError
+            lan._disconnect.reset_mock()
+            with self.assertRaisesRegex(TimeoutError, "No response from host."):
+                await lan.send(bytes(0))
 
-        # Test ProtocolErrors bubbled up with a disconnect
-        lan._protocol.read.side_effect = ProtocolError
-        lan._disconnect.reset_mock()
-        with self.assertRaises(ProtocolError):
-            await lan.send(bytes(0))
+            # Assert disconnect was called
+            lan._disconnect.assert_called_once()
 
-        # Assert disconnect was called
-        lan._disconnect.assert_called_once()
+    async def test_send_read_exception(self) -> None:
+        """Test that read exceptions are logged and handled."""
+        with self._mock_lan() as lan:
+            lan._protocol.read = AsyncMock(side_effect=ProtocolError)
 
-    async def test_authenticate_exceptions(self) -> None:
+            # Test ProtocolErrors bubble up and disconnect
+            with (
+                self.assertLogs("msmart.lan", logging.WARNING),
+                self.assertRaises(ProtocolError)
+            ):
+                await lan.send(bytes(0))
+
+            # Assert disconnect was called
+            lan._disconnect.assert_called_once()
+
+    async def test_send_read_canceled_exception(self) -> None:
+        """Test that read cancelled exceptions are logged and propagate as a timeout."""
+        with self._mock_lan() as lan:
+            lan._protocol.read = AsyncMock(side_effect=asyncio.CancelledError)
+
+            # Test cancelled exceptions log a warning, bubble up as TimeoutError and disconnect
+            with (
+                self.assertLogs("msmart", logging.WARNING) as log,
+                self.assertRaisesRegex(TimeoutError, "Read cancelled.")
+            ):
+                await lan.send(bytes(0))
+
+                # Assert timeouts were logged
+                self.assertRegex(" ".join(log.output),
+                                 ".*Read cancelled. Disconnecting.*")
+
+            # Assert disconnect was called
+            lan._disconnect.assert_called_once()
+
+    async def test_authenticate_connect_flow(self) -> None:
+        """Test the connect flow in the authenticate method."""
+        with self._mock_lan(alive=False, spec_protocol=_LanProtocolV3) as lan:
+            await lan.authenticate()
+
+            # Assert a disconnect->connect cycle occurred
+            lan._disconnect.assert_called_once()
+            lan._connect.assert_awaited_once()
+
+            # Assert that the expected protocol version is set
+            self.assertEqual(lan._protocol_version, 3)
+
+            # Assert protocol tried to authenticate
+            lan._protocol.authenticate.assert_awaited_once()
+
+    async def test_authenticate_timeouts(self) -> None:
+        """Test that both types of timeouts are handled in authentication."""
+        with self._mock_lan(spec_protocol=_LanProtocolV3) as lan:
+            # Test TimeoutError
+            lan._protocol.authenticate = AsyncMock(side_effect=TimeoutError)
+            with (
+                self.assertRaisesRegex(TimeoutError, "No response from host."),
+                self.assertLogs("msmart.lan", logging.DEBUG) as log
+            ):
+
+                await lan.authenticate(key=bytes(10), token=bytes(10))
+
+                # Assert timeouts were logged
+                self.assertRegex(" ".join(log.output),
+                                 "Authentication timeout. Resending to .*")
+
+            # Assert disconnect was called
+            lan._disconnect.assert_called_once()
+
+            # Test asyncio.TimeoutError
+            lan._protocol.read.side_effect = asyncio.TimeoutError
+            lan._disconnect.reset_mock()
+            with (
+                self.assertRaisesRegex(TimeoutError, "No response from host."),
+                self.assertLogs("msmart.lan", logging.DEBUG) as log
+            ):
+                await lan.authenticate(key=bytes(10), token=bytes(10))
+
+            # Assert disconnect was called
+            lan._disconnect.assert_called_once()
+
+    async def test_authenticate_exception(self) -> None:
+        """Test that authentication exceptions are logged and handled."""
+        with self._mock_lan(spec_protocol=_LanProtocolV3) as lan:
+            lan._protocol.authenticate = AsyncMock(
+                side_effect=AuthenticationError)
+
+            # Test AuthenticationError bubble up and disconnect
+            with self.assertRaises(AuthenticationError):
+                await lan.authenticate(key=bytes(10), token=bytes(10))
+
+            # Assert disconnect was called
+            lan._disconnect.assert_called_once()
+
+
+class TestProtocol(unittest.IsolatedAsyncioTestCase):
+    # pylint: disable=protected-access
+
+    class MockProtocol(_LanProtocol):
+        """Dummy class to suppress type errors"""
+        authenticate: AsyncMock
+        write: MagicMock  # type: ignore
+
+    @contextmanager
+    def _mock_protocol(self) -> Generator[MockProtocol, None, None]:
+        """Yield a Protocol instance for testing"""
+        protocol = _LanProtocolV3()
+        protocol.write = MagicMock()
+
+        yield cast(TestProtocol.MockProtocol, protocol)
+
+    async def test_authenticate_token_key_exception(self) -> None:
         """Test exception handling for authenticate method."""
-        # Create a dummy LAN object to test
-        lan = LAN("0.0.0.0", 0, 0)
+        with self._mock_protocol() as protocol:
+            # Assert that exception is thrown if token and key are invalid
+            with self.assertRaisesRegex(AuthenticationError, "Token and key must be supplied."):
+                await protocol.authenticate(key=None, token=None)
 
-        # Mock connect method to create a protocol
-        def _mock_connect() -> None:
-            lan._protocol = _LanProtocolV3()
+    async def test_authenticate_write_exception(self) -> None:
+        """Test write exception handling for authenticate method."""
+        with self._mock_protocol() as protocol:
+            protocol.write.side_effect = ProtocolError
 
-        # Mock connect/disconnect methods to check that they're called
-        lan._connect = mock.AsyncMock(side_effect=_mock_connect)
-        lan._disconnect = mock.MagicMock()
+            # Assert that a protocol error bubbles up as AuthenticationError
+            with self.assertRaises(AuthenticationError):
+                await protocol.authenticate(key=bytes(10), token=bytes(10))
 
-        # Assert that exception is thrown is token and key are invalid
-        with self.assertRaisesRegex(AuthenticationError, "Token and key must be supplied."):
-            await lan.authenticate(key=None, token=None)
+    async def test_authenticate_read_exception(self) -> None:
+        """Test read exception handling for authenticate method."""
+        with self._mock_protocol() as protocol:
+            protocol.read = AsyncMock(side_effect=ProtocolError)
 
-        # Assert a disconnect->connect cycle occurred
-        lan._disconnect.assert_called_once()
-        lan._connect.assert_awaited_once()
+            # Assert that a protocol error bubbles up as AuthenticationError
+            with self.assertRaises(AuthenticationError):
+                await protocol.authenticate(key=bytes(10), token=bytes(10))
 
-        # Assert that the expected protocol class was created
-        self.assertEqual(lan._protocol_version, 3)
-        self.assertIsInstance(lan._protocol, _LanProtocolV3)
+            # Assert write/read calls were made
+            protocol.write.assert_called_once()
+            protocol.read.assert_awaited_once()
 
-        # Mock connect method to create a protocol that throws
-        def _mock_connect_write_error() -> None:
-            lan._protocol = _LanProtocolV3()
-            lan._protocol.write = mock.MagicMock(side_effect=ProtocolError)
+    async def test_read_connection_lost_exception(self) -> None:
+        """Test that connection lose will raise an exception."""
+        with self._mock_protocol() as protocol:
+            with self.assertLogs("msmart.lan", logging.ERROR):
+                protocol.connection_lost(ConnectionResetError())
 
-        # Assert that a protocol error bubbles up as AuthenticationError
-        lan._connect.side_effect = _mock_connect_write_error
-        with self.assertRaises(AuthenticationError):
-            await lan.authenticate(key=bytes(10), token=bytes(10))
-
-        # Mock connect method to create a protocol that timeouts
-        def _mock_connect_timeout() -> None:
-            lan._protocol = _LanProtocolV3()
-            lan._protocol.authenticate = mock.MagicMock(
-                side_effect=TimeoutError)
-
-        # Assert that timeouts bubble up
-        lan._connect.side_effect = _mock_connect_timeout
-        with self.assertRaisesRegex(TimeoutError, "No response from host."):
-            await lan.authenticate(key=bytes(10), token=bytes(10))
+            with self.assertRaises(ProtocolError):
+                await protocol.read()
 
 
 if __name__ == "__main__":
