@@ -162,10 +162,19 @@ class AirConditioner(Device):
         self._outdoor_temperature = None
 
         self._request_energy_usage = False
-        self._total_energy_usage = {AirConditioner.EnergyDataFormat.BCD: None, AirConditioner.EnergyDataFormat.BINARY: None}
-        self._current_energy_usage = {AirConditioner.EnergyDataFormat.BCD: None, AirConditioner.EnergyDataFormat.BINARY: None}
-        self._real_time_power_usage = {AirConditioner.EnergyDataFormat.BCD: None, AirConditioner.EnergyDataFormat.BINARY: None}
-        self._use_binary_energy = False # Deprecated
+        self._total_energy_usage = {
+            AirConditioner.EnergyDataFormat.BCD: None,
+            AirConditioner.EnergyDataFormat.BINARY: None,
+        }
+        self._current_energy_usage = {
+            AirConditioner.EnergyDataFormat.BCD: None,
+            AirConditioner.EnergyDataFormat.BINARY: None,
+        }
+        self._real_time_power_usage = {
+            AirConditioner.EnergyDataFormat.BCD: None,
+            AirConditioner.EnergyDataFormat.BINARY: None,
+        }
+        self._use_binary_energy = False  # Deprecated
 
         # Default to assuming device can't handle any properties
         self._supported_properties = set()
@@ -1105,12 +1114,12 @@ class AirConditioner(Device):
         self.turbo = enabled
 
     @property
-    @deprecated("", msg = "Use format argument of get_*_energy_usage methods.")
+    @deprecated("", msg="Use format argument of get_*_energy_usage methods.")
     def use_alternate_energy_format(self) -> bool:
         return self._use_binary_energy
 
     @use_alternate_energy_format.setter
-    @deprecated("", msg = "Use format argument of get_*_energy_usage methods.")
+    @deprecated("", msg="Use format argument of get_*_energy_usage methods.")
     def use_alternate_energy_format(self, enable: bool) -> None:
         self._use_binary_energy = enable
 
