@@ -37,7 +37,7 @@ class MideaIntEnum(IntEnum):
             return cls(default)
 
 
-def deprecated(replacement: str) -> Callable[[Callable], Callable]:
+def deprecated(replacement: str, msg: Optional[str] = None) -> Callable[[Callable], Callable]:
     """Mark function as deprecated and recommend a replacement."""
 
     def deprecated_decorator(func: Callable) -> Callable:
@@ -50,10 +50,8 @@ def deprecated(replacement: str) -> Callable[[Callable], Callable]:
             # Check if already warned
             if not getattr(func, "_warn_deprecate", False):
                 logger = logging.getLogger(func.__module__)
-                logger.warning("'%s' is deprecated. Please use '%s' instead.",
-                               func.__name__,
-                               replacement,
-                               )
+                logger.warning("'%s' is deprecated. %s", func.__name__,
+                               (msg or f"Please use '{replacement}' instead."))
                 setattr(func, "_warn_deprecate", True)
 
             return func(*args, **kwargs)
