@@ -17,41 +17,53 @@ _LOGGER = logging.getLogger(__name__)
 
 class CommandType(IntEnum):
     """Command message types."""
-    COMMAND_COMMON = 0xC3
-    COMMAND_QUERY_COMMON = 0x01
+    COMMAND_CONTROL = 0xC3
+    COMMAND_QUERY = 0x01
     COMMAND_LOCK = 0xB0
     COMMAND_SMART = 0xE0
-    COMMAND_NOT_SUPPORTED = 0x0D
+    COMMAND_NOT_SUPPORTED = 0x0D  # ?
 
 
 class Command(Frame):
-    """Base class for 0xCC commands."""
+    """Base class for CC commands."""
 
-    def __init__(self, type: CommandType) -> None:
-        super().__init__(DeviceType.COMMERCIAL_AC, frame_type=FrameType.CONTROL)  # TODO
+    _message_id = 0
 
-        self._type = type
+    def __init__(self, frame_type: FrameType) -> None:
+        super().__init__(DeviceType.COMMERCIAL_AC, frame_type)
+
+    def tobytes(self, data: Union[bytes, bytearray] = bytes()) -> bytes:
+        # Append message ID to payload
+        # TODO Message ID in reference is just a random value
+        payload = data + bytes([self._next_message_id()])
+
+        # Append CRC
+        return super().tobytes(payload + bytes([crc8.calculate(payload)]))
+
+    def _next_message_id(self) -> int:
+        Command._message_id += 1
+        return Command._message_id & 0xFF
 
 
 class QueryCommand(Command):
     """Command to query state of the device."""
 
     def __init__(self) -> None:
-        super().__init__(CommandType.COMMAND_QUERY_COMMON)
+        super().__init__(frame_type=FrameType.QUERY)
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
-        payload = bytearray(24)  # TODO include random ID and crc8?
+        payload = bytearray(22)
 
-        payload[0] = self._type
+        payload[0] = CommandType.COMMAND_QUERY
 
         return super().tobytes(payload)
 
 
-class SetStateCommand(Command):
-    """Command to set basic state of the device."""
+class ControlCommand(Command):
+    """Command to control state of the device."""
 
     def __init__(self) -> None:
-        super().__init__(CommandType.COMMAND_COMMON)
+        super().__init__(frame_type=FrameType.CONTROL)
 
         self.beep_on = True
         self.power_on = False
@@ -72,9 +84,9 @@ class SetStateCommand(Command):
         self.independent_aux_heat = False
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
-        payload = bytearray(24)  # TODO include random ID and crc8?
+        payload = bytearray(22)
 
-        payload[0] = self._type
+        payload[0] = CommandType.COMMAND_CONTROL
 
         payload[1] |= 1 << 8 if self.power_on else 0
         payload[1] |= (self.operational_mode & 0x1F)
@@ -99,36 +111,55 @@ class SetStateCommand(Command):
 
 
 class Response():
-    """Base class for AC responses."""
+    """Base class for CC responses."""
 
-    def __init__(self, frame: memoryview) -> None:
-        self._type = frame[10]
-        self._payload = bytes(frame[10:-1])
+    def __init__(self, payload: memoryview) -> None:
+        self._type = payload[0]
+        self._payload = bytes(payload)
+
+    def __str__(self) -> str:
+        return self.payload.hex()
 
     @property
     def type(self) -> int:
-        """Type of the response."""
         return self._type
 
     @property
     def payload(self) -> bytes:
-        """Payload portion of the response."""
         return self._payload
 
     @classmethod
     def validate(cls, frame: memoryview) -> None:
         """Validate the response."""
-        # Responses only have frame checksum
-        Frame.validate(frame)
+        # TODO
+        pass
 
     @classmethod
     def construct(cls, frame: bytes) -> Union[Response]:
-        """Build a response object from the frame and response type."""
-        pass
+        """Construct a response object from raw data."""
+
+        # Build a memoryview of the frame for zero-copy slicing
+        with memoryview(frame) as frame_mv:
+            # Validate the frame
+            Frame.validate(frame_mv)
+
+            # Default to base class
+            response_class = Response
+
+            # Fetch the appropriate response class from the ID
+            response_type = frame_mv[10]
+            if response_type == CommandType.COMMAND_QUERY or response_type == CommandType.COMMAND_CONTROL:
+                response_class = StateResponse
+
+            # Validate the payload
+            Response.validate(frame_mv[10:-1])
+
+            # Build the response
+            return response_class(frame_mv[10:-2])
 
 
 class StateResponse(Response):
-    """Response to state query."""
+    """Response to query or control command."""
 
     def __init__(self, payload: memoryview) -> None:
         super().__init__(payload)
@@ -154,23 +185,6 @@ class StateResponse(Response):
         self.independent_aux_heat = None
 
         self._parse(payload)
-
-    def _parse_temperature(self, data: int, decimals: float, fahrenheit: bool) -> Optional[float]:
-        """Parse a temperature value from the payload using additional precision bits as needed."""
-        if data == 0xFF:
-            return None
-
-        # Temperature parsing lifted from https://github.com/dudanov/MideaUART
-        temperature = (data - 50) / 2
-
-        # In Celcius, use additional precision from decimals if present
-        if not fahrenheit and decimals:
-            return int(temperature) + (decimals if temperature >= 0 else -decimals)
-
-        if decimals >= 0.5:
-            return int(temperature) + (0.5 if temperature >= 0 else -0.5)
-
-        return temperature
 
     def _parse(self, payload: memoryview) -> None:
         """Parse the state response payload."""
