@@ -182,7 +182,7 @@ class StateResponse(Response):
         self.swing_lr = False
         self.swing_lr_angle = 0
         self.exhaust = False
-        self.ptc_on = False
+        self.ptc_on = False # Indicates if PTC is active?
         self.ptc_setting = 0
         self.digit_display = False
         
@@ -229,7 +229,7 @@ class StateResponse(Response):
 
 
         self.swing_lr = payload[14] & 0x01
-        self.digit_display = payload[14] & 0x08  # Unit?
+        self.digit_display = payload[14] & 0x08  # Display on/off?
         self.sleep = payload[14] & 0x10
         self.ptc_setting = (payload[14] & 0x60) >> 5
         # if (PTCValue == 0x02) then
