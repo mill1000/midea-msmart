@@ -1050,9 +1050,9 @@ class AirConditioner(Device):
             "follow_me": self.follow_me,
             "purifier": self.purifier,
             "self_clean": self.self_clean_active,
-            "total_energy_usage": self.total_energy_usage,
-            "current_energy_usage": self.current_energy_usage,
-            "real_time_power_usage": self.real_time_power_usage,
+            "total_energy_usage": self.get_total_energy_usage(),
+            "current_energy_usage": self.get_current_energy_usage(),
+            "real_time_power_usage": self.get_real_time_power_usage(),
             "rate_select": self.rate_select,
             "aux_mode": self.aux_mode,
         }}
