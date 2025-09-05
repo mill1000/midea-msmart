@@ -126,7 +126,7 @@ class HeatPump(Device):
         # Tank booster heater
         self._tbh_enable = False
         self._tbh_power_state = False
-        
+
         # Sensors
         self._tank_temperature = None
         self._outdoor_temperature = None

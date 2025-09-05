@@ -188,7 +188,7 @@ class Response():
             frame_type = frame_mv[9]
             type = frame_mv[10]
             if ((frame_type == FrameType.QUERY and type == QueryType.QUERY_BASIC) or
-                (frame_type == FrameType.CONTROL and type == ControlType.CONTROL_BASIC)):
+                    (frame_type == FrameType.CONTROL and type == ControlType.CONTROL_BASIC)):
                 return QueryBasicResponse(frame_mv)
             elif frame_type == FrameType.QUERY and type == QueryType.QUERY_UNIT_PARAMETERS:
                 return QueryUnitParametersResponse(frame_mv)
@@ -217,7 +217,7 @@ class QueryBasicResponse(Response):
         self.zone1_curve_state = bool(payload[1] & 0x08)
         self.zone2_curve_state = bool(payload[1] & 0x10)
         self.tbh_state = bool(payload[1] & 0x40)  # Ref: forcetbh_state
-        self.dhw_fast_mode = bool(payload[1] & 0x40) # Ref: fastdhw_state
+        self.dhw_fast_mode = bool(payload[1] & 0x40)  # Ref: fastdhw_state
         # self.remote_onoff = bool(payload[1] & 0x80) # TODO never referenced in ref
 
         self.heat_enable = bool(payload[2] & 0x01)
