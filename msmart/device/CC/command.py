@@ -65,23 +65,19 @@ class ControlCommand(Command):
     def __init__(self) -> None:
         super().__init__(frame_type=FrameType.CONTROL)
 
-        self.beep_on = True
         self.power_on = False
         self.target_temperature = 25.0
         self.operational_mode = 0
         self.fan_speed = 0
         self.eco = True
-        self.swing_mode = 0
-        self.turbo = False
-        self.fahrenheit = True
         self.sleep = False
-        self.freeze_protection = False
-        self.follow_me = False
-        self.purifier = False
-        self.target_humidity = 40
-        self.aux_heat = False
-        self.force_aux_heat = False
-        self.independent_aux_heat = False
+        self.swing_ud = False
+        self.swing_ud_angle = 0
+        self.swing_lr = False
+        self.swing_lr_angle = 0
+        self.exhaust = False
+        self.ptc_setting = 0
+        self.digit_display = False
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
         payload = bytearray(22)
@@ -93,19 +89,27 @@ class ControlCommand(Command):
 
         payload[2] = self.fan_speed
 
-        payload[3] = int(self.target_temperature)
+        # Get integer and fraction components of target temp
+        fractional_temp, integral_temp = math.modf(self.target_temperature)
+        integral_temp = int(integral_temp)
+
+        payload[3] = max(17, min(integral_temp, 30))
 
         payload[6] |= 1 << 0 if self.eco else 0
-        # swingUDValue, exhaustValue, PTCSettingValue in payload[6]
+        payload[6] |= 1 << 2 if self.swing_ud else 0
+        payload[6] |= 1 << 3 if self.exhaust else 0
+        payload[6] |= self.ptc_setting << 4
 
         payload[7] = 0xFF
 
+        payload[8] |= 1 << 0 if self.swing_lr else 0
+        payload[8] |= 1 << 3 if self.digit_display else 0
         payload[8] |= 1 << 4 if self.sleep else 0
-        # digitDisplay, swingLRValue in payload[8]
 
-        # payload[9] = swingLRSiteValue
-        # payload[10] = swingUDSiteValue
-        # payload[11] temperatureDecimals * 10
+        payload[9] = self.swing_lr_angle
+        payload[10] = self.swing_ud_angle
+
+        payload[11] = int(fractional_temp * 10)
 
         return super().tobytes(payload)
 
@@ -135,7 +139,7 @@ class Response():
         pass
 
     @classmethod
-    def construct(cls, frame: bytes) -> Union[Response]:
+    def construct(cls, frame: bytes) -> Union[StateResponse, Response]:
         """Construct a response object from raw data."""
 
         # Build a memoryview of the frame for zero-copy slicing
@@ -164,26 +168,24 @@ class StateResponse(Response):
     def __init__(self, payload: memoryview) -> None:
         super().__init__(payload)
 
-        self.power_on = None
-        self.target_temperature = None
-        self.operational_mode = None
-        self.fan_speed = None
-        self.swing_mode = None
-        self.turbo = None
-        self.eco = None
-        self.sleep = None
-        self.fahrenheit = None
+        self.power_on = False
+        self.target_temperature = 25.0
+        self.operational_mode = 0
+        self.fan_speed = 0
         self.indoor_temperature = None
-        self.outdoor_temperature = None
-        self.filter_alert = None
-        self.display_on = None
-        self.freeze_protection = None
-        self.follow_me = None
-        self.purifier = None
-        self.target_humidity = None
-        self.aux_heat = None
-        self.independent_aux_heat = None
-
+        self.evaporator_entrance_temperature = None
+        self.evaporator_exit_temperature = None
+        self.eco = True
+        self.sleep = False
+        self.swing_ud = False
+        self.swing_ud_angle = 0
+        self.swing_lr = False
+        self.swing_lr_angle = 0
+        self.exhaust = False
+        self.ptc_on = False
+        self.ptc_setting = 0
+        self.digit_display = False
+        
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
@@ -194,31 +196,51 @@ class StateResponse(Response):
 
         self.fan_speed = payload[2]
 
-        temperature_value = payload[3]  # Target temp?
+        self.target_temperature = payload[3]
         self.indoor_temperature = payload[4]
 
-        evaporator_entrance_temperature = payload[5]
-        evaporator_exit_temperature = payload[6]
+        self.evaporator_entrance_temperature = payload[5]
+        self.evaporator_exit_temperature = payload[6]
 
-        swing_ud_value = payload[9]
+        self.swing_ud_angle = payload[9]
 
-        # Timers?
+        # TODO temperature parsing
+        # streams[KEY_TEMPERATURE] = int2String(temperatureValue)
+        # streams[KEY_INDOOR_TEMPERATURE] = int2String((indoorTemperature - 40) / 2)
+        # streams[KEY_EVAPORATOR_ENTRANCE_TEMPERATURE] = int2String((evaporatorEntranceTemp - 40) / 2)
+        # streams[KEY_EVAPORATOR_EXIT_TEMPERATURE] = int2String((evaporatorExitTemp - 40) / 2)
+
+        # Timers
         # openTime payload[10]
         # closeTime payload[11]
 
-        # exhaustValue payload[13] & 0x08
-        swing_up = payload[13] & 0x04
-        ptc_value = payload[13] & 0x02  # Emergency heat PTC?
-        self.eco = payload[13] & 0x01
+        self.eco = bool(payload[13] & 0x01)
+        self.ptc_on = bool(payload[13] & 0x02)  # Emergency heat PTC?
+        self.swing_ud = bool(payload[13] & 0x04)
+        self.exhaust = bool (payload[13] & 0x08)
 
         # isCanDecimals (payload[14] & 80) # Decimals?
-        ptc_setting_value = payload[14] & 0x60
-        self.sleep = payload[14] & 0x10
-        digit_display = payload[14] & 0x08  # Unit?
-        swing_lr = payload[14] & 0x01
+        # streams[KEY_SMALL_TEMPERATURE] = int2String(temperatureDecimals / 10)
+        # if (isCanDecimals == 0x00) then
+        #     streams['support_decimals'] = 'on'
+        # elseif (isCanDecimals == 0x01) then
+        #     streams['support_decimals'] = 'off'
+        # end
 
-        swing_lr_value = payload[17]
-        temperature_decimals = payload[19]
+
+        self.swing_lr = payload[14] & 0x01
+        self.digit_display = payload[14] & 0x08  # Unit?
+        self.sleep = payload[14] & 0x10
+        self.ptc_setting = (payload[14] & 0x60) >> 5
+        # if (PTCValue == 0x02) then
+        #     streams[KEY_PTC_POWER] = VALUE_ON
+        # elseif (PTCValue == 0x00) then
+        #     streams[KEY_PTC_POWER] = VALUE_OFF
+        # end
+
+        self.swing_lr_value = payload[17]
+        
+        self.target_temperature += (payload[19] / 10.0)
 
         # errorCodeMachineStyle payload[18] & 0x80
         # errorHigh payload[18] & 0x7F
