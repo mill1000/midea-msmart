@@ -13,6 +13,10 @@ from .command import ControlCommand, QueryCommand, Response, StateResponse
 _LOGGER = logging.getLogger(__name__)
 
 
+_MIN_TEMPERATURE = 17
+_MAX_TEMPERATURE = 30
+
+
 class CommercialCooler(Device):
 
     class FanSpeed(MideaIntEnum):
@@ -36,11 +40,12 @@ class CommercialCooler(Device):
 
         DEFAULT = FAN
 
+    # TODO Is swing mode the right way to represent this device?
     class SwingMode(MideaIntEnum):
         OFF = 0x0
-        VERTICAL = 0xC
-        HORIZONTAL = 0x3
-        BOTH = 0xF
+        VERTICAL = 0x1
+        HORIZONTAL = 0x2
+        BOTH = 0x3
 
         DEFAULT = OFF
 
@@ -55,7 +60,6 @@ class CommercialCooler(Device):
 
         DEFAULT = OFF
 
-    # PTC Setting?
     class AuxHeatMode(MideaIntEnum):
         AUTO = 0x00
         ON = 0x10
@@ -76,15 +80,8 @@ class CommercialCooler(Device):
         self._fan_speed = CommercialCooler.FanSpeed.AUTO
         self._swing_mode = CommercialCooler.SwingMode.OFF
         self._eco = False
-        self._turbo = False
-        self._freeze_protection = False
         self._sleep = False
-        self._fahrenheit_unit = False  # Display temperature in Fahrenheit
         self._display_on = False
-        self._filter_alert = False
-        self._follow_me = False
-        self._purifier = False
-        self._target_humidity = 40
 
         # Support all known modes initially
         self._supported_op_modes = cast(
@@ -93,27 +90,16 @@ class CommercialCooler(Device):
             list[CommercialCooler.SwingMode], CommercialCooler.SwingMode.list())
         self._supported_fan_speeds = cast(
             list[CommercialCooler.FanSpeed], CommercialCooler.FanSpeed.list())
-        self._supports_custom_fan_speed = True
-        self._supports_eco = True
-        self._supports_turbo = True
-        self._supports_freeze_protection = True
-        self._supports_display_control = True
-        self._supports_filter_reminder = True
-        self._supports_purifier = True
-        self._supports_humidity = False
-        self._supports_target_humidity = False
-        self._min_target_temperature = 16
-        self._max_target_temperature = 30
 
         self._indoor_temperature = None
-        self._indoor_humidity = None
-        self._outdoor_temperature = None
+        self._evaporator_entrance_temperature = None
+        self._evaporator_exit_temperature = None
 
         self._horizontal_swing_angle = CommercialCooler.SwingAngle.OFF
         self._vertical_swing_angle = CommercialCooler.SwingAngle.OFF
 
         self._aux_mode = CommercialCooler.AuxHeatMode.OFF
-        self._supported_aux_modes = [CommercialCooler.AuxHeatMode.OFF]  # TODO
+        self._aux_heat_on = False
 
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
@@ -126,51 +112,39 @@ class CommercialCooler(Device):
 
             self._target_temperature = res.target_temperature
             self._operational_mode = cast(
-                CommercialCooler.OperationalMode,
-                CommercialCooler.OperationalMode.get_from_value(res.operational_mode))
+                CommercialCooler.OperationalMode, CommercialCooler.OperationalMode.get_from_value(res.operational_mode))
 
-            if self._supports_custom_fan_speed:
-                # Attempt to fetch enum of fan speed, but fallback to raw int if custom
-                try:
-                    self._fan_speed = CommercialCooler.FanSpeed(
-                        cast(int, res.fan_speed))
-                except ValueError:
-                    self._fan_speed = cast(int, res.fan_speed)
+            self._fan_speed = cast(
+                CommercialCooler.FanSpeed, CommercialCooler.FanSpeed.get_from_value(res.fan_speed))
+
+            if res.swing_lr and res.swing_ud:
+                self._swing_mode = CommercialCooler.SwingMode.BOTH
+            elif res.swing_lr:
+                self._swing_mode = CommercialCooler.SwingMode.HORIZONTAL
+            elif res.swing_ud:
+                self._swing_mode = CommercialCooler.SwingMode.VERTICAL
             else:
-                self._fan_speed = CommercialCooler.FanSpeed.get_from_value(
-                    res.fan_speed)
+                self._swing_mode = CommercialCooler.SwingMode.OFF
 
-            self._swing_mode = cast(
-                CommercialCooler.SwingMode,
-                CommercialCooler.SwingMode.get_from_value(res.swing_mode))
+            # TODO assuming device handles any mutual exclusion between swing mode and swing angle
+            self._horizontal_swing_angle = cast(
+                CommercialCooler.SwingAngle, CommercialCooler.SwingAngle.get_from_value(res.swing_lr_angle))
+            self._vertical_swing_angle = cast(
+                CommercialCooler.SwingAngle, CommercialCooler.SwingAngle.get_from_value(res.swing_ud_angle))
 
             self._eco = res.eco
-            self._turbo = res.turbo
-            self._freeze_protection = res.freeze_protection
             self._sleep = res.sleep
 
             self._indoor_temperature = res.indoor_temperature
-            self._outdoor_temperature = res.outdoor_temperature
+            self._evaporator_entrance_temperature = res.evaporator_entrance_temperature
+            self._evaporator_exit_temperature = res.evaporator_exit_temperature
 
-            self._display_on = res.display_on
-            self._fahrenheit_unit = res.fahrenheit
+            self._display_on = res.digit_display  # TODO?
 
-            self._filter_alert = res.filter_alert
+            self._aux_mode = cast(CommercialCooler.AuxHeatMode,
+                                  CommercialCooler.AuxHeatMode.get_from_value(res.ptc_setting))
+            self._aux_heat_on = res.ptc_on
 
-            self._follow_me = res.follow_me
-            self._purifier = res.purifier
-
-            self._target_humidity = res.target_humidity
-
-            if res.independent_aux_heat:
-                pass
-                #  TODO self._aux_mode = CommercialCooler.AuxHeatMode.AUX_ONLY
-            elif res.aux_heat:
-                pass
-                # TODO
-                # self._aux_mode = CommercialCooler.AuxHeatMode.AUX_HEAT
-            else:
-                self._aux_mode = CommercialCooler.AuxHeatMode.OFF
         else:
             _LOGGER.debug("Ignored unknown response from device %s: %s",
                           self.id, res)
@@ -227,29 +201,13 @@ class CommercialCooler(Device):
             _LOGGER.warning(
                 "Device %s is not capable of operational mode %r.",  self.id, self._operational_mode)
 
-        if (self._fan_speed not in self._supported_fan_speeds
-                and not self._supports_custom_fan_speed):
+        if self._fan_speed not in self._supported_fan_speeds:
             _LOGGER.warning(
                 "Device %s is not capable of fan speed %r.",  self.id, self._fan_speed)
 
         if self._swing_mode not in self._supported_swing_modes:
             _LOGGER.warning(
                 "Device %s is not capable of swing mode %r.",  self.id, self._swing_mode)
-
-        if self._turbo and not self._supports_turbo:
-            _LOGGER.warning("Device %s is not capable of turbo mode.", self.id)
-
-        if self._eco and not self._supports_eco:
-            _LOGGER.warning("Device %s is not capable of eco mode.",  self.id)
-
-        if self._freeze_protection and not self._supports_freeze_protection:
-            _LOGGER.warning(
-                "Device %s is not capable of freeze protection.", self.id)
-
-        # TODO
-        # if self._aux_mode != AirConditioner.AuxHeatMode.OFF and self._aux_mode not in self._supported_aux_modes:
-        #     _LOGGER.warning(
-        #         "Device is not capable of aux mode %r.", self._aux_mode)
 
         # Define function to return value or a default if value is None
 
@@ -260,19 +218,16 @@ class CommercialCooler(Device):
         cmd.target_temperature = or_default(self._target_temperature, 25)
         cmd.operational_mode = self._operational_mode
         cmd.fan_speed = self._fan_speed
-        cmd.swing_mode = self._swing_mode
+        cmd.swing_lr = bool(self._swing_mode &
+                            CommercialCooler.SwingMode.HORIZONTAL)
+        cmd.swing_ud = bool(self._swing_mode &
+                            CommercialCooler.SwingMode.VERTICAL)
+        cmd.swing_lr_angle = self._horizontal_swing_angle
+        cmd.swing_ud_angle = self._vertical_swing_angle
         cmd.eco = or_default(self._eco, False)
-        cmd.turbo = or_default(self._turbo, False)
-        cmd.freeze_protection = or_default(
-            self._freeze_protection, False)
         cmd.sleep = or_default(self._sleep, False)
-        cmd.fahrenheit = or_default(self._fahrenheit_unit, False)
-        cmd.follow_me = or_default(self._follow_me, False)
-        cmd.purifier = or_default(self._purifier, False)
-        cmd.target_humidity = or_default(self._target_humidity, 40)
-        # TODO
-        # cmd.aux_heat = self._aux_mode == CommercialCooler.AuxHeatMode.AUX_HEAT
-        # cmd.independent_aux_heat = self._aux_mode == CommercialCooler.AuxHeatMode.AUX_ONLY
+        cmd.ptc_setting = self._aux_mode
+        cmd.digit_display = self._display_on
 
         # Process any state responses from the device
         for response in await self._send_command_get_responses(cmd):
@@ -287,20 +242,12 @@ class CommercialCooler(Device):
         self._power_state = state
 
     @property
-    def fahrenheit(self) -> Optional[bool]:
-        return self._fahrenheit_unit
-
-    @fahrenheit.setter
-    def fahrenheit(self, enabled: bool) -> None:
-        self._fahrenheit_unit = enabled
-
-    @property
     def min_target_temperature(self) -> int:
-        return self._min_target_temperature
+        return _MIN_TEMPERATURE
 
     @property
     def max_target_temperature(self) -> int:
-        return self._max_target_temperature
+        return _MAX_TEMPERATURE
 
     @property
     def target_temperature(self) -> Optional[float]:
@@ -315,8 +262,12 @@ class CommercialCooler(Device):
         return self._indoor_temperature
 
     @property
-    def outdoor_temperature(self) -> Optional[float]:
-        return self._outdoor_temperature
+    def evaporator_entrance_temperature(self) -> Optional[float]:
+        return self._evaporator_entrance_temperature
+
+    @property
+    def evaporator_exit_temperature(self) -> Optional[float]:
+        return self._evaporator_exit_temperature
 
     @property
     def supported_operation_modes(self) -> list[OperationalMode]:
@@ -335,10 +286,6 @@ class CommercialCooler(Device):
         return self._supported_fan_speeds
 
     @property
-    def supports_custom_fan_speed(self) -> bool:
-        return self._supports_custom_fan_speed
-
-    @property
     def fan_speed(self) -> FanSpeed | int:
         return self._fan_speed
 
@@ -351,10 +298,6 @@ class CommercialCooler(Device):
         self._fan_speed = speed
 
     @property
-    def supported_swing_modes(self) -> list[SwingMode]:
-        return self._supported_swing_modes
-
-    @property
     def swing_mode(self) -> SwingMode:
         return self._swing_mode
 
@@ -362,36 +305,21 @@ class CommercialCooler(Device):
     def swing_mode(self, mode: SwingMode) -> None:
         self._swing_mode = mode
 
-    # TODO
-    # @property
-    # def supports_horizontal_swing_angle(self) -> bool:
-    #     return PropertyId.SWING_LR_ANGLE in self._supported_properties
+    @property
+    def horizontal_swing_angle(self) -> SwingAngle:
+        return self._horizontal_swing_angle
 
-    # @property
-    # def horizontal_swing_angle(self) -> SwingAngle:
-    #     return self._horizontal_swing_angle
-
-    # @horizontal_swing_angle.setter
-    # def horizontal_swing_angle(self, angle: SwingAngle) -> None:
-    #     self._horizontal_swing_angle = angle
-    #     self._updated_properties.add(PropertyId.SWING_LR_ANGLE)
-
-    # @property
-    # def supports_vertical_swing_angle(self) -> bool:
-    #     return PropertyId.SWING_UD_ANGLE in self._supported_properties
-
-    # @property
-    # def vertical_swing_angle(self) -> SwingAngle:
-    #     return self._vertical_swing_angle
-
-    # @vertical_swing_angle.setter
-    # def vertical_swing_angle(self, angle: SwingAngle) -> None:
-    #     self._vertical_swing_angle = angle
-    #     self._updated_properties.add(PropertyId.SWING_UD_ANGLE)
+    @horizontal_swing_angle.setter
+    def horizontal_swing_angle(self, angle: SwingAngle) -> None:
+        self._horizontal_swing_angle = angle
 
     @property
-    def supports_eco(self) -> bool:
-        return self._supports_eco
+    def vertical_swing_angle(self) -> SwingAngle:
+        return self._vertical_swing_angle
+
+    @vertical_swing_angle.setter
+    def vertical_swing_angle(self, angle: SwingAngle) -> None:
+        self._vertical_swing_angle = angle
 
     @property
     def eco(self) -> Optional[bool]:
@@ -402,30 +330,6 @@ class CommercialCooler(Device):
         self._eco = enabled
 
     @property
-    def supports_turbo(self) -> bool:
-        return self._supports_turbo
-
-    @property
-    def turbo(self) -> Optional[bool]:
-        return self._turbo
-
-    @turbo.setter
-    def turbo(self, enabled: bool) -> None:
-        self._turbo = enabled
-
-    @property
-    def supports_freeze_protection(self) -> bool:
-        return self._supports_freeze_protection
-
-    @property
-    def freeze_protection(self) -> Optional[bool]:
-        return self._freeze_protection
-
-    @freeze_protection.setter
-    def freeze_protection(self, enabled: bool) -> None:
-        self._freeze_protection = enabled
-
-    @property
     def sleep(self) -> Optional[bool]:
         return self._sleep
 
@@ -434,64 +338,16 @@ class CommercialCooler(Device):
         self._sleep = enabled
 
     @property
-    def follow_me(self) -> Optional[bool]:
-        return self._follow_me
-
-    @follow_me.setter
-    def follow_me(self, enabled: bool) -> None:
-        self._follow_me = enabled
-
-    @property
-    def supports_purifier(self) -> bool:
-        return self._supports_purifier
-
-    @property
-    def purifier(self) -> Optional[bool]:
-        return self._purifier
-
-    @purifier.setter
-    def purifier(self, enabled: bool) -> None:
-        self._purifier = enabled
-
-    @property
-    def supports_display_control(self) -> bool:
-        return self._supports_display_control
-
-    @property
-    def display_on(self) -> Optional[bool]:
+    def display(self) -> Optional[bool]:
         return self._display_on
 
-    @property
-    def supports_filter_reminder(self) -> bool:
-        return self._supports_filter_reminder
+    @display.setter
+    def display(self, enabled: bool) -> None:
+        self._display_on = enabled
 
     @property
-    def filter_alert(self) -> Optional[bool]:
-        return self._filter_alert
-
-    @property
-    def supports_humidity(self) -> bool:
-        return self._supports_humidity
-
-    @property
-    def indoor_humidity(self) -> Optional[int]:
-        return self._indoor_humidity
-
-    @property
-    def supports_target_humidity(self) -> bool:
-        return self._supports_target_humidity
-
-    @property
-    def target_humidity(self) -> Optional[int]:
-        return self._target_humidity
-
-    @target_humidity.setter
-    def target_humidity(self, humidity: int) -> None:
-        self._target_humidity = humidity
-
-    @property
-    def supported_aux_modes(self) -> list[AuxHeatMode]:
-        return self._supported_aux_modes
+    def aux_heat_on(self) -> Optional[bool]:
+        return self._aux_heat_on
 
     @property
     def aux_mode(self) -> AuxHeatMode:
@@ -511,17 +367,11 @@ class CommercialCooler(Device):
             "vertical_swing_angle": self.vertical_swing_angle,
             "target_temperature": self.target_temperature,
             "indoor_temperature": self.indoor_temperature,
-            "outdoor_temperature": self.outdoor_temperature,
-            "target_humidity": self.target_humidity,
-            "indoor_humidity": self.indoor_humidity,
+            "evaporator_entrance_temperature": self.evaporator_entrance_temperature,
+            "evaporator_exit_temperature": self.evaporator_exit_temperature,
             "eco": self.eco,
-            "turbo": self.turbo,
-            "freeze_protection": self.freeze_protection,
             "sleep": self.sleep,
-            "display_on": self.display_on,
-            "fahrenheit": self.fahrenheit,
-            "filter_alert": self.filter_alert,
-            "follow_me": self.follow_me,
-            "purifier": self.purifier,
+            "display": self.display,
+            "aux_heat_on": self.aux_heat_on,
             "aux_mode": self.aux_mode,
         }}
