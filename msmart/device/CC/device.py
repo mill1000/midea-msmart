@@ -8,8 +8,7 @@ from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum
 
-from .command import (ControlCommand, QueryCommand, Response,
-                      StateResponse)
+from .command import ControlCommand, QueryCommand, Response, StateResponse
 
 _LOGGER = logging.getLogger(__name__)
 

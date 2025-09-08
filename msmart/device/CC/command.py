@@ -66,9 +66,9 @@ class ControlCommand(Command):
         super().__init__(frame_type=FrameType.CONTROL)
 
         self.power_on = False
-        self.target_temperature = 25.0
         self.operational_mode = 0
         self.fan_speed = 0
+        self.target_temperature = 25.0
         self.eco = True
         self.sleep = False
         self.swing_ud = False
@@ -169,9 +169,9 @@ class StateResponse(Response):
         super().__init__(payload)
 
         self.power_on = False
-        self.target_temperature = 25.0
         self.operational_mode = 0
         self.fan_speed = 0
+        self.target_temperature = 25.0
         self.indoor_temperature = None
         self.evaporator_entrance_temperature = None
         self.evaporator_exit_temperature = None
@@ -182,10 +182,11 @@ class StateResponse(Response):
         self.swing_lr = False
         self.swing_lr_angle = 0
         self.exhaust = False
-        self.ptc_on = False # Indicates if PTC is active?
+        self.ptc_on = False
         self.ptc_setting = 0
         self.digit_display = False
-        
+        self.decimals = False
+
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
@@ -197,49 +198,36 @@ class StateResponse(Response):
         self.fan_speed = payload[2]
 
         self.target_temperature = payload[3]
-        self.indoor_temperature = payload[4]
 
-        self.evaporator_entrance_temperature = payload[5]
-        self.evaporator_exit_temperature = payload[6]
+        def parse_temperature(data: int) -> float:
+            # From reference int2String((indoorTemperature - 40) / 2)
+            return (data - 40) / 2
+
+        self.indoor_temperature = parse_temperature(payload[4])
+        self.evaporator_entrance_temperature = parse_temperature(payload[5])
+        self.evaporator_exit_temperature = parse_temperature(payload[6])
 
         self.swing_ud_angle = payload[9]
-
-        # TODO temperature parsing
-        # streams[KEY_TEMPERATURE] = int2String(temperatureValue)
-        # streams[KEY_INDOOR_TEMPERATURE] = int2String((indoorTemperature - 40) / 2)
-        # streams[KEY_EVAPORATOR_ENTRANCE_TEMPERATURE] = int2String((evaporatorEntranceTemp - 40) / 2)
-        # streams[KEY_EVAPORATOR_EXIT_TEMPERATURE] = int2String((evaporatorExitTemp - 40) / 2)
 
         # Timers
         # openTime payload[10]
         # closeTime payload[11]
 
         self.eco = bool(payload[13] & 0x01)
-        self.ptc_on = bool(payload[13] & 0x02)  # Emergency heat PTC?
+        self.ptc_on = bool(payload[13] & 0x02)  # Aux heat status?
         self.swing_ud = bool(payload[13] & 0x04)
-        self.exhaust = bool (payload[13] & 0x08)
+        self.exhaust = bool(payload[13] & 0x08)
 
-        # isCanDecimals (payload[14] & 80) # Decimals?
-        # streams[KEY_SMALL_TEMPERATURE] = int2String(temperatureDecimals / 10)
-        # if (isCanDecimals == 0x00) then
-        #     streams['support_decimals'] = 'on'
-        # elseif (isCanDecimals == 0x01) then
-        #     streams['support_decimals'] = 'off'
-        # end
-
-
-        self.swing_lr = payload[14] & 0x01
-        self.digit_display = payload[14] & 0x08  # Display on/off?
-        self.sleep = payload[14] & 0x10
+        self.swing_lr = bool(payload[14] & 0x01)
+        self.digit_display = bool(payload[14] & 0x08)  # Display on/off?
+        self.sleep = bool(payload[14] & 0x10)
         self.ptc_setting = (payload[14] & 0x60) >> 5
-        # if (PTCValue == 0x02) then
-        #     streams[KEY_PTC_POWER] = VALUE_ON
-        # elseif (PTCValue == 0x00) then
-        #     streams[KEY_PTC_POWER] = VALUE_OFF
-        # end
+
+        # Reference inverts 0x00 -> On, 0x01 -> Off
+        self.decimals = not bool(payload[14] & 0x80)
 
         self.swing_lr_value = payload[17]
-        
+
         self.target_temperature += (payload[19] / 10.0)
 
         # errorCodeMachineStyle payload[18] & 0x80
