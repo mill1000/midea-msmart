@@ -133,7 +133,7 @@ class Response():
         return self._payload
 
     @classmethod
-    def validate(cls, frame: memoryview) -> None:
+    def validate(cls, payload: memoryview) -> None:
         """Validate the response."""
         # TODO
         pass
@@ -159,7 +159,7 @@ class Response():
             Response.validate(frame_mv[10:-1])
 
             # Build the response
-            return response_class(frame_mv[10:-2])
+            return response_class(frame_mv[10:-1])
 
 
 class StateResponse(Response):
@@ -189,47 +189,67 @@ class StateResponse(Response):
 
         self._parse(payload)
 
+    def _parse_temperature(self, data: int) -> float:
+        # Based on sample data
+        # 0x72 -> 17C
+        # 0x8C -> 30C
+        # 0x79 -> 20.5C
+        return (data / 2.0) - 40
+
     def _parse(self, payload: memoryview) -> None:
         """Parse the state response payload."""
 
-        self.power_on = bool(payload[1] & 0x80)
-        self.operational_mode = payload[1] & 0x1F
+        self.power_on = bool(payload[8])
 
-        self.fan_speed = payload[2]
+        # min/max temperature possibly encoded in payload[9] & payload[10]
+        self.target_temperature = self._parse_temperature(payload[11])
 
-        self.target_temperature = payload[3]
+        # 0x728C -> 17C/30C is repeated 3 times in user payload
+        # Possible multi zones? Or multiple temp limits for different modes?
 
-        def parse_temperature(data: int) -> float:
-            # From reference int2String((indoorTemperature - 40) / 2)
-            return (data - 40) / 2
+        self.fan_speed = payload[34]
 
-        self.indoor_temperature = parse_temperature(payload[4])
-        self.evaporator_entrance_temperature = parse_temperature(payload[5])
-        self.evaporator_exit_temperature = parse_temperature(payload[6])
+        # Maybe swing angles in payload[36] and payload[41]
 
-        self.swing_ud_angle = payload[9]
+        # Reference decoding seems wildly off
+        # self.power_on = bool(payload[1] & 0x80)
+        # self.operational_mode = payload[1] & 0x1F
 
-        # Timers
-        # openTime payload[10]
-        # closeTime payload[11]
+        # self.fan_speed = payload[2]
 
-        self.eco = bool(payload[13] & 0x01)
-        self.ptc_on = bool(payload[13] & 0x02)  # Aux heat status?
-        self.swing_ud = bool(payload[13] & 0x04)
-        self.exhaust = bool(payload[13] & 0x08)
+        # self.target_temperature = payload[3]
 
-        self.swing_lr = bool(payload[14] & 0x01)
-        self.digit_display = bool(payload[14] & 0x08)  # Display on/off?
-        self.sleep = bool(payload[14] & 0x10)
-        self.ptc_setting = (payload[14] & 0x60) >> 5
+        # def parse_temperature(data: int) -> float:
+        #     # From reference int2String((indoorTemperature - 40) / 2)
+        #     return (data - 40) / 2
 
-        # Reference inverts 0x00 -> On, 0x01 -> Off
-        self.decimals = not bool(payload[14] & 0x80)
+        # self.indoor_temperature = parse_temperature(payload[4])
+        # self.evaporator_entrance_temperature = parse_temperature(payload[5])
+        # self.evaporator_exit_temperature = parse_temperature(payload[6])
 
-        self.swing_lr_value = payload[17]
+        # self.swing_ud_angle = payload[9]
 
-        self.target_temperature += (payload[19] / 10.0)
+        # # Timers
+        # # openTime payload[10]
+        # # closeTime payload[11]
 
-        # errorCodeMachineStyle payload[18] & 0x80
-        # errorHigh payload[18] & 0x7F
-        # errorLow payload[19]
+        # self.eco = bool(payload[13] & 0x01)
+        # self.ptc_on = bool(payload[13] & 0x02)  # Aux heat status?
+        # self.swing_ud = bool(payload[13] & 0x04)
+        # self.exhaust = bool(payload[13] & 0x08)
+
+        # self.swing_lr = bool(payload[14] & 0x01)
+        # self.digit_display = bool(payload[14] & 0x08)  # Display on/off?
+        # self.sleep = bool(payload[14] & 0x10)
+        # self.ptc_setting = (payload[14] & 0x60) >> 5
+
+        # # Reference inverts 0x00 -> On, 0x01 -> Off
+        # self.decimals = not bool(payload[14] & 0x80)
+
+        # self.swing_lr_value = payload[17]
+
+        # self.target_temperature += (payload[19] / 10.0)
+
+        # # errorCodeMachineStyle payload[18] & 0x80
+        # # errorHigh payload[18] & 0x7F
+        # # errorLow payload[19]

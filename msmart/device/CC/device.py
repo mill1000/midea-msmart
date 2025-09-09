@@ -20,14 +20,15 @@ _MAX_TEMPERATURE = 30
 class CommercialCooler(Device):
 
     class FanSpeed(MideaIntEnum):
-        AUTO = 0x80
-        POWER = 0x40  # ?
-        SUPER_HIGH = 0x20
-        HIGH = 0x10
-        MEDIUM = 0x08
-        LOW = 0x04
-        MICRON = 0x02  # ?
-        SLEEP = 0x01
+        OFF = 0x0 # OFF?
+        L1 = 0x01
+        L2 = 0x02
+        L3 = 0x03
+        L4 = 0x04
+        L5 = 0x05
+        L6 = 0x06
+        L7 = 0x07
+        AUTO = 0x08
 
         DEFAULT = AUTO
 
