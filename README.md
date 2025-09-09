@@ -15,6 +15,11 @@ This library supports air conditioners from Midea and several associated brands 
   
 __Note: Only air conditioners (type 0xAC) are supported. See the [usage](#usage) section for how to check compatibility.__ 
 
+## Note On Cloud Usage
+This library (and its Home Assistant integration [midea-ac-py](https://github.com/mill1000/midea-ac-py)) works locally. No internet connection is required to control your device. 
+
+_However_, for newer "V3" devices, the Midea Cloud is used to acquire a token & key for device authentication. Once retrieved and saved, no further cloud connection is required. Devices are not linked to the library’s built-in accounts and concerned users may supply their own account credentials if they prefer.
+
 ## Features
 #### Async Support
 The library fully supports async/await, allowing non-blocking communication with devices.
@@ -147,15 +152,11 @@ usage: msmart-ng [-h] [-v] {discover,query,control,download} ...
 * If devices are not being discovered, ensure your devices are on the same subnet as your computer.
 * If a cloud connection can not be made, try using a credentials from a different region with the `--region` argument or manually specifying a NetHome Plus account.
 
-## Note On Cloud Usage
-This library (and its Home Assistant integration [midea-ac-py](https://github.com/mill1000/midea-ac-py)) works locally. No internet connection is required to control your device. 
-
-_However_, for newer "V3" devices, the Midea Cloud is used to acquire a token & key for device authentication. Once retrieved and saved, no further cloud connection is required. Devices are not linked to the library’s built-in accounts and concerned users may supply their own account credentials if they prefer.
-
 ## Gratitude
 This project is a fork of [mac-zhou/midea-msmart](https://github.com/mac-zhou/midea-msmart), and builds upon the work of
 * [dudanov/MideaUART](https://github.com/dudanov/MideaUART)
 * [NeoAcheron/midea-ac-py](https://github.com/NeoAcheron/midea-ac-py)
 * [andersonshatch/midea-ac-py](https://github.com/andersonshatch/midea-ac-py)
 * [yitsushi/midea-air-condition](https://github.com/yitsushi/midea-air-condition)
+
 
