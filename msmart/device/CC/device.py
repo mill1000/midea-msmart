@@ -33,11 +33,11 @@ class CommercialCooler(Device):
         DEFAULT = AUTO
 
     class OperationalMode(MideaIntEnum):
-        AUTO = 0x10
-        COOL = 0x08
-        HEAT = 0x04
-        DRY = 0x02
         FAN = 0x01
+        COOL = 0x02
+        HEAT = 0x03
+        DRY = 0x06
+        # AUTO = 0x10 TODO?
 
         DEFAULT = FAN
 
@@ -51,15 +51,15 @@ class CommercialCooler(Device):
         DEFAULT = OFF
 
     class SwingAngle(MideaIntEnum):
-        OFF = 0
-        POS_1 = 1
-        POS_2 = 2
-        POS_3 = 3
-        POS_4 = 4
-        POS_5 = 5
-        POS_6 = 6
+        # OFF = 0x00 TODO?
+        POS_1 = 0x01
+        POS_2 = 0x02
+        POS_3 = 0x03
+        POS_4 = 0x04
+        POS_5 = 0x05
+        AUTO = 0x06 # Vertical angle might use 0 for auto?
 
-        DEFAULT = OFF
+        DEFAULT = POS_3
 
     class AuxHeatMode(MideaIntEnum):
         AUTO = 0x00
@@ -77,7 +77,7 @@ class CommercialCooler(Device):
 
         self._power_state = False
         self._target_temperature = 17.0
-        self._operational_mode = CommercialCooler.OperationalMode.AUTO
+        self._operational_mode = CommercialCooler.OperationalMode.DEFAULT
         self._fan_speed = CommercialCooler.FanSpeed.AUTO
         self._swing_mode = CommercialCooler.SwingMode.OFF
         self._eco = False
@@ -96,8 +96,8 @@ class CommercialCooler(Device):
         self._evaporator_entrance_temperature = None
         self._evaporator_exit_temperature = None
 
-        self._horizontal_swing_angle = CommercialCooler.SwingAngle.OFF
-        self._vertical_swing_angle = CommercialCooler.SwingAngle.OFF
+        self._horizontal_swing_angle = CommercialCooler.SwingAngle.DEFAULT
+        self._vertical_swing_angle = CommercialCooler.SwingAngle.DEFAULT
 
         self._aux_mode = CommercialCooler.AuxHeatMode.OFF
         self._aux_heat_on = False
