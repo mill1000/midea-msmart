@@ -301,7 +301,7 @@ class CommercialCooler(Device):
         if mode & CommercialCooler.SwingMode.VERTICAL:
             self._vertical_swing_angle = CommercialCooler.SwingAngle.AUTO
         else:
-            self._horizontal_swing_angle = CommercialCooler.SwingAngle.DEFAULT
+            self._vertical_swing_angle = CommercialCooler.SwingAngle.DEFAULT
 
     @property
     def horizontal_swing_angle(self) -> SwingAngle:
