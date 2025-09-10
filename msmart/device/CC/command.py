@@ -169,23 +169,17 @@ class StateResponse(Response):
         super().__init__(payload)
 
         self.power_on = False
+        self.target_temperature = None
         self.operational_mode = 0
         self.fan_speed = 0
-        self.target_temperature = 25.0
-        self.indoor_temperature = None
-        self.evaporator_entrance_temperature = None
-        self.evaporator_exit_temperature = None
-        self.eco = True
-        self.sleep = False
-        self.swing_ud = False
         self.swing_ud_angle = 0
-        self.swing_lr = False
         self.swing_lr_angle = 0
-        self.exhaust = False
-        self.ptc_on = False
-        self.ptc_setting = 0
-        self.digit_display = False
-        self.decimals = False
+        self.soft = False
+        self.eco = False
+        self.silent = False
+        self.sleep = False
+        self.purifier = False
+        self.aux_mode = 0
 
         self._parse(payload)
 
@@ -208,51 +202,16 @@ class StateResponse(Response):
         # Possible multi zones? Or multiple temp limits for different modes?
 
         self.operational_mode = payload[31]
-
         self.fan_speed = payload[34]
 
         self.swing_ud_angle = payload[36]  # Also at payload[41]
         self.swing_lr_angle = payload[43]
 
-        # Reference decoding seems wildly off
-        # self.power_on = bool(payload[1] & 0x80)
-        # self.operational_mode = payload[1] & 0x1F
+        self.soft = bool(payload[45])  # Cool mode only, breezeless?
+        self.eco = bool(payload[55])
+        self.silent = bool(payload[57])
+        self.sleep = bool(payload[59])
+        self.purifier = bool(payload[74] & 0x01)  # 0x01 - On, 0x02 - Off
 
-        # self.fan_speed = payload[2]
-
-        # self.target_temperature = payload[3]
-
-        # def parse_temperature(data: int) -> float:
-        #     # From reference int2String((indoorTemperature - 40) / 2)
-        #     return (data - 40) / 2
-
-        # self.indoor_temperature = parse_temperature(payload[4])
-        # self.evaporator_entrance_temperature = parse_temperature(payload[5])
-        # self.evaporator_exit_temperature = parse_temperature(payload[6])
-
-        # self.swing_ud_angle = payload[9]
-
-        # # Timers
-        # # openTime payload[10]
-        # # closeTime payload[11]
-
-        # self.eco = bool(payload[13] & 0x01)
-        # self.ptc_on = bool(payload[13] & 0x02)  # Aux heat status?
-        # self.swing_ud = bool(payload[13] & 0x04)
-        # self.exhaust = bool(payload[13] & 0x08)
-
-        # self.swing_lr = bool(payload[14] & 0x01)
-        # self.digit_display = bool(payload[14] & 0x08)  # Display on/off?
-        # self.sleep = bool(payload[14] & 0x10)
-        # self.ptc_setting = (payload[14] & 0x60) >> 5
-
-        # # Reference inverts 0x00 -> On, 0x01 -> Off
-        # self.decimals = not bool(payload[14] & 0x80)
-
-        # self.swing_lr_value = payload[17]
-
-        # self.target_temperature += (payload[19] / 10.0)
-
-        # # errorCodeMachineStyle payload[18] & 0x80
-        # # errorHigh payload[18] & 0x7F
-        # # errorLow payload[19]
+        # 0x02 - Force off, 0x01 - Force on, 0x00 - Auto
+        self.aux_mode = payload[86]

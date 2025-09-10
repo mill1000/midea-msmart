@@ -20,7 +20,7 @@ _MAX_TEMPERATURE = 30
 class CommercialCooler(Device):
 
     class FanSpeed(MideaIntEnum):
-        OFF = 0x0 # OFF?
+        OFF = 0x00  # TODO OFF doesn't make sense right?
         L1 = 0x01
         L2 = 0x02
         L3 = 0x03
@@ -37,7 +37,7 @@ class CommercialCooler(Device):
         COOL = 0x02
         HEAT = 0x03
         DRY = 0x06
-        # AUTO = 0x10 TODO?
+        # AUTO = 0x10 TODO remote only? No obvious bit
 
         DEFAULT = FAN
 
@@ -51,13 +51,13 @@ class CommercialCooler(Device):
         DEFAULT = OFF
 
     class SwingAngle(MideaIntEnum):
-        # OFF = 0x00 TODO?
+        # OFF = 0x00 TODO would off just mean...middle?
         POS_1 = 0x01
         POS_2 = 0x02
         POS_3 = 0x03
         POS_4 = 0x04
         POS_5 = 0x05
-        AUTO = 0x06 # Vertical angle might use 0 for auto?
+        AUTO = 0x06  # TODO 0 might be valid too?
 
         DEFAULT = POS_3
 
@@ -79,10 +79,19 @@ class CommercialCooler(Device):
         self._target_temperature = 17.0
         self._operational_mode = CommercialCooler.OperationalMode.DEFAULT
         self._fan_speed = CommercialCooler.FanSpeed.AUTO
-        self._swing_mode = CommercialCooler.SwingMode.OFF
+        # self._swing_mode = CommercialCooler.SwingMode.OFF # TODO generate on the fly?
+        self._soft = False
         self._eco = False
+        self._silent = False
         self._sleep = False
-        self._display_on = False
+        self._purifier = False
+        # self._display_on = False # TODO
+
+        self._horizontal_swing_angle = CommercialCooler.SwingAngle.DEFAULT
+        self._vertical_swing_angle = CommercialCooler.SwingAngle.DEFAULT
+
+        self._aux_mode = CommercialCooler.AuxHeatMode.OFF
+        # self._aux_heat_on = False # TODO
 
         # Support all known modes initially
         self._supported_op_modes = cast(
@@ -91,16 +100,6 @@ class CommercialCooler(Device):
             list[CommercialCooler.SwingMode], CommercialCooler.SwingMode.list())
         self._supported_fan_speeds = cast(
             list[CommercialCooler.FanSpeed], CommercialCooler.FanSpeed.list())
-
-        self._indoor_temperature = None
-        self._evaporator_entrance_temperature = None
-        self._evaporator_exit_temperature = None
-
-        self._horizontal_swing_angle = CommercialCooler.SwingAngle.DEFAULT
-        self._vertical_swing_angle = CommercialCooler.SwingAngle.DEFAULT
-
-        self._aux_mode = CommercialCooler.AuxHeatMode.OFF
-        self._aux_heat_on = False
 
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
@@ -118,33 +117,23 @@ class CommercialCooler(Device):
             self._fan_speed = cast(
                 CommercialCooler.FanSpeed, CommercialCooler.FanSpeed.get_from_value(res.fan_speed))
 
-            if res.swing_lr and res.swing_ud:
-                self._swing_mode = CommercialCooler.SwingMode.BOTH
-            elif res.swing_lr:
-                self._swing_mode = CommercialCooler.SwingMode.HORIZONTAL
-            elif res.swing_ud:
-                self._swing_mode = CommercialCooler.SwingMode.VERTICAL
-            else:
-                self._swing_mode = CommercialCooler.SwingMode.OFF
+            self._horizontal_swing_angle = cast(CommercialCooler.SwingAngle,
+                                                CommercialCooler.SwingAngle.get_from_value(res.swing_lr_angle))
 
-            # TODO assuming device handles any mutual exclusion between swing mode and swing angle
-            self._horizontal_swing_angle = cast(
-                CommercialCooler.SwingAngle, CommercialCooler.SwingAngle.get_from_value(res.swing_lr_angle))
-            self._vertical_swing_angle = cast(
-                CommercialCooler.SwingAngle, CommercialCooler.SwingAngle.get_from_value(res.swing_ud_angle))
+            self._vertical_swing_angle = cast(CommercialCooler.SwingAngle,
+                                              CommercialCooler.SwingAngle.get_from_value(res.swing_ud_angle))
 
+            self._soft = res.soft
             self._eco = res.eco
+            self._silent = res.silent
             self._sleep = res.sleep
+            self._purifier = res.purifier
 
-            self._indoor_temperature = res.indoor_temperature
-            self._evaporator_entrance_temperature = res.evaporator_entrance_temperature
-            self._evaporator_exit_temperature = res.evaporator_exit_temperature
-
-            self._display_on = res.digit_display  # TODO?
+            # self._display_on = res.digit_display  # TODO?
 
             self._aux_mode = cast(CommercialCooler.AuxHeatMode,
-                                  CommercialCooler.AuxHeatMode.get_from_value(res.ptc_setting))
-            self._aux_heat_on = res.ptc_on
+                                  CommercialCooler.AuxHeatMode.get_from_value(res.aux_mode))
+            # self._aux_heat_on = res.ptc_on # TODO
 
         else:
             _LOGGER.debug("Ignored unknown response from device %s: %s",
@@ -206,29 +195,25 @@ class CommercialCooler(Device):
             _LOGGER.warning(
                 "Device %s is not capable of fan speed %r.",  self.id, self._fan_speed)
 
-        if self._swing_mode not in self._supported_swing_modes:
-            _LOGGER.warning(
-                "Device %s is not capable of swing mode %r.",  self.id, self._swing_mode)
-
         # Define function to return value or a default if value is None
-
         def or_default(v, d) -> Any: return v if v is not None else d
 
+        # TODO control command is completely unknown
         cmd = ControlCommand()
         cmd.power_on = or_default(self._power_state, False)
         cmd.target_temperature = or_default(self._target_temperature, 25)
         cmd.operational_mode = self._operational_mode
         cmd.fan_speed = self._fan_speed
-        cmd.swing_lr = bool(self._swing_mode &
-                            CommercialCooler.SwingMode.HORIZONTAL)
-        cmd.swing_ud = bool(self._swing_mode &
-                            CommercialCooler.SwingMode.VERTICAL)
+        # cmd.swing_lr = bool(self._swing_mode &
+        #                     CommercialCooler.SwingMode.HORIZONTAL)
+        # cmd.swing_ud = bool(self._swing_mode &
+        #                     CommercialCooler.SwingMode.VERTICAL)
         cmd.swing_lr_angle = self._horizontal_swing_angle
         cmd.swing_ud_angle = self._vertical_swing_angle
         cmd.eco = or_default(self._eco, False)
         cmd.sleep = or_default(self._sleep, False)
         cmd.ptc_setting = self._aux_mode
-        cmd.digit_display = self._display_on
+        # cmd.digit_display = self._display_on
 
         # Process any state responses from the device
         for response in await self._send_command_get_responses(cmd):
@@ -258,17 +243,10 @@ class CommercialCooler(Device):
     def target_temperature(self, temperature_celsius: float) -> None:
         self._target_temperature = temperature_celsius
 
-    @property
-    def indoor_temperature(self) -> Optional[float]:
-        return self._indoor_temperature
-
-    @property
-    def evaporator_entrance_temperature(self) -> Optional[float]:
-        return self._evaporator_entrance_temperature
-
-    @property
-    def evaporator_exit_temperature(self) -> Optional[float]:
-        return self._evaporator_exit_temperature
+    # TODO sensor must exist!
+    # @property
+    # def indoor_temperature(self) -> Optional[float]:
+    #     return self._indoor_temperature
 
     @property
     def supported_operation_modes(self) -> list[OperationalMode]:
@@ -300,11 +278,29 @@ class CommercialCooler(Device):
 
     @property
     def swing_mode(self) -> SwingMode:
-        return self._swing_mode
+        swing_mode = CommercialCooler.SwingMode.OFF
+
+        # TODO better to keep a swing_mode attr?
+        if self._horizontal_swing_angle == CommercialCooler.SwingAngle.AUTO:
+            swing_mode |= CommercialCooler.SwingMode.HORIZONTAL
+
+        if self._vertical_swing_angle == CommercialCooler.SwingAngle.AUTO:
+            swing_mode |= CommercialCooler.SwingMode.VERTICAL
+
+        return cast(CommercialCooler.SwingMode, swing_mode)
 
     @swing_mode.setter
     def swing_mode(self, mode: SwingMode) -> None:
-        self._swing_mode = mode
+        # Enable swing on correct axises
+        if mode & CommercialCooler.SwingMode.HORIZONTAL:
+            self._horizontal_swing_angle = CommercialCooler.SwingAngle.AUT
+        else:
+            self._horizontal_swing_angle = CommercialCooler.SwingAngle.DEFAULT
+
+        if mode & CommercialCooler.SwingMode.VERTICAL:
+            self._vertical_swing_angle = CommercialCooler.SwingAngle.AUTO
+        else:
+            self._horizontal_swing_angle = CommercialCooler.SwingAngle.DEFAULT
 
     @property
     def horizontal_swing_angle(self) -> SwingAngle:
@@ -323,12 +319,28 @@ class CommercialCooler(Device):
         self._vertical_swing_angle = angle
 
     @property
+    def soft(self) -> Optional[bool]:
+        return self._soft
+
+    @soft.setter
+    def soft(self, enabled: bool) -> None:
+        self._soft = enabled
+
+    @property
     def eco(self) -> Optional[bool]:
         return self._eco
 
     @eco.setter
     def eco(self, enabled: bool) -> None:
         self._eco = enabled
+
+    @property
+    def silent(self) -> Optional[bool]:
+        return self._silent
+
+    @silent.setter
+    def silent(self, enabled: bool) -> None:
+        self._silent = enabled
 
     @property
     def sleep(self) -> Optional[bool]:
@@ -339,16 +351,26 @@ class CommercialCooler(Device):
         self._sleep = enabled
 
     @property
-    def display(self) -> Optional[bool]:
-        return self._display_on
+    def purifier(self) -> Optional[bool]:
+        return self._purifier
 
-    @display.setter
-    def display(self, enabled: bool) -> None:
-        self._display_on = enabled
+    @purifier.setter
+    def purifier(self, enabled: bool) -> None:
+        self._purifier = enabled
 
-    @property
-    def aux_heat_on(self) -> Optional[bool]:
-        return self._aux_heat_on
+    # TODO
+    # @property
+    # def display(self) -> Optional[bool]:
+    #     return self._display_on
+
+    # @display.setter
+    # def display(self, enabled: bool) -> None:
+    #     self._display_on = enabled
+
+    # TODO
+    # @property
+    # def aux_heat_on(self) -> Optional[bool]:
+    #     return self._aux_heat_on
 
     @property
     def aux_mode(self) -> AuxHeatMode:
@@ -367,12 +389,11 @@ class CommercialCooler(Device):
             "horizontal_swing_angle": self.horizontal_swing_angle,
             "vertical_swing_angle": self.vertical_swing_angle,
             "target_temperature": self.target_temperature,
-            "indoor_temperature": self.indoor_temperature,
-            "evaporator_entrance_temperature": self.evaporator_entrance_temperature,
-            "evaporator_exit_temperature": self.evaporator_exit_temperature,
             "eco": self.eco,
+            "sleep": self.silent,
             "sleep": self.sleep,
-            "display": self.display,
-            "aux_heat_on": self.aux_heat_on,
+            "purifier": self.purifier,
+            # "display": self.display,
+            # "aux_heat_on": self.aux_heat_on,
             "aux_mode": self.aux_mode,
         }}
