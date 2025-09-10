@@ -294,7 +294,7 @@ class CommercialCooler(Device):
     def swing_mode(self, mode: SwingMode) -> None:
         # Enable swing on correct axises
         if mode & CommercialCooler.SwingMode.HORIZONTAL:
-            self._horizontal_swing_angle = CommercialCooler.SwingAngle.AUT
+            self._horizontal_swing_angle = CommercialCooler.SwingAngle.AUTO
         else:
             self._horizontal_swing_angle = CommercialCooler.SwingAngle.DEFAULT
 
