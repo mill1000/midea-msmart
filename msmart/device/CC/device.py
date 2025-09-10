@@ -119,11 +119,13 @@ class CommercialCooler(Device):
             self._fan_speed = cast(
                 CommercialCooler.FanSpeed, CommercialCooler.FanSpeed.get_from_value(res.fan_speed))
 
-            self._horizontal_swing_angle = cast(CommercialCooler.SwingAngle,
-                                                CommercialCooler.SwingAngle.get_from_value(res.swing_lr_angle))
+            self._horizontal_swing_angle = cast(
+                CommercialCooler.SwingAngle,
+                CommercialCooler.SwingAngle.get_from_value(res.swing_lr_angle))
 
-            self._vertical_swing_angle = cast(CommercialCooler.SwingAngle,
-                                              CommercialCooler.SwingAngle.get_from_value(res.swing_ud_angle))
+            self._vertical_swing_angle = cast(
+                CommercialCooler.SwingAngle,
+                CommercialCooler.SwingAngle.get_from_value(res.swing_ud_angle))
 
             self._soft = res.soft
             self._eco = res.eco
