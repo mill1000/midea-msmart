@@ -63,8 +63,8 @@ class CommercialCooler(Device):
 
     class AuxHeatMode(MideaIntEnum):
         AUTO = 0x00
-        ON = 0x10
-        OFF = 0x20
+        ON = 0x01
+        OFF = 0x02
 
         DEFAULT = OFF
 
