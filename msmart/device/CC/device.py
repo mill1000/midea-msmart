@@ -51,7 +51,7 @@ class CommercialCooler(Device):
         DEFAULT = OFF
 
     class SwingAngle(MideaIntEnum):
-        # OFF = 0x00 TODO would off just mean...middle?
+        OFF = 0x00  # TODO would off just mean...middle?
         POS_1 = 0x01
         POS_2 = 0x02
         POS_3 = 0x03
