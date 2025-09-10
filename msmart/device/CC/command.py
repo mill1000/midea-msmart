@@ -170,6 +170,7 @@ class StateResponse(Response):
 
         self.power_on = False
         self.target_temperature = None
+        self.indoor_temperature = None
         self.operational_mode = 0
         self.fan_speed = 0
         self.swing_ud_angle = 0
@@ -183,20 +184,23 @@ class StateResponse(Response):
 
         self._parse(payload)
 
-    def _parse_temperature(self, data: int) -> float:
-        # Based on sample data
-        # 0x72 -> 17C
-        # 0x8C -> 30C
-        # 0x79 -> 20.5C
-        return (data / 2.0) - 40
-
     def _parse(self, payload: memoryview) -> None:
         """Parse the state response payload."""
 
         self.power_on = bool(payload[8])
 
         # min/max temperature possibly encoded in payload[9] & payload[10]
-        self.target_temperature = self._parse_temperature(payload[11])
+        # Based on sample data
+        # 0x72 -> 17C
+        # 0x8C -> 30C
+        # 0x79 -> 20.5C
+        self.target_temperature = (payload[11] / 2.0) - 40
+
+        # Based on samples
+        # 0x00CF -> 207 -> 20.7
+        # 0x00EF -> 239 -> 23.9
+        # 0x0107 -> 263 -> 26.3
+        self.indoor_temperature = (payload[12] << 8 | payload[13]) / 10.0
 
         # 0x728C -> 17C/30C is repeated 3 times in user payload
         # Possible multi zones? Or multiple temp limits for different modes?
@@ -208,10 +212,10 @@ class StateResponse(Response):
         self.swing_lr_angle = payload[43]
 
         self.soft = bool(payload[45])  # Cool mode only, breezeless?
-        self.eco = bool(payload[55])
-        self.silent = bool(payload[57])
-        self.sleep = bool(payload[59])
-        self.purifier = bool(payload[74] & 0x01)  # 0x01 - On, 0x02 - Off
+        self.eco = bool(payload[56])
+        self.silent = bool(payload[58])
+        self.sleep = bool(payload[60])
+        self.purifier = bool(payload[75] & 0x01)  # 0x01 - On, 0x02 - Off
 
         # 0x02 - Force off, 0x01 - Force on, 0x00 - Auto
-        self.aux_mode = payload[86]
+        self.aux_mode = payload[87]
