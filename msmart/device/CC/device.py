@@ -77,6 +77,7 @@ class CommercialCooler(Device):
 
         self._power_state = False
         self._target_temperature = 17.0
+        self._indoor_temperature = None
         self._operational_mode = CommercialCooler.OperationalMode.DEFAULT
         self._fan_speed = CommercialCooler.FanSpeed.AUTO
         # self._swing_mode = CommercialCooler.SwingMode.OFF # TODO generate on the fly?
@@ -111,6 +112,7 @@ class CommercialCooler(Device):
             self._power_state = res.power_on
 
             self._target_temperature = res.target_temperature
+            self._indoor_temperature = res.indoor_temperature
             self._operational_mode = cast(
                 CommercialCooler.OperationalMode, CommercialCooler.OperationalMode.get_from_value(res.operational_mode))
 
@@ -243,10 +245,9 @@ class CommercialCooler(Device):
     def target_temperature(self, temperature_celsius: float) -> None:
         self._target_temperature = temperature_celsius
 
-    # TODO sensor must exist!
-    # @property
-    # def indoor_temperature(self) -> Optional[float]:
-    #     return self._indoor_temperature
+    @property
+    def indoor_temperature(self) -> Optional[float]:
+        return self._indoor_temperature
 
     @property
     def supported_operation_modes(self) -> list[OperationalMode]:
@@ -389,6 +390,7 @@ class CommercialCooler(Device):
             "horizontal_swing_angle": self.horizontal_swing_angle,
             "vertical_swing_angle": self.vertical_swing_angle,
             "target_temperature": self.target_temperature,
+            "indoor_temperature": self.indoor_temperature,
             "eco": self.eco,
             "sleep": self.silent,
             "sleep": self.sleep,
