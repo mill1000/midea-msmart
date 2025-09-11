@@ -17,7 +17,7 @@ _MIN_TEMPERATURE = 17
 _MAX_TEMPERATURE = 30
 
 
-class CommercialCooler(Device):
+class CommercialClimate(Device):
 
     class FanSpeed(MideaIntEnum):
         OFF = 0x00  # TODO OFF doesn't make sense right?
@@ -78,8 +78,8 @@ class CommercialCooler(Device):
         self._power_state = False
         self._target_temperature = 17.0
         self._indoor_temperature = None
-        self._operational_mode = CommercialCooler.OperationalMode.DEFAULT
-        self._fan_speed = CommercialCooler.FanSpeed.AUTO
+        self._operational_mode = CommercialClimate.OperationalMode.DEFAULT
+        self._fan_speed = CommercialClimate.FanSpeed.AUTO
         # self._swing_mode = CommercialCooler.SwingMode.OFF # TODO generate on the fly?
         self._soft = False
         self._eco = False
@@ -88,19 +88,19 @@ class CommercialCooler(Device):
         self._purifier = False
         # self._display_on = False # TODO
 
-        self._horizontal_swing_angle = CommercialCooler.SwingAngle.DEFAULT
-        self._vertical_swing_angle = CommercialCooler.SwingAngle.DEFAULT
+        self._horizontal_swing_angle = CommercialClimate.SwingAngle.DEFAULT
+        self._vertical_swing_angle = CommercialClimate.SwingAngle.DEFAULT
 
-        self._aux_mode = CommercialCooler.AuxHeatMode.OFF
+        self._aux_mode = CommercialClimate.AuxHeatMode.OFF
         # self._aux_heat_on = False # TODO
 
         # Support all known modes initially
         self._supported_op_modes = cast(
-            list[CommercialCooler.OperationalMode], CommercialCooler.OperationalMode.list())
+            list[CommercialClimate.OperationalMode], CommercialClimate.OperationalMode.list())
         self._supported_swing_modes = cast(
-            list[CommercialCooler.SwingMode], CommercialCooler.SwingMode.list())
+            list[CommercialClimate.SwingMode], CommercialClimate.SwingMode.list())
         self._supported_fan_speeds = cast(
-            list[CommercialCooler.FanSpeed], CommercialCooler.FanSpeed.list())
+            list[CommercialClimate.FanSpeed], CommercialClimate.FanSpeed.list())
 
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
@@ -114,18 +114,18 @@ class CommercialCooler(Device):
             self._target_temperature = res.target_temperature
             self._indoor_temperature = res.indoor_temperature
             self._operational_mode = cast(
-                CommercialCooler.OperationalMode, CommercialCooler.OperationalMode.get_from_value(res.operational_mode))
+                CommercialClimate.OperationalMode, CommercialClimate.OperationalMode.get_from_value(res.operational_mode))
 
             self._fan_speed = cast(
-                CommercialCooler.FanSpeed, CommercialCooler.FanSpeed.get_from_value(res.fan_speed))
+                CommercialClimate.FanSpeed, CommercialClimate.FanSpeed.get_from_value(res.fan_speed))
 
             self._horizontal_swing_angle = cast(
-                CommercialCooler.SwingAngle,
-                CommercialCooler.SwingAngle.get_from_value(res.swing_lr_angle))
+                CommercialClimate.SwingAngle,
+                CommercialClimate.SwingAngle.get_from_value(res.swing_lr_angle))
 
             self._vertical_swing_angle = cast(
-                CommercialCooler.SwingAngle,
-                CommercialCooler.SwingAngle.get_from_value(res.swing_ud_angle))
+                CommercialClimate.SwingAngle,
+                CommercialClimate.SwingAngle.get_from_value(res.swing_ud_angle))
 
             self._soft = res.soft
             self._eco = res.eco
@@ -135,8 +135,8 @@ class CommercialCooler(Device):
 
             # self._display_on = res.digit_display  # TODO?
 
-            self._aux_mode = cast(CommercialCooler.AuxHeatMode,
-                                  CommercialCooler.AuxHeatMode.get_from_value(res.aux_mode))
+            self._aux_mode = cast(CommercialClimate.AuxHeatMode,
+                                  CommercialClimate.AuxHeatMode.get_from_value(res.aux_mode))
             # self._aux_heat_on = res.ptc_on # TODO
 
         else:
@@ -281,29 +281,29 @@ class CommercialCooler(Device):
 
     @property
     def swing_mode(self) -> SwingMode:
-        swing_mode = CommercialCooler.SwingMode.OFF
+        swing_mode = CommercialClimate.SwingMode.OFF
 
         # TODO better to keep a swing_mode attr?
-        if self._horizontal_swing_angle == CommercialCooler.SwingAngle.AUTO:
-            swing_mode |= CommercialCooler.SwingMode.HORIZONTAL
+        if self._horizontal_swing_angle == CommercialClimate.SwingAngle.AUTO:
+            swing_mode |= CommercialClimate.SwingMode.HORIZONTAL
 
-        if self._vertical_swing_angle == CommercialCooler.SwingAngle.AUTO:
-            swing_mode |= CommercialCooler.SwingMode.VERTICAL
+        if self._vertical_swing_angle == CommercialClimate.SwingAngle.AUTO:
+            swing_mode |= CommercialClimate.SwingMode.VERTICAL
 
-        return cast(CommercialCooler.SwingMode, swing_mode)
+        return cast(CommercialClimate.SwingMode, swing_mode)
 
     @swing_mode.setter
     def swing_mode(self, mode: SwingMode) -> None:
         # Enable swing on correct axises
-        if mode & CommercialCooler.SwingMode.HORIZONTAL:
-            self._horizontal_swing_angle = CommercialCooler.SwingAngle.AUTO
+        if mode & CommercialClimate.SwingMode.HORIZONTAL:
+            self._horizontal_swing_angle = CommercialClimate.SwingAngle.AUTO
         else:
-            self._horizontal_swing_angle = CommercialCooler.SwingAngle.DEFAULT
+            self._horizontal_swing_angle = CommercialClimate.SwingAngle.DEFAULT
 
-        if mode & CommercialCooler.SwingMode.VERTICAL:
-            self._vertical_swing_angle = CommercialCooler.SwingAngle.AUTO
+        if mode & CommercialClimate.SwingMode.VERTICAL:
+            self._vertical_swing_angle = CommercialClimate.SwingAngle.AUTO
         else:
-            self._vertical_swing_angle = CommercialCooler.SwingAngle.DEFAULT
+            self._vertical_swing_angle = CommercialClimate.SwingAngle.DEFAULT
 
     @property
     def horizontal_swing_angle(self) -> SwingAngle:
