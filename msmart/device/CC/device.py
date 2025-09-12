@@ -41,7 +41,6 @@ class CommercialClimate(Device):
 
         DEFAULT = FAN
 
-    # TODO Is swing mode the right way to represent this device?
     class SwingMode(MideaIntEnum):
         OFF = 0x0
         VERTICAL = 0x1
@@ -79,8 +78,7 @@ class CommercialClimate(Device):
         self._target_temperature = 17.0
         self._indoor_temperature = None
         self._operational_mode = CommercialClimate.OperationalMode.DEFAULT
-        self._fan_speed = CommercialClimate.FanSpeed.AUTO
-        # self._swing_mode = CommercialCooler.SwingMode.OFF # TODO generate on the fly?
+        self._fan_speed = CommercialClimate.FanSpeed.DEFAULT
         self._soft = False
         self._eco = False
         self._silent = False
@@ -91,10 +89,10 @@ class CommercialClimate(Device):
         self._horizontal_swing_angle = CommercialClimate.SwingAngle.DEFAULT
         self._vertical_swing_angle = CommercialClimate.SwingAngle.DEFAULT
 
-        self._aux_mode = CommercialClimate.AuxHeatMode.OFF
+        self._aux_mode = CommercialClimate.AuxHeatMode.DEFAULT
         # self._aux_heat_on = False # TODO
 
-        # Support all known modes initially
+        # Support all known modes
         self._supported_op_modes = cast(
             list[CommercialClimate.OperationalMode], CommercialClimate.OperationalMode.list())
         self._supported_swing_modes = cast(
@@ -278,6 +276,10 @@ class CommercialClimate(Device):
             speed = int(speed)
 
         self._fan_speed = speed
+
+    @property
+    def supported_swing_modes(self) -> list[SwingMode]:
+        return self._supported_swing_modes
 
     @property
     def swing_mode(self) -> SwingMode:
