@@ -27,6 +27,7 @@ DEFAULT_CLOUD_REGION = "US"
 
 class DeviceType(IntEnum):
     AIR_CONDITIONER = 0xAC
+    COMMERCIAL_AC = 0xCC
 
 
 class FrameType(IntEnum):
