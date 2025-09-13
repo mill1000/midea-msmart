@@ -11,7 +11,7 @@ import httpx
 from msmart.cloud import CloudError, NetHomePlusCloud
 from msmart.const import (DEFAULT_CLOUD_REGION, DEVICE_INFO_MSG, DISCOVERY_MSG,
                           DeviceType)
-from msmart.device import AirConditioner, CommercialClimate, Device
+from msmart.device import AirConditioner, CommercialAirConditioner, Device
 from msmart.lan import AuthenticationError, Security
 
 _LOGGER = logging.getLogger(__name__)
@@ -360,7 +360,7 @@ class Discover:
             return AirConditioner
 
         if device_type == DeviceType.COMMERCIAL_AC:
-            return CommercialClimate
+            return CommercialAirConditioner
 
         # Unknown type return generic device
         return Device

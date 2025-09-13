@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 
 from .command import *
-from .device import CommercialClimate as CC
+from .device import CommercialAirConditioner as CC
 
 
 class TestDeviceEnums(unittest.TestCase):
