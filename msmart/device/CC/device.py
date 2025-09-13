@@ -206,15 +206,14 @@ class CommercialAirConditioner(Device):
         cmd.target_temperature = or_default(self._target_temperature, 25)
         cmd.operational_mode = self._operational_mode
         cmd.fan_speed = self._fan_speed
-        # cmd.swing_lr = bool(self._swing_mode &
-        #                     CommercialCooler.SwingMode.HORIZONTAL)
-        # cmd.swing_ud = bool(self._swing_mode &
-        #                     CommercialCooler.SwingMode.VERTICAL)
         cmd.swing_lr_angle = self._horizontal_swing_angle
         cmd.swing_ud_angle = self._vertical_swing_angle
+        cmd.soft = or_default(self._soft, False)
         cmd.eco = or_default(self._eco, False)
+        cmd.silent = or_default(self._silent, False)
         cmd.sleep = or_default(self._sleep, False)
-        cmd.ptc_setting = self._aux_mode
+        cmd.purifier = or_default(self._purifier, False)
+        cmd.aux_mode = self._aux_mode
         # cmd.digit_display = self._display_on
 
         # Process any state responses from the device

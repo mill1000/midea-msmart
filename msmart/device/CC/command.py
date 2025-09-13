@@ -66,50 +66,44 @@ class ControlCommand(Command):
         super().__init__(frame_type=FrameType.CONTROL)
 
         self.power_on = False
+        self.target_temperature = 25.0
         self.operational_mode = 0
         self.fan_speed = 0
-        self.target_temperature = 25.0
-        self.eco = True
-        self.sleep = False
-        self.swing_ud = False
         self.swing_ud_angle = 0
-        self.swing_lr = False
         self.swing_lr_angle = 0
-        self.exhaust = False
-        self.ptc_setting = 0
-        self.digit_display = False
+        self.soft = False
+        self.eco = False
+        self.silent = False
+        self.sleep = False
+        self.purifier = False
+        self.aux_mode = 0
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
-        payload = bytearray(22)
+        payload = bytearray(89)
 
         payload[0] = CommandType.COMMAND_CONTROL
 
-        payload[1] |= 1 << 8 if self.power_on else 0
-        payload[1] |= (self.operational_mode & 0x1F)
+        payload[8] =  self.power_on
 
-        payload[2] = self.fan_speed
+        temperature = max(17, min(self.target_temperature, 30))
+        payload[11] = int(2 * (temperature + 40))
 
-        # Get integer and fraction components of target temp
-        fractional_temp, integral_temp = math.modf(self.target_temperature)
-        integral_temp = int(integral_temp)
+        payload[31] = self.operational_mode
 
-        payload[3] = max(17, min(integral_temp, 30))
+        payload[34] = self.fan_speed
 
-        payload[6] |= 1 << 0 if self.eco else 0
-        payload[6] |= 1 << 2 if self.swing_ud else 0
-        payload[6] |= 1 << 3 if self.exhaust else 0
-        payload[6] |= self.ptc_setting << 4
+        payload[36] = self.swing_ud_angle
+        # Maybe UD angle at 41?
+        payload[43] = self.swing_lr_angle
 
-        payload[7] = 0xFF
+        payload[45] = self.soft
+        payload[56] = self.eco
+        payload[58] = self.silent
+        payload[60] = self.sleep
 
-        payload[8] |= 1 << 0 if self.swing_lr else 0
-        payload[8] |= 1 << 3 if self.digit_display else 0
-        payload[8] |= 1 << 4 if self.sleep else 0
-
-        payload[9] = self.swing_lr_angle
-        payload[10] = self.swing_ud_angle
-
-        payload[11] = int(fractional_temp * 10)
+        payload[75] = 0x01 if self.purifier else 0x02
+        
+        payload[87] = self.aux_mode
 
         return super().tobytes(payload)
 
