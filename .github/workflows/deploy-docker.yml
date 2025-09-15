@@ -1,4 +1,6 @@
 name: Publish Docker Images
+permissions:
+  contents: read
 
 on:
   push:
@@ -23,7 +25,6 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
       packages: write
 
     steps:
