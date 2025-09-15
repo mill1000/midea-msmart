@@ -1,4 +1,6 @@
 name: Prune GHCR
+permissions:
+  contents: read
 
 on:
   pull_request:
