@@ -83,7 +83,7 @@ class ControlCommand(Command):
 
         payload[0] = CommandType.COMMAND_CONTROL
 
-        payload[8] =  self.power_on
+        payload[8] = self.power_on
 
         temperature = max(17, min(self.target_temperature, 30))
         payload[11] = int(2 * (temperature + 40))
@@ -102,7 +102,7 @@ class ControlCommand(Command):
         payload[60] = self.sleep
 
         payload[75] = 0x01 if self.purifier else 0x02
-        
+
         payload[87] = self.aux_mode
 
         return super().tobytes(payload)
