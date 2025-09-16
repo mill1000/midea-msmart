@@ -49,6 +49,10 @@ class Frame():
 
     @classmethod
     def validate(cls, frame: memoryview) -> None:
+        # Ensure length is sane
+        if len(frame) < cls._HEADER_LENGTH:
+            raise InvalidFrameException(f"Frame is too short: {frame.hex()}")
+
         # Validate frame checksum
         checksum = Frame.checksum(frame[1:-1])
         if checksum != frame[-1]:
