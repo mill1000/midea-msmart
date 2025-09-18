@@ -197,6 +197,8 @@ class AirConditioner(Device):
         self._aux_mode = AirConditioner.AuxHeatMode.OFF
         self._supported_aux_modes = [AirConditioner.AuxHeatMode.OFF]
 
+        self._error_code = None
+
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
 
@@ -250,6 +252,8 @@ class AirConditioner(Device):
                 self._aux_mode = AirConditioner.AuxHeatMode.AUX_HEAT
             else:
                 self._aux_mode = AirConditioner.AuxHeatMode.OFF
+
+            self._error_code = res.error_code
 
         elif isinstance(res, PropertiesResponse):
             _LOGGER.debug(
@@ -1025,6 +1029,10 @@ class AirConditioner(Device):
     def aux_mode(self, mode: AuxHeatMode) -> None:
         self._aux_mode = mode
 
+    @property
+    def error_code(self) -> Optional[int]:
+        return self._error_code
+
     def to_dict(self) -> dict:
         return {**super().to_dict(), **{
             "power": self.power_state,
@@ -1055,6 +1063,7 @@ class AirConditioner(Device):
             "real_time_power_usage": self.get_real_time_power_usage(),
             "rate_select": self.rate_select,
             "aux_mode": self.aux_mode,
+            "error_code": self.error_code,
         }}
 
     # Deprecated methods and properties
