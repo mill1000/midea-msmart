@@ -58,9 +58,9 @@ class Frame():
         if checksum != frame[-1]:
             raise InvalidFrameException(
                 f"Frame '{frame.hex()}' failed checksum. Received: 0x{frame[-1]:X}, Expected: 0x{checksum:X}.")
-        
+
         # Check device type matches
         device_type = frame[2]
         if device_type != expected_device_type:
-            raise InvalidFrameException(f"Received device type 0x{device_type:X} does not match expected device type 0x{expected_device_type:X}.")
-
+            raise InvalidFrameException(
+                f"Received device type 0x{device_type:X} does not match expected device type 0x{expected_device_type:X}.")
