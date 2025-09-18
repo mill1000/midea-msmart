@@ -8,13 +8,13 @@ from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum, deprecated
 
-from .command import (CapabilitiesResponse, EnergyUsageResponse,
+from .command import (CapabilitiesResponse, Command, EnergyUsageResponse,
                       GetCapabilitiesCommand, GetEnergyUsageCommand,
                       GetHumidityCommand, GetPropertiesCommand,
                       GetStateCommand, HumidityResponse,
                       InvalidResponseException, PropertiesResponse, PropertyId,
-                      Response, ResponseId, SetPropertiesCommand,
-                      SetStateCommand, StateResponse, ToggleDisplayCommand)
+                      Response, SetPropertiesCommand, SetStateCommand,
+                      StateResponse, ToggleDisplayCommand)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -449,10 +449,15 @@ class AirConditioner(Device):
         if res.jet_cool:
             self._supported_properties.add(PropertyId.JET_COOL)
 
-    async def _send_command_get_responses(self, command) -> list[Response]:
-        """Send a command and return all valid responses."""
+    async def _send_commands_get_responses(self, commands: Union[Command, list[Command]]) -> list[Response]:
+        """Send a list of commands and return all valid responses."""
 
-        responses = await super()._send_command(command)
+        responses: list[bytes] = []
+        for cmd in commands if isinstance(commands, list) else [commands]:
+            responses.extend(await super()._send_command(cmd))
+
+        # Device is online if any response received
+        self._online = len(responses) > 0
 
         valid_responses = []
         for data in responses:
@@ -465,14 +470,14 @@ class AirConditioner(Device):
 
             valid_responses.append(response)
 
-        # Device is supported if we can process any response
-        self._supported = len(valid_responses) > 0
+        # Device is supported if online and any supported response is received
+        self._supported |= self._online and len(valid_responses) > 0
 
         return valid_responses
 
     async def _send_command_get_response_with_class(self, command, response_class: type[Response]) -> Optional[Response]:
         """Send a command and return the first response of the requested class."""
-        for response in await self._send_command_get_responses(command):
+        for response in await self._send_commands_get_responses(command):
             if isinstance(response, response_class):
                 return response
 
@@ -528,10 +533,10 @@ class AirConditioner(Device):
             _LOGGER.warning(
                 "Device %s is not capable of display control.", self.id)
 
+        # Send the command and ignore all responses
         cmd = ToggleDisplayCommand()
         cmd.beep_on = self._beep_on
-        # Send the command and ignore all responses
-        await self._send_command_get_responses(cmd)
+        await self._send_commands_get_responses(cmd)
 
         # Force a refresh to get the updated display state
         await self.refresh()
@@ -565,14 +570,7 @@ class AirConditioner(Device):
             commands.append(GetPropertiesCommand(self._supported_properties))
 
         # Send all commands and collect responses
-        responses = [
-            resp
-            for cmd in commands
-            for resp in await self._send_command_get_responses(cmd)
-        ]
-
-        # Device is online if any response received
-        self._online = len(responses) > 0
+        responses = await self._send_commands_get_responses(commands)
 
         # Update state from responses
         for response in responses:
@@ -591,7 +589,7 @@ class AirConditioner(Device):
 
         # Build command with properties
         cmd = SetPropertiesCommand(properties)
-        for response in await self._send_command_get_responses(cmd):
+        for response in await self._send_commands_get_responses(cmd):
             self._update_state(response)
 
     async def apply(self) -> None:
@@ -652,7 +650,7 @@ class AirConditioner(Device):
         cmd.independent_aux_heat = self._aux_mode == AirConditioner.AuxHeatMode.AUX_ONLY
 
         # Process any state responses from the device
-        for response in await self._send_command_get_responses(cmd):
+        for response in await self._send_commands_get_responses(cmd):
             self._update_state(response)
 
         # Done if no properties need updating
