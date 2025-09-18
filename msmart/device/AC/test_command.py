@@ -86,6 +86,7 @@ class TestStateResponse(_TestResponseBase):
         "target_humidity",
         "aux_heat",
         "independent_aux_heat",
+        "error_code",
     ]
 
     def _test_response(self, msg) -> StateResponse:
