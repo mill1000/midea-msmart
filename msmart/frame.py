@@ -48,7 +48,7 @@ class Frame():
         return (~sum(frame) + 1) & 0xFF
 
     @classmethod
-    def validate(cls, frame: memoryview) -> None:
+    def validate(cls, frame: memoryview, expected_device_type: DeviceType) -> None:
         # Ensure length is sane
         if len(frame) < cls._HEADER_LENGTH:
             raise InvalidFrameException(f"Frame is too short: {frame.hex()}")
@@ -58,3 +58,9 @@ class Frame():
         if checksum != frame[-1]:
             raise InvalidFrameException(
                 f"Frame '{frame.hex()}' failed checksum. Received: 0x{frame[-1]:X}, Expected: 0x{checksum:X}.")
+
+        # Check device type matches
+        device_type = frame[2]
+        if device_type != expected_device_type:
+            raise InvalidFrameException(
+                f"Received device type 0x{device_type:X} does not match expected device type 0x{expected_device_type:X}.")
