@@ -1260,7 +1260,7 @@ class TestResponseConstruct(_TestResponseBase):
             Response.construct(TEST_RESPONSE_SHORT_FRAME)
 
     def test_invalid_device_type(self) -> None:
-        """Test that responses with an incorrect response type raise exceptions."""
+        """Test that responses with an incorrect device type raise exceptions."""
         # https://github.com/mill1000/midea-ac-py/issues/374#issuecomment-3240831784
         TEST_RESPONSE_TYPE_CC = bytes.fromhex(
             "aa63cc0000000000000301fe00000043005000728c8000bc00728c728c808000010141ff010203000603010000000000000001000103010000000000000000000001000100010000000000000000000000000001000200000100000101000102ff02ffa2")
