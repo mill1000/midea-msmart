@@ -623,7 +623,7 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
         # Create a dummy device
         device = AC(0, 0, 0)
 
-        # Assert device is offline and unsupported
+        # Assert device starts offline and unsupported
         self.assertEqual(device.online, False)
         self.assertEqual(device.supported, False)
 
@@ -718,7 +718,7 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(device.supported, True)
 
     async def test_refresh_incorrect_device_type_response(self) -> None:
-        """Test that a refresh() with a response from the wrong device type marks a device as unsupported."""
+        """Test that a refresh() with a response from the wrong device type marks a device as online but unsupported."""
         # https://github.com/mill1000/midea-ac-py/issues/374#issuecomment-3240831784
         TEST_RESPONSE = bytes.fromhex(
             "aa63cc0000000000000301fe00000043005000728c8000bc00728c728c808000010141ff010203000603010000000000000001000103010000000000000000000001000100010000000000000000000000000001000200000100000101000102ff02ffa2")
@@ -726,12 +726,12 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
         # Create a dummy device
         device = AC(0, 0, 0)
 
-        # Patch _send_command to return no responses
-        with patch("msmart.base_device.Device._send_command", return_value=[TEST_RESPONSE]) as patched_method:
+        # Assert device starts offline and unsupported
+        self.assertEqual(device.online, False)
+        self.assertEqual(device.supported, False)
 
-            # Force device supported
-            device._supported = True
-            self.assertEqual(device.supported, True)
+        # Patch _send_command to return response
+        with patch("msmart.base_device.Device._send_command", return_value=[TEST_RESPONSE]) as patched_method:
 
             with self.assertLogs("msmart", logging.ERROR) as log:
                 # Refresh device
@@ -744,7 +744,8 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
             # Assert patch method was awaited
             patched_method.assert_awaited()
 
-            # Assert device is now unsupported
+            # Assert device is online but unsupported
+            self.assertEqual(device.online, True)
             self.assertEqual(device.supported, False)
 
     async def test_get_capabilities_bad_response(self):
