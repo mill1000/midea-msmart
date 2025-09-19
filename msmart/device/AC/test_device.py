@@ -679,6 +679,7 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
 
         # Assert device is still online
         self.assertEqual(device.online, True)
+        self.assertEqual(device.supported, True)
 
     async def test_refresh_supported_sticky(self) -> None:
         """Test that once set, the supported property remains true if the device doesn't respond."""
@@ -688,7 +689,8 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
         # Create a dummy device
         device = AC(0, 0, 0)
 
-        # Assert device starts unsupported
+        # Assert device starts offline and unsupported
+        self.assertEqual(device.online, False)
         self.assertEqual(device.supported, False)
 
         # Patch _send_command to return response
