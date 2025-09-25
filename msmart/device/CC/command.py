@@ -79,31 +79,33 @@ class ControlCommand(Command):
         self.aux_mode = 0
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
-        payload = bytearray(89)
+        payload = bytearray(22)
 
         payload[0] = CommandType.COMMAND_CONTROL
 
-        payload[8] = self.power_on
+        payload[1] |= 1 << 8 if self.power_on else 0
+        payload[1] |= (self.operational_mode & 0x1F)
 
+        payload[2] = self.fan_speed
+
+        # Get integer and fraction components of target temp
         temperature = max(17, min(self.target_temperature, 30))
-        payload[11] = int(2 * (temperature + 40))
+        fractional_temp, integral_temp = math.modf(temperature)
+        integral_temp = int(integral_temp)
 
-        payload[31] = self.operational_mode
+        payload[3] = max(17, min(integral_temp, 30))
 
-        payload[34] = self.fan_speed
+        payload[6] |= 1 << 0 if self.eco else 0
+        payload[6] |= self.aux_mode << 4
 
-        payload[36] = self.swing_ud_angle
-        # Maybe UD angle at 41?
-        payload[43] = self.swing_lr_angle
+        payload[7] = 0xFF
 
-        payload[45] = self.soft
-        payload[56] = self.eco
-        payload[58] = self.silent
-        payload[60] = self.sleep
+        payload[8] |= 1 << 4 if self.sleep else 0
 
-        payload[75] = 0x01 if self.purifier else 0x02
+        payload[9] = self.swing_lr_angle
+        payload[10] = self.swing_ud_angle
 
-        payload[87] = self.aux_mode
+        payload[11] = int(fractional_temp * 10)
 
         return super().tobytes(payload)
 
