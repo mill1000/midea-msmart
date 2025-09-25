@@ -469,7 +469,7 @@ class Response():
         # Build a memoryview of the frame for zero-copy slicing
         with memoryview(frame) as frame_mv:
             # Validate the frame
-            Frame.validate(frame_mv)
+            Frame.validate(frame_mv, DeviceType.AIR_CONDITIONER)
 
             # Default to base class
             response_class = Response
@@ -877,6 +877,7 @@ class StateResponse(Response):
         self.target_humidity = None
         self.aux_heat = None
         self.independent_aux_heat = None
+        self.error_code = None
 
         self._parse(payload)
 
@@ -973,6 +974,8 @@ class StateResponse(Response):
         self.filter_alert = bool(payload[13] & 0x20)
 
         self.display_on = (payload[14] != 0x70)
+
+        self.error_code = payload[16]
 
         if len(payload) < 20:
             return

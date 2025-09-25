@@ -46,7 +46,7 @@ class TestCommand(unittest.TestCase):
 
         # Assert that frame is valid
         with memoryview(frame) as frame_mv:
-            Frame.validate(frame_mv)
+            Frame.validate(frame_mv, DeviceType.AIR_CONDITIONER)
 
         # Check frame payload to ensure it matches expected
         self.assertEqual(frame[10:-1], EXPECTED_PAYLOAD)
@@ -86,6 +86,7 @@ class TestStateResponse(_TestResponseBase):
         "target_humidity",
         "aux_heat",
         "independent_aux_heat",
+        "error_code",
     ]
 
     def _test_response(self, msg) -> StateResponse:
@@ -1249,6 +1250,23 @@ class TestResponseConstruct(_TestResponseBase):
 
         self.assertIsNotNone(resp)
         self.assertEqual(type(resp), PropertiesResponse)
+
+    def test_short_packet(self) -> None:
+        """Test that a short frame raise exceptions."""
+        # https://github.com/mill1000/midea-msmart/issues/234#issuecomment-3299199631
+        TEST_RESPONSE_SHORT_FRAME = bytes.fromhex("01000000")
+
+        with self.assertRaises(InvalidFrameException):
+            Response.construct(TEST_RESPONSE_SHORT_FRAME)
+
+    def test_invalid_device_type(self) -> None:
+        """Test that responses with an incorrect device type raise exceptions."""
+        # https://github.com/mill1000/midea-ac-py/issues/374#issuecomment-3240831784
+        TEST_RESPONSE_TYPE_CC = bytes.fromhex(
+            "aa63cc0000000000000301fe00000043005000728c8000bc00728c728c808000010141ff010203000603010000000000000001000103010000000000000000000001000100010000000000000000000000000001000200000100000101000102ff02ffa2")
+
+        with self.assertRaises(InvalidFrameException):
+            Response.construct(TEST_RESPONSE_TYPE_CC)
 
 
 class TestGroupDataResponse(_TestResponseBase):
