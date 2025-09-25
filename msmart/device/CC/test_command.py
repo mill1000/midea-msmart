@@ -46,7 +46,7 @@ class TestCommand(unittest.TestCase):
 
         # Assert that frame is valid
         with memoryview(frame) as frame_mv:
-            Frame.validate(frame_mv)
+            Frame.validate(frame_mv, DeviceType.COMMERCIAL_AC)
 
         # Check frame payload to ensure it matches expected
         self.assertEqual(frame[10:-1], EXPECTED_PAYLOAD)

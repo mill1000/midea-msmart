@@ -141,7 +141,7 @@ class Response():
         # Build a memoryview of the frame for zero-copy slicing
         with memoryview(frame) as frame_mv:
             # Validate the frame
-            Frame.validate(frame_mv)
+            Frame.validate(frame_mv, DeviceType.COMMERCIAL_AC)
 
             # Default to base class
             response_class = Response
