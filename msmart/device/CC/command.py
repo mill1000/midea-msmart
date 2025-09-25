@@ -83,7 +83,7 @@ class ControlCommand(Command):
 
         payload[0] = CommandType.COMMAND_CONTROL
 
-        payload[1] |= 1 << 8 if self.power_on else 0
+        payload[1] |= 1 << 7 if self.power_on else 0
         payload[1] |= (self.operational_mode & 0x1F)
 
         payload[2] = self.fan_speed
