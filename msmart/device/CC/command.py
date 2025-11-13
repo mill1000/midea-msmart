@@ -24,6 +24,22 @@ class CommandType(IntEnum):
     COMMAND_NOT_SUPPORTED = 0x0D  # ?
 
 
+class ControlId(IntEnum):
+    POWER = 0x0000
+    TARGET_TEMPERATURE = 0x0003
+    TEMPERATURE_UNIT = 0x000C
+    MODE = 0x0012
+    FAN_MODE = 0x0015  # TODO Unsure
+    ECO = 0x0027  # TODO Unsure
+    SILENT = 0x0029  # TODO Unsure
+    SLEEP = 0x0031  # TODO Unsure
+    SELF_CLEAN = 0x002D  # TODO Unsure
+    PURIFIER = 0x0038  # TODO Unsure
+    BEEP = 0x003F
+    DISPLAY = 0x0040
+    AUX_MODE = 0x0041  # TODO Unsure
+
+
 class Command(Frame):
     """Base class for CC commands."""
 
@@ -62,52 +78,73 @@ class QueryCommand(Command):
 class ControlCommand(Command):
     """Command to control state of the device."""
 
-    def __init__(self) -> None:
+    def __init__(self, controls: Mapping[ControlId, bytes]) -> None:
         super().__init__(frame_type=FrameType.CONTROL)
 
-        self.power_on = False
-        self.target_temperature = 25.0
-        self.operational_mode = 0
-        self.fan_speed = 0
-        self.swing_ud_angle = 0
-        self.swing_lr_angle = 0
-        self.soft = False
-        self.eco = False
-        self.silent = False
-        self.sleep = False
-        self.purifier = False
-        self.aux_mode = 0
+        self._controls = controls
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
-        payload = bytearray(22)
+        payload = bytearray()
 
-        payload[0] = CommandType.COMMAND_CONTROL
+        for id, value in self._controls.items():
+            payload += struct.pack(">H", id)
 
-        payload[1] |= 1 << 7 if self.power_on else 0
-        payload[1] |= (self.operational_mode & 0x1F)
-
-        payload[2] = self.fan_speed
-
-        # Get integer and fraction components of target temp
-        temperature = max(17, min(self.target_temperature, 30))
-        fractional_temp, integral_temp = math.modf(temperature)
-        integral_temp = int(integral_temp)
-
-        payload[3] = max(17, min(integral_temp, 30))
-
-        payload[6] |= 1 << 0 if self.eco else 0
-        payload[6] |= self.aux_mode << 4
-
-        payload[7] = 0xFF
-
-        payload[8] |= 1 << 4 if self.sleep else 0
-
-        payload[9] = self.swing_lr_angle
-        payload[10] = self.swing_ud_angle
-
-        payload[11] = int(fractional_temp * 10)
+            payload += bytes([len(value)])
+            payload += value # TODO need more intelligent encoding
+            payload += bytes([0xFF])
 
         return super().tobytes(payload)
+
+
+# class ControlCommand(Command):
+#     """Command to control state of the device."""
+
+#     def __init__(self) -> None:
+#         super().__init__(frame_type=FrameType.CONTROL)
+
+#         self.power_on = False
+#         self.target_temperature = 25.0
+#         self.operational_mode = 0
+#         self.fan_speed = 0
+#         self.swing_ud_angle = 0
+#         self.swing_lr_angle = 0
+#         self.soft = False
+#         self.eco = False
+#         self.silent = False
+#         self.sleep = False
+#         self.purifier = False
+#         self.aux_mode = 0
+
+#     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
+#         payload = bytearray(22)
+
+#         payload[0] = CommandType.COMMAND_CONTROL
+
+#         payload[1] |= 1 << 7 if self.power_on else 0
+#         payload[1] |= (self.operational_mode & 0x1F)
+
+#         payload[2] = self.fan_speed
+
+#         # Get integer and fraction components of target temp
+#         temperature = max(17, min(self.target_temperature, 30))
+#         fractional_temp, integral_temp = math.modf(temperature)
+#         integral_temp = int(integral_temp)
+
+#         payload[3] = max(17, min(integral_temp, 30))
+
+#         payload[6] |= 1 << 0 if self.eco else 0
+#         payload[6] |= self.aux_mode << 4
+
+#         payload[7] = 0xFF
+
+#         payload[8] |= 1 << 4 if self.sleep else 0
+
+#         payload[9] = self.swing_lr_angle
+#         payload[10] = self.swing_ud_angle
+
+#         payload[11] = int(fractional_temp * 10)
+
+#         return super().tobytes(payload)
 
 
 class Response():
