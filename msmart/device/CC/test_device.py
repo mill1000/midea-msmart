@@ -175,6 +175,32 @@ class TestUpdateStateFromResponse(unittest.TestCase):
             # Assert that expected aux mode matches
             self.assertEqual(device.aux_mode, value)
 
+    def test_supported_op_modes(self) -> None:
+        """Test parsing of supported op modes."""
+        # https://github.com/mill1000/midea-msmart/pull/233#issuecomment-3272675291
+        TEST_RESPONSE = bytes.fromhex(
+            "aa63cc0000000000000301fe00000043005001728c7800ff00728c728c787800010141ff010203000603010008000600000001060106010000000000000000000001000100010000000000000000000000000001000200000100000101000102ff02ff5f")
+
+        resp = Response.construct(TEST_RESPONSE)
+        self.assertIsNotNone(resp)
+
+        # Assert response is a state response
+        self.assertEqual(type(resp), StateResponse)
+
+        # Create a dummy device and process the response
+        device = CC(0, 0, 0)
+        device._update_state(resp)
+
+        self.assertCountEqual(
+            device.supported_operation_modes,
+            [
+                CC.OperationalMode.HEAT,
+                CC.OperationalMode.COOL,
+                CC.OperationalMode.FAN,
+                CC.OperationalMode.DRY,
+            ]
+        )
+
 
 class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
     # pylint: disable=protected-access

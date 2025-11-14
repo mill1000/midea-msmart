@@ -36,8 +36,8 @@ class CommercialAirConditioner(Device):
         FAN = 0x01
         COOL = 0x02
         HEAT = 0x03
+        AUTO = 0x05
         DRY = 0x06
-        # AUTO = 0x10 TODO remote only? No obvious bit
 
         DEFAULT = FAN
 
@@ -136,6 +136,14 @@ class CommercialAirConditioner(Device):
             self._aux_mode = cast(self.AuxHeatMode,
                                   self.AuxHeatMode.get_from_value(res.aux_mode))
             # self._aux_heat_on = res.ptc_on # TODO
+
+            # TODO we dont need to do this every time
+            # Build list of supported operation modes
+            self._supported_op_modes = [
+                CommercialAirConditioner.OperationalMode.get_from_value(mode)
+                for mode in res.supported_modes
+                if mode in CommercialAirConditioner.OperationalMode
+            ]
 
         else:
             _LOGGER.debug("Ignored unknown response from device %s: %s",

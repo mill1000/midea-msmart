@@ -80,6 +80,7 @@ class TestStateResponse(_TestResponseBase):
         "sleep",
         "purifier",
         "aux_mode",
+        "supported_modes",
     ]
 
     def _test_response(self, msg) -> StateResponse:
@@ -262,6 +263,20 @@ class TestStateResponse(_TestResponseBase):
 
             # Assert that expected aux mode matches
             self.assertEqual(resp.aux_mode, value)
+
+    def test_supported_modes(self) -> None:
+        """Test parsing of supported modes from payloads."""
+        # https://github.com/mill1000/midea-msmart/pull/233#issuecomment-3268885233
+        TEST_PAYLOAD = bytes.fromhex(
+            "01fe00000043005001728c7800eb00728c728c787800010141ff010203000601010008000300000001030103010000000000000000000001000100010000000000000000000000000001000200000100000101000102ff02")
+
+        resp = self._test_payload(TEST_PAYLOAD)
+
+        # Check for known supported mode
+        self.assertIn(1, resp.supported_modes)
+        self.assertIn(2, resp.supported_modes)
+        self.assertIn(3, resp.supported_modes)
+        self.assertIn(6, resp.supported_modes)
 
 
 if __name__ == "__main__":

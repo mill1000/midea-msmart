@@ -226,6 +226,8 @@ class StateResponse(Response):
         self.purifier = False
         self.aux_mode = 0
 
+        self.supported_modes = []
+
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
@@ -249,6 +251,7 @@ class StateResponse(Response):
         # 0x728C -> 17C/30C is repeated 3 times in user payload
         # Possible multi zones? Or multiple temp limits for different modes?
 
+        self.supported_modes = list(payload[26:31])
         self.operational_mode = payload[31]
         self.fan_speed = payload[34]
 
