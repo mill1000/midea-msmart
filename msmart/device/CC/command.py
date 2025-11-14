@@ -29,15 +29,23 @@ class ControlId(IntEnum):
     TARGET_TEMPERATURE = 0x0003
     TEMPERATURE_UNIT = 0x000C
     MODE = 0x0012
-    FAN_MODE = 0x0015  # TODO Unsure
-    ECO = 0x0027  # TODO Unsure
-    SILENT = 0x0029  # TODO Unsure
-    SLEEP = 0x0031  # TODO Unsure
-    SELF_CLEAN = 0x002D  # TODO Unsure
-    PURIFIER = 0x0038  # TODO Unsure
+    FAN_MODE = 0x0015
+    ECO = 0x0028
+    SILENT = 0x002A
+    SLEEP = 0x002C
+    SELF_CLEAN = 0x002E
+    PURIFIER = 0x0038
     BEEP = 0x003F
     DISPLAY = 0x0040
     AUX_MODE = 0x0041  # TODO Unsure
+
+    def encode(self, *args, **kwargs) -> bytes:
+        """Encode property into raw form."""
+
+        if self == ControlId.TARGET_TEMPERATURE:
+            return bytes([(2 * int(args[0])) + 80])
+        else:
+            return bytes(args[0:1])
 
 
 class Command(Frame):
@@ -78,7 +86,7 @@ class QueryCommand(Command):
 class ControlCommand(Command):
     """Command to control state of the device."""
 
-    def __init__(self, controls: Mapping[ControlId, bytes]) -> None:
+    def __init__(self, controls: Mapping[ControlId, Union[int, float, bool]]) -> None:
         super().__init__(frame_type=FrameType.CONTROL)
 
         self._controls = controls
@@ -86,11 +94,14 @@ class ControlCommand(Command):
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
         payload = bytearray()
 
-        for id, value in self._controls.items():
-            payload += struct.pack(">H", id)
+        for control, value in self._controls.items():
+            payload += struct.pack(">H", control)
+
+            # Encode property value to bytes
+            value = control.encode(value)
 
             payload += bytes([len(value)])
-            payload += value # TODO need more intelligent encoding
+            payload += value
             payload += bytes([0xFF])
 
         return super().tobytes(payload)
