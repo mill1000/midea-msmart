@@ -62,10 +62,10 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(frame[9], FrameType.QUERY)
 
 
-class TestStateResponse(_TestResponseBase):
-    """Test device state response messages."""
+class TestQueryResponse(_TestResponseBase):
+    """Test device query response messages."""
 
-    # Attributes expected in state response objects
+    # Attributes expected in query response objects
     EXPECTED_ATTRS = [
         "power_on",
         "target_temperature",
@@ -83,10 +83,10 @@ class TestStateResponse(_TestResponseBase):
         "supported_modes",
     ]
 
-    def _test_response(self, msg) -> StateResponse:
+    def _test_response(self, msg) -> QueryResponse:
         resp = self._test_build_response(msg)
         self._test_check_attributes(resp, self.EXPECTED_ATTRS)
-        return cast(StateResponse, resp)
+        return cast(QueryResponse, resp)
 
     def test_message(self) -> None:
         # https://github.com/mill1000/midea-msmart/pull/233#issuecomment-3268766672
@@ -95,10 +95,10 @@ class TestStateResponse(_TestResponseBase):
         resp = self._test_response(TEST_MESSAGE)
 
         # Assert response is a state response
-        self.assertEqual(type(resp), StateResponse)
+        self.assertEqual(type(resp), QueryResponse)
 
         # Suppress type errors
-        resp = cast(StateResponse, resp)
+        resp = cast(QueryResponse, resp)
 
         # Check basic state
         self.assertEqual(resp.power_on, True)
@@ -109,17 +109,17 @@ class TestStateResponse(_TestResponseBase):
         self.assertEqual(resp.swing_ud_angle, 3)
         self.assertEqual(resp.swing_lr_angle, 3)
 
-    def _test_payload(self, payload: bytes) -> StateResponse:
+    def _test_payload(self, payload: bytes) -> QueryResponse:
         """Create a response from a test payload."""
         # Create response
         with memoryview(payload) as mv_payload:
-            resp = StateResponse(mv_payload)
+            resp = QueryResponse(mv_payload)
 
         # Assert that it exists
         self.assertIsNotNone(resp)
 
         # Assert response is a state response
-        self.assertEqual(type(resp), StateResponse)
+        self.assertEqual(type(resp), QueryResponse)
 
         return resp
 

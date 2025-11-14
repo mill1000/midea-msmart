@@ -106,58 +106,6 @@ class ControlCommand(Command):
 
         return super().tobytes(payload)
 
-
-# class ControlCommand(Command):
-#     """Command to control state of the device."""
-
-#     def __init__(self) -> None:
-#         super().__init__(frame_type=FrameType.CONTROL)
-
-#         self.power_on = False
-#         self.target_temperature = 25.0
-#         self.operational_mode = 0
-#         self.fan_speed = 0
-#         self.swing_ud_angle = 0
-#         self.swing_lr_angle = 0
-#         self.soft = False
-#         self.eco = False
-#         self.silent = False
-#         self.sleep = False
-#         self.purifier = False
-#         self.aux_mode = 0
-
-#     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
-#         payload = bytearray(22)
-
-#         payload[0] = CommandType.COMMAND_CONTROL
-
-#         payload[1] |= 1 << 7 if self.power_on else 0
-#         payload[1] |= (self.operational_mode & 0x1F)
-
-#         payload[2] = self.fan_speed
-
-#         # Get integer and fraction components of target temp
-#         temperature = max(17, min(self.target_temperature, 30))
-#         fractional_temp, integral_temp = math.modf(temperature)
-#         integral_temp = int(integral_temp)
-
-#         payload[3] = max(17, min(integral_temp, 30))
-
-#         payload[6] |= 1 << 0 if self.eco else 0
-#         payload[6] |= self.aux_mode << 4
-
-#         payload[7] = 0xFF
-
-#         payload[8] |= 1 << 4 if self.sleep else 0
-
-#         payload[9] = self.swing_lr_angle
-#         payload[10] = self.swing_ud_angle
-
-#         payload[11] = int(fractional_temp * 10)
-
-#         return super().tobytes(payload)
-
-
 class Response():
     """Base class for CC responses."""
 
@@ -183,7 +131,7 @@ class Response():
         pass
 
     @classmethod
-    def construct(cls, frame: bytes) -> Union[StateResponse, Response]:
+    def construct(cls, frame: bytes) -> Union[QueryResponse, Response]:
         """Construct a response object from raw data."""
 
         # Build a memoryview of the frame for zero-copy slicing
@@ -197,7 +145,7 @@ class Response():
             # Fetch the appropriate response class from the ID
             response_type = frame_mv[10]
             if response_type == CommandType.COMMAND_QUERY or response_type == CommandType.COMMAND_CONTROL:
-                response_class = StateResponse
+                response_class = QueryResponse
 
             # Validate the payload
             Response.validate(frame_mv[10:-1])
@@ -206,8 +154,8 @@ class Response():
             return response_class(frame_mv[10:-1])
 
 
-class StateResponse(Response):
-    """Response to query or control command."""
+class QueryResponse(Response):
+    """Response to query command."""
 
     def __init__(self, payload: memoryview) -> None:
         super().__init__(payload)
@@ -231,7 +179,15 @@ class StateResponse(Response):
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
-        """Parse the state response payload."""
+        """Parse the query response payload."""
+
+        # Query response starts with an 8 byte header
+        # 0x01 - Basic data set
+        # 0xFE - Indicates formt of data
+        # 2 bytes - Start index in protocol's "key_maps"
+        # 2 bytes - End index in "key_maps"
+        # 2 bytes - Length of section in bytes
+        # Our ControlIds are translated indeces in "key_maps"
 
         self.power_on = bool(payload[8])
 
@@ -266,3 +222,16 @@ class StateResponse(Response):
 
         # 0x02 - Force off, 0x01 - Force on, 0x00 - Auto
         self.aux_mode = payload[87]
+
+
+class ControlResponse(Response):
+    """Response to control command."""
+
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
+
+        self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+        """Parse the control response payload."""
+        pass

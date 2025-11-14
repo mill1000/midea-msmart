@@ -8,7 +8,7 @@ from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum
 
-from .command import ControlCommand, QueryCommand, Response, StateResponse
+from .command import ControlCommand, QueryCommand, Response, QueryResponse
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -103,8 +103,8 @@ class CommercialAirConditioner(Device):
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
 
-        if isinstance(res, StateResponse):
-            _LOGGER.debug("State response payload from device %s: %s",
+        if isinstance(res, QueryResponse):
+            _LOGGER.debug("Query response payload from device %s: %s",
                           self.id, res)
 
             self._power_state = res.power_on

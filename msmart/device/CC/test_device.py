@@ -129,8 +129,8 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         resp = Response.construct(TEST_RESPONSE)
         self.assertIsNotNone(resp)
 
-        # Assert response is a state response
-        self.assertEqual(type(resp), StateResponse)
+        # Assert response is a query response
+        self.assertEqual(type(resp), QueryResponse)
 
         # Create a dummy device and process the response
         device = CC(0, 0, 0)
@@ -166,8 +166,8 @@ class TestUpdateStateFromResponse(unittest.TestCase):
             resp = Response.construct(response)
             self.assertIsNotNone(resp)
 
-            # Assert response is a state response
-            self.assertEqual(type(resp), StateResponse)
+            # Assert response is a query response
+            self.assertEqual(type(resp), QueryResponse)
 
             # Process the response
             device._update_state(resp)
@@ -184,8 +184,8 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         resp = Response.construct(TEST_RESPONSE)
         self.assertIsNotNone(resp)
 
-        # Assert response is a state response
-        self.assertEqual(type(resp), StateResponse)
+        # Assert response is a query response
+        self.assertEqual(type(resp), QueryResponse)
 
         # Create a dummy device and process the response
         device = CC(0, 0, 0)
