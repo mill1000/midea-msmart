@@ -33,16 +33,18 @@ class ControlId(IntEnum):
     TARGET_TEMPERATURE = 0x0003
     TEMPERATURE_UNIT = 0x000C
     MODE = 0x0012
-    FAN_MODE = 0x0015
+    FAN_SPEED = 0x0015
+    VERT_SWING_ANGLE = 0x001C
+    HORZ_SWING_ANGLE = 0x001E
     WIND_SENSE = 0x0020
     ECO = 0x0028
     SILENT = 0x002A
     SLEEP = 0x002C
     SELF_CLEAN = 0x002E
-    PURIFIER = 0x0038
+    PURIFIER = 0x003A
     BEEP = 0x003F
     DISPLAY = 0x0040
-    AUX_MODE = 0x0041  # TODO Unsure
+    AUX_MODE = 0x0043
 
     def decode(self, data: bytes) -> Any:
         """Decode raw control data into a convenient form."""
@@ -232,8 +234,8 @@ class QueryResponse(Response):
         self.operational_mode = payload[31]
         self.fan_speed = payload[34]
 
-        self.swing_ud_angle = payload[36]  # Also at payload[41]
-        self.swing_lr_angle = payload[43]
+        self.swing_ud_angle = payload[41]  # Replicated at payload[36]?
+        self.swing_lr_angle = payload[43]  # Not replicated?
 
         self.soft = bool(payload[45])  # Cool mode only, breezeless?
         self.eco = bool(payload[56])

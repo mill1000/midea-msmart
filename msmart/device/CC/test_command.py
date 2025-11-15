@@ -360,5 +360,6 @@ class TestControlResponse(_TestResponseBase):
 
         self.assertEqual(len(resp._states), 2)
 
+
 if __name__ == "__main__":
     unittest.main()
