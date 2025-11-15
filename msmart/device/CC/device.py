@@ -403,7 +403,7 @@ class CommercialAirConditioner(Device):
             "target_temperature": self.target_temperature,
             "indoor_temperature": self.indoor_temperature,
             "eco": self.eco,
-            "sleep": self.silent,
+            "silent": self.silent,
             "sleep": self.sleep,
             "purifier": self.purifier,
             # "display": self.display,
