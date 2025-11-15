@@ -19,15 +19,6 @@ class InvalidResponseException(Exception):
     pass
 
 
-class CommandType(IntEnum):
-    """Command message types."""
-    COMMAND_CONTROL = 0xC3
-    COMMAND_QUERY = 0x01
-    COMMAND_LOCK = 0xB0
-    COMMAND_SMART = 0xE0
-    COMMAND_NOT_SUPPORTED = 0x0D  # ?
-
-
 class ControlId(IntEnum):
     POWER = 0x0000
     TARGET_TEMPERATURE = 0x0003
@@ -36,15 +27,15 @@ class ControlId(IntEnum):
     FAN_SPEED = 0x0015
     VERT_SWING_ANGLE = 0x001C
     HORZ_SWING_ANGLE = 0x001E
-    WIND_SENSE = 0x0020
+    WIND_SENSE = 0x0020  # Untested
     ECO = 0x0028
     SILENT = 0x002A
     SLEEP = 0x002C
-    SELF_CLEAN = 0x002E
+    SELF_CLEAN = 0x002E  # Untested
     PURIFIER = 0x003A
     BEEP = 0x003F
     DISPLAY = 0x0040
-    AUX_MODE = 0x0043
+    AUX_MODE = 0x0043  # Untested
 
     def decode(self, data: bytes) -> Any:
         """Decode raw control data into a convenient form."""
@@ -62,7 +53,8 @@ class ControlId(IntEnum):
         if self == ControlId.TARGET_TEMPERATURE:
             return bytes([(2 * int(args[0])) + 80])
         elif self == ControlId.PURIFIER:
-            return bytes([0x01 if args[0] else 0x02]) # TODO Auto = 0 if supported
+            # TODO Auto = 0 if supported
+            return bytes([0x01 if args[0] else 0x02])
         else:
             return bytes(args[0:1])
 
@@ -95,9 +87,9 @@ class QueryCommand(Command):
         super().__init__(frame_type=FrameType.QUERY)
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
+        # TODO Query format doesn't match plugin but seems to work
         payload = bytearray(22)
-
-        payload[0] = CommandType.COMMAND_QUERY
+        payload[0] = 0x01
 
         return super().tobytes(payload)
 
@@ -205,11 +197,11 @@ class QueryResponse(Response):
 
         # Query response starts with an 8 byte header
         # 0x01 - Basic data set
-        # 0xFE - Indicates formt of data
+        # 0xFE - Indicates format of data
         # 2 bytes - Start index in protocol's "key_maps"
         # 2 bytes - End index in "key_maps"
         # 2 bytes - Length of section in bytes
-        # Our ControlIds are translated indeces in "key_maps"
+        # Our ControlIds are translated indices in "key_maps"
 
         # Validate header
         if payload[0:2] != b"\x01\xfe":
