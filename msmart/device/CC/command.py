@@ -51,6 +51,8 @@ class ControlId(IntEnum):
 
         if self == ControlId.TARGET_TEMPERATURE:
             return (data[0] / 2.0) - 40
+        elif self == ControlId.PURIFIER:
+            return data[0] == 0x01
         else:
             return data[0]
 
@@ -59,6 +61,8 @@ class ControlId(IntEnum):
 
         if self == ControlId.TARGET_TEMPERATURE:
             return bytes([(2 * int(args[0])) + 80])
+        elif self == ControlId.PURIFIER:
+            return bytes([0x01 if args[0] else 0x02]) # TODO Auto = 0 if supported
         else:
             return bytes(args[0:1])
 
