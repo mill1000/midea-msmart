@@ -15,6 +15,10 @@ from msmart.frame import Frame
 _LOGGER = logging.getLogger(__name__)
 
 
+class InvalidResponseException(Exception):
+    pass
+
+
 class CommandType(IntEnum):
     """Command message types."""
     COMMAND_CONTROL = 0xC3
@@ -30,6 +34,7 @@ class ControlId(IntEnum):
     TEMPERATURE_UNIT = 0x000C
     MODE = 0x0012
     FAN_MODE = 0x0015
+    WIND_SENSE = 0x0020
     ECO = 0x0028
     SILENT = 0x002A
     SLEEP = 0x002C
@@ -39,8 +44,16 @@ class ControlId(IntEnum):
     DISPLAY = 0x0040
     AUX_MODE = 0x0041  # TODO Unsure
 
+    def decode(self, data: bytes) -> Any:
+        """Decode raw control data into a convenient form."""
+
+        if self == ControlId.TARGET_TEMPERATURE:
+            return (data[0] / 2.0) - 40
+        else:
+            return data[0]
+
     def encode(self, *args, **kwargs) -> bytes:
-        """Encode property into raw form."""
+        """Encode controls into raw form."""
 
         if self == ControlId.TARGET_TEMPERATURE:
             return bytes([(2 * int(args[0])) + 80])
@@ -105,6 +118,7 @@ class ControlCommand(Command):
             payload += bytes([0xFF])
 
         return super().tobytes(payload)
+
 
 class Response():
     """Base class for CC responses."""
@@ -230,8 +244,52 @@ class ControlResponse(Response):
     def __init__(self, payload: memoryview) -> None:
         super().__init__(payload)
 
+        self._states = {}
+
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
         """Parse the control response payload."""
-        pass
+        # Clear existing states
+        self._states.clear()
+
+        if len(payload) < 6:
+            raise InvalidResponseException(
+                f"Control response payload '{payload.hex()}' is too short.")
+
+        # Loop through each entry
+        # Each entry is 2 byte ID, 1 byte length, N byte value, 1 byte terminator 0xFF
+        while len(payload) >= 5:
+            # Skip empty states
+            size = payload[2]
+            if size == 0:
+                # Zero length values still are at least 1 byte
+                payload = payload[5:]
+                continue
+
+            # Unpack 16 bit ID
+            (raw_id, ) = struct.unpack(">H", payload[0:2])
+
+            # Covert ID to enumerate type
+            try:
+                control = ControlId(raw_id)
+            except ValueError:
+                _LOGGER.warning(
+                    "Unknown control ID 0x%04X, Size: %d.", raw_id, size)
+                # Advance to next entry
+                payload = payload[4+size:]
+                continue
+
+            # Parse the property
+            try:
+                if (value := control.decode(payload[3:])) is not None:
+                    self._states.update({control: value})
+            except NotImplementedError:
+                _LOGGER.warning(
+                    "Unsupported control %r, Size: %d.", control, size)
+
+            # Advance to next entry
+            payload = payload[4+size:]
+
+    def get_control_state(self, id: ControlId) -> Optional[Any]:
+        return self._states.get(id, None)
