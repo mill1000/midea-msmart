@@ -123,6 +123,18 @@ class TestQueryResponse(_TestResponseBase):
 
         return resp
 
+    def test_invalid_header(self) -> None:
+        """Test exceptions are raised when payload lacks header."""
+        TEST_PAYLOADS = [
+            bytes.fromhex(
+                "01ff0000000000000000000000000000000000000000000000000000000000"),
+            bytes.fromhex(
+                "00fe0000000000000000000000000000000000000000000000000000000000")
+        ]
+        for payload in TEST_PAYLOADS:
+            with self.assertRaises(InvalidResponseException):
+                self._test_payload(payload)
+
     def test_target_temperature(self) -> None:
         """Test parsing of target temperature from payloads."""
         TEST_PAYLOADS = {
@@ -278,6 +290,75 @@ class TestQueryResponse(_TestResponseBase):
         self.assertIn(3, resp.supported_modes)
         self.assertIn(6, resp.supported_modes)
 
+
+class TestControlResponse(_TestResponseBase):
+    """Test device control response messages."""
+
+    def _test_response(self, msg) -> ControlResponse:
+        resp = self._test_build_response(msg)
+        return cast(ControlResponse, resp)
+
+    def test_message(self) -> None:
+        # https://github.com/mill1000/midea-msmart/pull/233#issuecomment-3530709294
+        TEST_MESSAGE = bytes.fromhex(
+            "aa16cc0000000000000200000101ff00120102ff000007")
+        resp = self._test_response(TEST_MESSAGE)
+
+        # Assert response is a control response
+        self.assertEqual(type(resp), ControlResponse)
+
+        # Suppress type errors
+        resp = cast(ControlResponse, resp)
+
+        # Check basic state
+        self.assertEqual(len(resp._states), 2)
+        self.assertEqual(resp.get_control_state(ControlId.MODE), 2)
+        self.assertEqual(resp.get_control_state(ControlId.POWER), True)
+
+    def _test_payload(self, payload: bytes) -> ControlResponse:
+        """Create a response from a test payload."""
+        # Create response
+        with memoryview(payload) as mv_payload:
+            resp = ControlResponse(mv_payload)
+
+        # Assert that it exists
+        self.assertIsNotNone(resp)
+
+        # Assert response is a state response
+        self.assertEqual(type(resp), ControlResponse)
+
+        return resp
+
+    def test_payload_too_short(self) -> None:
+        """Test exceptions are raised when payload is too short."""
+        TEST_PAYLOAD = bytes.fromhex("00000101")
+
+        with self.assertRaises(InvalidResponseException):
+            self._test_payload(TEST_PAYLOAD)
+
+    def test_unknown_command_id(self) -> None:
+        """Test we warn when decoding an unknown command ID."""
+        # https://github.com/mill1000/midea-msmart/pull/233#issuecomment-3530709294
+        # Modified 2nd ID
+        TEST_PAYLOAD = bytes.fromhex(
+            "00000101ffaa030180ff0000")
+
+        with self.assertLogs("msmart", logging.WARNING) as log:
+            resp = self._test_payload(TEST_PAYLOAD)
+
+            # Check warning is generated for ID 0x001E
+            self.assertRegex(log.output[0], "Unknown control ID 0xAA03")
+
+    def test_zero_length_entry(self) -> None:
+        """Test we ignore entries with a length of zero."""
+        # Response to malformed request, 4entries, 2 of zero length
+        # https://github.com/mill1000/midea-msmart/pull/233#issuecomment-3332107433
+        TEST_PAYLOAD = bytes.fromhex(
+            "00000000ff00200100ff00000000ff00000100ff00000000")
+
+        resp = self._test_payload(TEST_PAYLOAD)
+
+        self.assertEqual(len(resp._states), 2)
 
 if __name__ == "__main__":
     unittest.main()
