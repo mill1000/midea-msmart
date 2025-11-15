@@ -8,7 +8,8 @@ from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum
 
-from .command import ControlCommand, QueryCommand, QueryResponse, Response
+from .command import (ControlCommand, ControlId, QueryCommand, QueryResponse,
+                      Response)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -208,21 +209,24 @@ class CommercialAirConditioner(Device):
         # Define function to return value or a default if value is None
         def or_default(v, d) -> Any: return v if v is not None else d
 
-        # TODO control command is completely unknown
-        cmd = ControlCommand()
-        cmd.power_on = or_default(self._power_state, False)
-        cmd.target_temperature = or_default(self._target_temperature, 25)
-        cmd.operational_mode = self._operational_mode
-        cmd.fan_speed = self._fan_speed
-        cmd.swing_lr_angle = self._horizontal_swing_angle
-        cmd.swing_ud_angle = self._vertical_swing_angle
-        cmd.soft = or_default(self._soft, False)
-        cmd.eco = or_default(self._eco, False)
-        cmd.silent = or_default(self._silent, False)
-        cmd.sleep = or_default(self._sleep, False)
-        cmd.purifier = or_default(self._purifier, False)
-        cmd.aux_mode = self._aux_mode
-        # cmd.digit_display = self._display_on
+        controls = {
+            ControlId.POWER: or_default(self._power_state, False),
+            ControlId.TARGET_TEMPERATURE: or_default(self._target_temperature, 25),
+            ControlId.MODE: self._operational_mode,
+            ControlId.FAN_SPEED: self._fan_speed,
+            ControlId.HORZ_SWING_ANGLE: self._horizontal_swing_angle,
+            ControlId.VERT_SWING_ANGLE: self._vertical_swing_angle,
+            ControlId.ECO: or_default(self._eco, False),
+            ControlId.SLEEP: or_default(self._sleep, False),
+            ControlId.SILENT: or_default(self._silent, False),
+            ControlId.PURIFIER: or_default(self._purifier, False),
+            # TODO untested
+            # ControlId.SOFT: or_default(self._soft, False),
+            # ControlId.AUX_MODE: self._aux_mode,
+            # ControlId.DISPLAY: self._display_on
+            # ControlId.BEEP: self._beep
+        }
+        cmd = ControlCommand(controls)
 
         # Process any state responses from the device
         for response in await self._send_command_get_responses(cmd):
