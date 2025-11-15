@@ -143,7 +143,7 @@ class Response():
         pass
 
     @classmethod
-    def construct(cls, frame: bytes) -> Union[QueryResponse, Response]:
+    def construct(cls, frame: bytes) -> Union[ControlResponse, QueryResponse, Response]:
         """Construct a response object from raw data."""
 
         # Build a memoryview of the frame for zero-copy slicing
@@ -175,22 +175,52 @@ class QueryResponse(Response):
         super().__init__(payload)
 
         self.power_on = False
-        self.target_temperature = None
+        self.target_temperature = 24
         self.indoor_temperature = None
+        self.outdoor_temperature = None
+        self.fahrenheit = False
+        self.target_humidity = 40
+        self.indoor_humidity = None
         self.operational_mode = 0
         self.fan_speed = 0
-        self.swing_ud_angle = 0
-        self.swing_lr_angle = 0
-        self.soft = False
+        self.vert_swing_angle = 0
+        self.horz_swing_angle = 0
+        self.wind_sense = 0
+        # self.co2_level = None
         self.eco = False
         self.silent = False
         self.sleep = False
-        self.purifier = False
+        # self.self_clean = False
+        # self.self_clean_time_remaining = None
+        self.purifier = 0
+        # self.filter_level = None
+        self.beep = False
+        self.display = False
         self.aux_mode = 0
 
-        self.supported_modes = []
+        # Capablities
+        self.target_temperature_min = 17
+        self.target_temperature_max = 30
+        self.supports_humidity = None
+        self.supported_modes = None
+        self.supports_fan_speed = False
+        self.supports_swing_angle_vert = False
+        self.supports_swing_angle_horz = False
+        self.supports_wind_sense = False
+        self.supports_co2_level = False
+        self.supports_eco = False
+        self.supports_silent = False
+        self.supports_sleep = False
+        self.supports_self_clean = False
+        self.supports_purifier = False
+        self.supports_purifier_auto = False
+        self.supports_filter_level = False
+        self.supported_aux_modes = None
 
         self._parse(payload)
+
+    def _parse_temperature(self, data: int) -> float:
+        return (data / 2.0) - 40
 
     def _parse(self, payload: memoryview) -> None:
         """Parse the query response payload."""
@@ -210,37 +240,102 @@ class QueryResponse(Response):
 
         self.power_on = bool(payload[8])
 
-        # min/max temperature possibly encoded in payload[9] & payload[10]
-        # Based on sample data
-        # 0x72 -> 17C
-        # 0x8C -> 30C
-        # 0x79 -> 20.5C
-        self.target_temperature = (payload[11] / 2.0) - 40
+        self.target_temperature = self._parse_temperature(payload[11])
 
-        # Based on samples
-        # 0x00CF -> 207 -> 20.7
-        # 0x00EF -> 239 -> 23.9
-        # 0x0107 -> 263 -> 26.3
         self.indoor_temperature = (payload[12] << 8 | payload[13]) / 10.0
 
-        # 0x728C -> 17C/30C is repeated 3 times in user payload
-        # Possible multi zones? Or multiple temp limits for different modes?
+        # TODO unverified, sample device returned 0
+        if outdoor_temperature := payload[14]:
+            self.outdoor_temperature = self._parse_temperature(
+                outdoor_temperature)
+        else:
+            self.outdoor_temperature = None
 
-        self.supported_modes = list(payload[26:31])
+        # TODO Unsure if these temperatures are setpoints or limits
+        # self.target_temperature_auto_min = self._parse_temperature(payload[19])
+        # self.target_temperature_auto_max = self._parse_temperature(payload[20])
+
+        self.fahrenheit = bool(payload[21])
+        # TODO temperature accuracy at payload[22] # 0 = 1 deg, 1 = 0.5 deg
+
+        # TODO unverified
+        self.target_humidity = payload[24]
+        if (indoor_humidity := payload[25]) != 0xFF:
+            self.indoor_humidity = indoor_humidity
+        else:
+            self.indoor_humidity = None
+
         self.operational_mode = payload[31]
         self.fan_speed = payload[34]
 
-        self.swing_ud_angle = payload[41]  # Replicated at payload[36]?
-        self.swing_lr_angle = payload[43]  # Not replicated?
+        self.vert_swing_angle = payload[41]  # Replicated at payload[36]?
+        self.horz_swing_angle = payload[43]  # Not replicated?
 
-        self.soft = bool(payload[45])  # Cool mode only, breezeless?
+        # 0 - "Close", 1 - Follow, 2 - Avoid, 3 - Soft, 4 - Stong
+        self.wind_sense = payload[45]
+
+        # TODO fault codes at payload[47:50]
+
+        # TODO unverified, unsupported by sample device
+        # self.co2_level = payload[53:55]
+
         self.eco = bool(payload[56])
         self.silent = bool(payload[58])
         self.sleep = bool(payload[60])
-        self.purifier = bool(payload[75] & 0x01)  # 0x01 - On, 0x02 - Off
 
-        # 0x02 - Force off, 0x01 - Force on, 0x00 - Auto
+        # TODO unverified, unsupported by sample device
+        # self.self_clean = bool(payload[62])
+        # self.self_clean_time_remaining = payload[63:65]
+
+        # TODO "leave home" setting could be away/freeze protection?
+
+        self.purifier = payload[75]  # 0 - Auto, 1 - On, 2 - Off
+
+        # TODO unverified, unsupported by sample device
+        # self.filter_level = payload[79]
+
+        # TODO unverified, sample device did not respond as expected
+        self.beep = bool(payload[80])
+        self.display = bool(payload[81])
+
+        # 0 - Auto, 1 - On, 2 - Off, 4 - "Seperate"
         self.aux_mode = payload[87]
+
+    def parse_capabilities(self) -> None:
+        """Parse capabilities from the query response payload."""
+        payload = self.payload
+
+        # Additional cool/heat min/max temperatures available, but plugin only uses these
+        self.target_temperature_min = self._parse_temperature(payload[9])
+        self.target_temperature_max = self._parse_temperature(payload[10])
+
+        self.supports_humidity = bool(payload[23])  # TODO unverified
+
+        self.supported_modes = list(payload[26:31])
+
+        self.supports_fan_speed = bool(payload[32])
+
+        self.supports_swing_angle_vert = bool(payload[40])
+        self.supports_swing_angle_horz = bool(payload[42])
+
+        self.supports_wind_sense = bool(payload[44])
+
+        self.supports_co2_level = bool(payload[52])
+
+        self.supports_eco = bool(payload[55])
+        self.supports_silent = bool(payload[57])
+        self.supports_sleep = bool(payload[59])
+
+        self.supports_self_clean = bool(payload[61])  # TODO unverified
+
+        self.supports_purifier = bool(payload[73])
+        self.supports_purifier_auto = bool(payload[74])  # TODO unverified
+
+        self.supports_filter_level = bool(payload[78])  # TODO unverified
+
+        supports_aux_heat = bool(payload[82])
+        if supports_aux_heat:
+            self.supported_aux_modes = list(payload[83:87])
 
 
 class ControlResponse(Response):
