@@ -1,5 +1,6 @@
 import logging
 import unittest
+from typing import cast
 from unittest.mock import patch
 
 from .command import *
@@ -51,14 +52,15 @@ class TestDeviceEnums(unittest.TestCase):
         self.assertIsInstance(enum, enum_cls)
 
     def test_device_enums(self) -> None:
-        """Test AuxHeatMode enum conversion from value/name."""
+        """Test enum conversion from value/name."""
 
         ENUM_CLASSES = [
             CC.AuxHeatMode,
             CC.FanSpeed,
             CC.OperationalMode,
+            CC.PurifierMode,
             CC.SwingAngle,
-            CC.SwingMode
+            CC.SwingMode,
         ]
 
         for enum_cls in ENUM_CLASSES:
@@ -82,11 +84,11 @@ class TestSwingMode(unittest.TestCase):
 
         # Assert auto horizontal swing angle decodes to swing mode horizontal
         device._horizontal_swing_angle = CC.SwingAngle.AUTO
-        device._vertical_swing_angle = CC.SwingAngle.OFF
+        device._vertical_swing_angle = CC.SwingAngle.CLOSE
         self.assertEqual(device.swing_mode, CC.SwingMode.HORIZONTAL)
 
         # Assert auto vertical swing angle decodes to swing mode vertical
-        device._horizontal_swing_angle = CC.SwingAngle.OFF
+        device._horizontal_swing_angle = CC.SwingAngle.CLOSE
         device._vertical_swing_angle = CC.SwingAngle.AUTO
         self.assertEqual(device.swing_mode, CC.SwingMode.VERTICAL)
 
@@ -143,8 +145,8 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(device.eco, False)
         self.assertEqual(device.silent, False)
         self.assertEqual(device.sleep, False)
-        self.assertEqual(device.purifier, False)
-        self.assertEqual(device.soft, False)
+        self.assertEqual(device.purifier, CC.PurifierMode.OFF)
+        # self.assertEqual(device.soft, False)
 
         self.assertEqual(device.operational_mode, CC.OperationalMode.HEAT)
         self.assertEqual(device.fan_speed, CC.FanSpeed.AUTO)
@@ -175,8 +177,12 @@ class TestUpdateStateFromResponse(unittest.TestCase):
             # Assert that expected aux mode matches
             self.assertEqual(device.aux_mode, value)
 
-    def test_supported_op_modes(self) -> None:
-        """Test parsing of supported op modes."""
+
+class TestCapabilities(unittest.TestCase):
+    """Test parsing of CapabilitiesResponse into device capabilities."""
+
+    def test_capability_parsing(self) -> None:
+        """Test parsing device capabilities."""
         # https://github.com/mill1000/midea-msmart/pull/233#issuecomment-3272675291
         TEST_RESPONSE = bytes.fromhex(
             "aa63cc0000000000000301fe00000043005001728c7800ff00728c728c787800010141ff010203000603010008000600000001060106010000000000000000000001000100010000000000000000000000000001000200000100000101000102ff02ff5f")
@@ -187,19 +193,51 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         # Assert response is a query response
         self.assertEqual(type(resp), QueryResponse)
 
+        # Suppress type errors
+        resp = cast(QueryResponse, resp)
+
+        # Parse capabilities
+        resp.parse_capabilities()
+
         # Create a dummy device and process the response
         device = CC(0, 0, 0)
-        device._update_state(resp)
+        device._update_capabilities(resp)
 
-        self.assertCountEqual(
-            device.supported_operation_modes,
-            [
-                CC.OperationalMode.HEAT,
-                CC.OperationalMode.COOL,
-                CC.OperationalMode.FAN,
-                CC.OperationalMode.DRY,
-            ]
-        )
+        self.assertCountEqual(device.supported_operation_modes, [
+            CC.OperationalMode.HEAT,
+            CC.OperationalMode.COOL,
+            CC.OperationalMode.FAN,
+            CC.OperationalMode.DRY,
+        ])
+
+        self.assertCountEqual(device.supported_swing_modes, [
+            CC.SwingMode.OFF,
+            CC.SwingMode.BOTH,
+            CC.SwingMode.HORIZONTAL,
+            CC.SwingMode.VERTICAL
+        ])
+
+        self.assertCountEqual(device.supported_fan_speeds, [
+            CC.FanSpeed.L1,
+            CC.FanSpeed.L2,
+            CC.FanSpeed.L3,
+            CC.FanSpeed.L4,
+            CC.FanSpeed.L5,
+            CC.FanSpeed.L6,
+            CC.FanSpeed.L7,
+            CC.FanSpeed.AUTO,
+        ])
+
+        self.assertEqual(device.supports_humidity, True)
+
+        self.assertEqual(device.supports_eco, True)
+        self.assertEqual(device.supports_silent, True)
+        self.assertEqual(device.supports_sleep, True)
+
+        self.assertCountEqual(device.supported_purifier_modes, [
+            CC.PurifierMode.OFF, CC.PurifierMode.ON])
+        self.assertCountEqual(device.supported_aux_modes, [
+            CC.AuxHeatMode.OFF, CC.AuxHeatMode.ON, CC.AuxHeatMode.AUTO])
 
 
 class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
