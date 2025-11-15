@@ -2,11 +2,9 @@
 from __future__ import annotations
 
 import logging
-import math
 import struct
-from collections import namedtuple
 from enum import IntEnum
-from typing import Any, Callable, Collection, Mapping, Optional, Union
+from typing import Any, Mapping, Optional, Union
 
 import msmart.crc8 as crc8
 from msmart.const import DeviceType, FrameType
@@ -23,6 +21,7 @@ class ControlId(IntEnum):
     POWER = 0x0000
     TARGET_TEMPERATURE = 0x0003
     TEMPERATURE_UNIT = 0x000C
+    TARGET_HUMIDITY = 0x000F
     MODE = 0x0012
     FAN_SPEED = 0x0015
     VERT_SWING_ANGLE = 0x001C
