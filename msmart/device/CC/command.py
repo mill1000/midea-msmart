@@ -156,10 +156,12 @@ class Response():
             # Default to base class
             response_class = Response
 
-            # Fetch the appropriate response class from the ID
-            response_type = frame_mv[10]
-            if response_type == CommandType.COMMAND_QUERY or response_type == CommandType.COMMAND_CONTROL:
+            # Fetch the appropriate response class from the frame type
+            frame_type = frame_mv[9]
+            if frame_type in [FrameType.QUERY, FrameType.REPORT]:
                 response_class = QueryResponse
+            elif frame_type == FrameType.CONTROL:
+                response_class = ControlResponse
 
             # Validate the payload
             Response.validate(frame_mv[10:-1])
@@ -202,6 +204,11 @@ class QueryResponse(Response):
         # 2 bytes - End index in "key_maps"
         # 2 bytes - Length of section in bytes
         # Our ControlIds are translated indeces in "key_maps"
+
+        # Validate header
+        if payload[0:2] != b"\x01\xfe":
+            raise InvalidResponseException(
+                f"Query response payload '{payload.hex()}' lacks expected header 0x01FE.")
 
         self.power_on = bool(payload[8])
 
