@@ -180,7 +180,7 @@ class CommercialAirConditioner(Device):
             list[self.OperationalMode], [
                 self.OperationalMode.get_from_value(mode)
                 for mode in res.supported_modes
-                if mode in self.OperationalMode
+                if mode in {m.value for m in self.OperationalMode}
             ])
 
         # Build list of supported fan speeds
@@ -220,7 +220,7 @@ class CommercialAirConditioner(Device):
             list[self.AuxHeatMode], [
                 self.AuxHeatMode.get_from_value(mode)
                 for mode in res.supported_modes
-                if mode in self.AuxHeatMode
+                if mode in {m.value for m in self.AuxHeatMode}
             ])
 
     async def _send_command_get_responses(self, command) -> list[Response]:
