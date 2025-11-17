@@ -8,8 +8,8 @@ from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum
 
-from .command import (ControlCommand, ControlId, QueryCommand, QueryResponse,
-                      Response)
+from .command import (ControlCommand, ControlId, InvalidResponseException,
+                      QueryCommand, QueryResponse, Response)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -223,24 +223,28 @@ class CommercialAirConditioner(Device):
                 if mode in {m.value for m in self.AuxHeatMode}
             ])
 
-    async def _send_command_get_responses(self, command) -> list[Response]:
-        """Send a command and return all valid responses."""
-        responses = await super()._send_command(command)
+    async def _send_commands_get_responses(self, commands: Union[Command, list[Command]]) -> list[Response]:
+        """Send a list of commands and return all valid responses."""
+        responses: list[bytes] = []
+        for cmd in commands if isinstance(commands, list) else [commands]:
+            responses.extend(await super()._send_command(cmd))
+
+        # Device is online if any response received
+        self._online = len(responses) > 0
 
         valid_responses = []
         for data in responses:
             try:
                 # Construct response from data
                 response = Response.construct(data)
-            # TODO, InvalidResponseException) as e:
-            except (InvalidFrameException) as e:
+            except (InvalidFrameException, InvalidResponseException) as e:
                 _LOGGER.error(e)
                 continue
 
             valid_responses.append(response)
 
         # Device is supported if we can process any response
-        self._supported = len(valid_responses) > 0
+        self._supported |= self._online and len(valid_responses) > 0
 
         return valid_responses
 
@@ -248,7 +252,7 @@ class CommercialAirConditioner(Device):
         """Fetch the device capabilities."""
         # Capabilties are part of query response
         cmd = QueryCommand()
-        responses = await self._send_command_get_responses(cmd)
+        responses = await self._send_commands_get_responses(cmd)
         if len(responses) == 0:
             _LOGGER.error(
                 "Failed to query capabilities from device %s.", self.id)
@@ -276,14 +280,7 @@ class CommercialAirConditioner(Device):
         commands.append(QueryCommand())
 
         # Send all commands and collect responses
-        responses = [
-            resp
-            for cmd in commands
-            for resp in await self._send_command_get_responses(cmd)
-        ]
-
-        # Device is online if any response received
-        self._online = len(responses) > 0
+        responses = await self._send_commands_get_responses(commands)
 
         # Update state from responses
         for response in responses:
@@ -341,7 +338,7 @@ class CommercialAirConditioner(Device):
         cmd = ControlCommand(controls)
 
         # Process any state responses from the device
-        for response in await self._send_command_get_responses(cmd):
+        for response in await self._send_commands_get_responses(cmd):
             self._update_state(response)
 
     @property
