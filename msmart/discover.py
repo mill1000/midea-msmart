@@ -4,14 +4,13 @@ import ipaddress
 import logging
 import socket
 import xml.etree.ElementTree as ET
-from typing import Any, Callable, Optional, Type, cast
+from typing import Any, Callable, Optional, cast
 
 import httpx
 
 from msmart.cloud import CloudError, NetHomePlusCloud
-from msmart.const import (DEFAULT_CLOUD_REGION, DEVICE_INFO_MSG, DISCOVERY_MSG,
-                          DeviceType)
-from msmart.device import AirConditioner, CommercialAirConditioner, Device
+from msmart.const import DEFAULT_CLOUD_REGION, DEVICE_INFO_MSG, DISCOVERY_MSG
+from msmart.device import Device, get_device_class
 from msmart.lan import AuthenticationError, Security
 
 _LOGGER = logging.getLogger(__name__)
@@ -353,19 +352,6 @@ class Discover:
             return {"ip": ip, "port": port, "device_id": device_id, "name": name, "sn": sn, "device_type": device_type, "version": version}
 
     @classmethod
-    def _get_device_class(cls, device_type: int) -> Type[Device]:
-        """Get the device class from the device type."""
-
-        if device_type == DeviceType.AIR_CONDITIONER:
-            return AirConditioner
-
-        if device_type == DeviceType.COMMERCIAL_AC:
-            return CommercialAirConditioner
-
-        # Unknown type return generic device
-        return Device
-
-    @classmethod
     async def _authenticate_device(cls, dev: Device) -> bool:
         """Attempt to authenticate a V3 device."""
 
@@ -411,7 +397,7 @@ class Discover:
             return None
 
         # Get device class corresponding to type
-        device_class = Discover._get_device_class(info["device_type"])
+        device_class = get_device_class(info["device_type"])
 
         # Build device, authenticate as needed and refresh
         dev = device_class(**info)
