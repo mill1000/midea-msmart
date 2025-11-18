@@ -2,12 +2,14 @@ import argparse
 import ast
 import asyncio
 import logging
-from typing import NoReturn
+from typing import NoReturn, Union
 
 from msmart import __version__
+from msmart.base_device import Device
 from msmart.cloud import CloudError, NetHomePlusCloud, SmartHomeCloud
-from msmart.const import DEFAULT_CLOUD_REGION
+from msmart.const import DEFAULT_CLOUD_REGION, DeviceType
 from msmart.device import AirConditioner as AC
+from msmart.device import CommercialAirConditioner as CC
 from msmart.discover import Discover
 from msmart.lan import AuthenticationError
 from msmart.utils import MideaIntEnum
@@ -18,6 +20,11 @@ _LOGGER = logging.getLogger(__name__)
 CLOUD_CREDENTIALS = NetHomePlusCloud.CLOUD_CREDENTIALS
 
 DEFAULT_CLOUD_ACCOUNT, DEFAULT_CLOUD_PASSWORD = CLOUD_CREDENTIALS[DEFAULT_CLOUD_REGION]
+
+DEVICE_TYPES = {
+    "AC": DeviceType.AIR_CONDITIONER,
+    "CC": DeviceType.COMMERCIAL_AC,
+}
 
 
 async def _discover(args) -> None:
@@ -43,16 +50,18 @@ async def _discover(args) -> None:
 
         if isinstance(device, AC):
             device = super(AC, device)
+        elif isinstance(device, CC):
+            device = super(CC, device)
 
         _LOGGER.info("Found device:\n%s", device.to_dict())
 
 
-async def _connect(args) -> AC:
+async def _connect(args) -> Union[AC, CC]:
     """Connect to a device directly or via discovery."""
 
-    if args.auto and (args.token or args.key or args.device_id):
+    if args.auto and (args.token or args.key or args.device_id or args.device_type):
         _LOGGER.warning(
-            "--token, --key and --id are ignored with --auto option.")
+            "--token, --key, --id and --device_type are ignored with --auto option.")
 
     if args.auto:
         # Use discovery to automatically connect and authenticate with device
@@ -63,8 +72,13 @@ async def _connect(args) -> AC:
             _LOGGER.error("Device not found.")
             exit(1)
     else:
-        # Manually create device and authenticate
-        device = AC(ip=args.host, port=6444, device_id=args.device_id)
+        device = Device.construct(
+            type=DEVICE_TYPES[args.device_type],
+            ip=args.host,
+            port=6444,
+            device_id=args.device_id
+        )
+
         if args.token and args.key:
             try:
                 await device.authenticate(args.token, args.key)
@@ -72,7 +86,7 @@ async def _connect(args) -> AC:
                 _LOGGER.error("Authentication failed. Error: %s", e)
                 exit(1)
 
-    if not isinstance(device, AC):
+    if not isinstance(device, (AC, CC)):
         _LOGGER.error("Device is not supported.")
         exit(1)
 
@@ -93,24 +107,15 @@ async def _query(args) -> None:
             _LOGGER.error("Device is not online.")
             exit(1)
 
-        # TODO method to get caps in string format
-        _LOGGER.info("%s", str({
-            "supported_modes": device.supported_operation_modes,
-            "supported_swing_modes": device.supported_swing_modes,
-            "supported_fan_speeds": device.supported_fan_speeds,
-            "supports_custom_fan_speed": device.supports_custom_fan_speed,
-            "supports_eco": device.supports_eco,
-            "supports_turbo": device.supports_turbo,
-            "supports_freeze_protection": device.supports_freeze_protection,
-            "supports_display_control": device.supports_display_control,
-            "supports_filter_reminder": device.supports_filter_reminder,
-            "max_target_temperature": device.max_target_temperature,
-            "min_target_temperature": device.min_target_temperature,
-        }))
+        _LOGGER.info("%s", device.capabilities_dict())
     else:
         # Enable energy requests
         if args.energy:
-            device._request_energy_usage = True
+            if hasattr(device, "enable_energy_usage_requests"):
+                device.enable_energy_usage_requests = True
+            else:
+                _LOGGER.error("Device does not support energy data.")
+                exit(1)
 
         _LOGGER.info("Querying device state.")
         await device.refresh()
@@ -136,22 +141,33 @@ async def _control(args) -> None:
                           v, t.__qualname__)
             exit(1)
 
+    # Create a dummy device instance for property validation
+    device_type = DEVICE_TYPES[args.device_type]
+    dummy_device = Device.construct(
+        type=device_type,
+        ip="0.0.0.0",
+        device_id=0,
+        port=6444
+    )
+    device_class = type(dummy_device)
+
     # Parse each setting, checking if the property exists and the supplied value is valid
     new_properties = {}
     for name, value in (s.split("=") for s in args.settings):
-        # Check if property exists
-        prop = getattr(AC, name, None)
+        # Check if property exists on the device class
+        prop = getattr(device_class, name, None)
         if prop is None or not isinstance(prop, property):
-            _LOGGER.error("'%s' is not a valid device property.", name)
+            _LOGGER.error(
+                "'%s' is not a valid property for device type %02X.", name, device_type)
             exit(1)
 
-        # Check if property has a setter, with special handling for the display
-        if name != KEY_DISPLAY_ON and prop.fset is None:
+        # Check if property has a setter, with special handling for the AC display
+        if prop.fset is None and not (device_class == AC and name == KEY_DISPLAY_ON):
             _LOGGER.error("'%s' property is not writable.", name)
             exit(1)
 
         # Get the default value of the property and its type
-        attr_value = getattr(AC("0.0.0.0", 0, 0), name)
+        attr_value = getattr(dummy_device, name)
         attr_type = type(attr_value)
 
         if isinstance(attr_value, MideaIntEnum):
@@ -166,8 +182,9 @@ async def _control(args) -> None:
                 try:
                     new_properties[name] = attr_type(value)
                 except ValueError:
-                    # Allow raw integers for AC.FanSpeed
-                    if attr_type == AC.FanSpeed:
+                    # Allow raw integers for FanSpeed if device supports custom fan speeds
+                    if (attr_type == device_class.FanSpeed and
+                            getattr(dummy_device, 'supports_custom_fan_speed', False)):
                         new_properties[name] = int(value)
                     else:
                         _LOGGER.error("Value '%d' is not a valid %s",
@@ -201,8 +218,9 @@ async def _control(args) -> None:
         _LOGGER.info("Querying device capabilities.")
         await device.get_capabilities()
 
-    # Handle display which is unique
-    if (display := new_properties.pop(KEY_DISPLAY_ON, None)) is not None:
+    # Handle display which is unique to AC devices
+    if ((display := new_properties.pop(KEY_DISPLAY_ON, None)) is not None
+            and isinstance(device, AC)):
         if display != device.display_on:
             _LOGGER.info("Setting '%s' to %s.", KEY_DISPLAY_ON, display)
             await device.toggle_display()
@@ -233,6 +251,8 @@ async def _download(args) -> None:
 
     if isinstance(device, AC):
         device = super(AC, device)
+    elif isinstance(device, CC):
+        device = super(CC, device)
 
     _LOGGER.info("Found device:\n%s", device.to_dict())
 
@@ -338,8 +358,12 @@ def main() -> NoReturn:
     query_parser.add_argument("--capabilities",
                               help="Query device capabilities instead of state.",
                               action="store_true")
+    query_parser.add_argument("--device_type",
+                              help="Type of device.",
+                              choices=DEVICE_TYPES.keys(),
+                              default="AC")
     query_parser.add_argument("--auto",
-                              help="Automatically authenticate V3 devices.",
+                              help="Automatically identify, connect and authenticate with the device.",
                               action="store_true")
     query_parser.add_argument("--id",
                               help="Device ID for V3 devices.",
@@ -364,8 +388,12 @@ def main() -> NoReturn:
     control_parser.add_argument("--capabilities",
                                 help="Query device capabilities before sending commands.",
                                 action="store_true")
+    control_parser.add_argument("--device_type",
+                                help="Type of device.",
+                                choices=DEVICE_TYPES.keys(),
+                                default="AC")
     control_parser.add_argument("--auto",
-                                help="Automatically authenticate V3 devices.",
+                                help="Automatically identify, connect and authenticate with the device.",
                                 action="store_true")
     control_parser.add_argument("--id",
                                 help="Device ID for V3 devices.",

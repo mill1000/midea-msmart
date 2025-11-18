@@ -1064,6 +1064,35 @@ class AirConditioner(Device):
             "error_code": self.error_code,
         }}
 
+    def capabilities_dict(self) -> dict:
+        return {
+            "supported_modes": self.supported_operation_modes,
+            "supported_swing_modes": self.supported_swing_modes,
+            "supports_horizontal_swing_angle": self.supports_horizontal_swing_angle,
+            "supports_vertical_swing_angle": self.supports_vertical_swing_angle,
+            "supported_fan_speeds": self.supported_fan_speeds,
+            "supports_custom_fan_speed": self.supports_custom_fan_speed,
+            "min_target_temperature": self.min_target_temperature,
+            "max_target_temperature": self.max_target_temperature,
+            "supports_humidity": self.supports_humidity,
+            "supports_target_humidity": self.supports_target_humidity,
+            "supports_eco": self.supports_eco,
+            "supports_ieco": self.supports_ieco,
+            "supports_turbo": self.supports_turbo,
+            "supports_freeze_protection": self.supports_freeze_protection,
+            "supports_breeze_away": self.supports_breeze_away,
+            "supports_breeze_mild": self.supports_breeze_mild,
+            "supports_breezeless": self.supports_breezeless,
+            "supports_cascade": self.supports_cascade,
+            "supports_flash_cool": self.supports_flash_cool,
+            "supports_self_clean": self.supports_self_clean,
+            "supports_purifier": self.supports_purifier,
+            "supported_aux_modes": self.supported_aux_modes,
+            "supported_rate_selects": self.supported_rate_selects,
+            "supports_display_control": self.supports_display_control,
+            "supports_filter_reminder": self.supports_filter_reminder,
+        }
+
     # Deprecated methods and properties
     @property
     @deprecated("supports_eco")

@@ -561,3 +561,18 @@ class CommercialAirConditioner(Device):
             "aux_mode": self.aux_mode,
             # "display": self.display,
         }}
+
+    def capabilities_dict(self) -> dict:
+        return {
+            "supported_modes": self.supported_operation_modes,
+            "supported_swing_modes": self.supported_swing_modes,
+            "supported_fan_speeds": self.supported_fan_speeds,
+            "min_target_temperature": self.min_target_temperature,
+            "max_target_temperature": self.max_target_temperature,
+            "supports_humidity": self.supports_humidity,
+            "supports_eco": self.supports_eco,
+            "supports_silent": self.supports_silent,
+            "supports_sleep": self.supports_sleep,
+            "supported_purifier_modes": self.supported_purifier_modes,
+            "supported_aux_modes": self.supported_aux_modes,
+        }
