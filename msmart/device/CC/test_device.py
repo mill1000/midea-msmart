@@ -177,6 +177,31 @@ class TestUpdateStateFromResponse(unittest.TestCase):
             # Assert that expected aux mode matches
             self.assertEqual(device.aux_mode, value)
 
+    def test_purifier_mode(self) -> None:
+        """Test parsing of purifier mode into device state."""
+        # https://github.com/mill1000/midea-msmart/pull/233#issuecomment-3272675291
+        TEST_RESPONSES = {
+            CC.PurifierMode.ON: bytes.fromhex("aa63cc0000000000000301fe00000043005001728c78010600728c728c787800010141ff010203000603010008000100000001010103010000000000000000000001000100010000000000000000000000000001000100000100000101000102ff02ff65"),
+            CC.PurifierMode.OFF: bytes.fromhex("aa63cc0000000000000301fe00000043005001728c78010700728c728c787800010141ff010203000603010008000100000001010103010000000000000000000001000101010000000000000000000000000001000200000100000101000102ff02ff62"),
+            # CC.AuxHeatMode.AUTO: bytes.fromhex(""), # TODO
+        }
+
+        # Create a dummy device
+        device = CC(0, 0, 0)
+
+        for value, response in TEST_RESPONSES.items():
+            resp = Response.construct(response)
+            self.assertIsNotNone(resp)
+
+            # Assert response is a query response
+            self.assertEqual(type(resp), QueryResponse)
+
+            # Process the response
+            device._update_state(resp)
+
+            # Assert that expected mode matches
+            self.assertEqual(device.purifier, value)
+
 
 class TestCapabilities(unittest.TestCase):
     """Test parsing of CapabilitiesResponse into device capabilities."""
