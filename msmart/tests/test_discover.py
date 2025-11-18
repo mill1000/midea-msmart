@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from msmart.const import DISCOVERY_MSG, DeviceType
 from msmart.device import AirConditioner as AC
+from msmart.device import get_device_class
 from msmart.discover import _IPV4_BROADCAST, Discover
 
 _DISCOVER_RESPONSES = [
@@ -41,7 +42,7 @@ class TestDiscover(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(info["sn"], "000000P0000000Q1F0C9D153F7B40000")
 
         # Check class is correct
-        device_class = Discover._get_device_class(info["device_type"])
+        device_class = get_device_class(info["device_type"])
         self.assertEqual(device_class, AC)
 
         # Check that device can be built
@@ -73,7 +74,7 @@ class TestDiscover(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(info["sn"], "000000P0000000Q1B88C29C963BA0000")
 
         # Check class is correct
-        device_class = Discover._get_device_class(info["device_type"])
+        device_class = get_device_class(info["device_type"])
         self.assertEqual(device_class, AC)
 
         # Check that device can be built
