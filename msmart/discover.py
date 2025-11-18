@@ -8,9 +8,9 @@ from typing import Any, Callable, Optional, cast
 
 import httpx
 
+from msmart.base_device import Device
 from msmart.cloud import CloudError, NetHomePlusCloud
 from msmart.const import DEFAULT_CLOUD_REGION, DEVICE_INFO_MSG, DISCOVERY_MSG
-from msmart.device import Device, get_device_class
 from msmart.lan import AuthenticationError, Security
 
 _LOGGER = logging.getLogger(__name__)
@@ -396,11 +396,8 @@ class Discover:
             _LOGGER.error(e)
             return None
 
-        # Get device class corresponding to type
-        device_class = get_device_class(info["device_type"])
-
-        # Build device, authenticate as needed and refresh
-        dev = device_class(**info)
+        # Build device from type
+        dev = Device.construct(type=info["device_type"], **info)
 
         # Don't query device if requested
         if cls._auto_connect:

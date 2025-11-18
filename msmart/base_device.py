@@ -1,12 +1,18 @@
+from __future__ import annotations
+
 import logging
 import time
-from typing import Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 from msmart.const import DeviceType
 from msmart.frame import Frame
 from msmart.lan import LAN, AuthenticationError, Key, ProtocolError, Token
 
 _LOGGER = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    # Conditionally import device classes for type hints
+    from msmart.device import AirConditioner, CommercialAirConditioner
 
 
 class Device():
@@ -136,3 +142,18 @@ class Device():
 
     def __str__(self) -> str:
         return str(self.to_dict())
+
+    @classmethod
+    def construct(cls, *, type: DeviceType, **kwargs) -> Union[AirConditioner, CommercialAirConditioner, Device]:
+        """Construct a device object based on the provided device type."""
+
+        if type == DeviceType.AIR_CONDITIONER:
+            from msmart.device import AirConditioner
+            return AirConditioner(**kwargs)
+
+        if type == DeviceType.COMMERCIAL_AC:
+            from msmart.device import CommercialAirConditioner
+            return CommercialAirConditioner(**kwargs)
+
+        # Unknown type return generic device
+        return Device(**kwargs)
