@@ -274,46 +274,189 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
         # Create a dummy device
         device = CC(0, 0, 0)
 
+        # Force device online
+        device._online = True
+        self.assertEqual(device.online, True)
+
         # Patch _send_command to return no responses
         with patch("msmart.base_device.Device._send_command", return_value=[]) as patched_method:
-
-            # Force device online
-            device._online = True
-            self.assertEqual(device.online, True)
 
             # Refresh device
             await device.refresh()
 
-            # Assert patch method was awaited
+            # Assert patched method was awaited
             patched_method.assert_awaited()
 
-            # Assert device is now offline
-            self.assertEqual(device.online, False)
+        # Assert device is now offline
+        self.assertEqual(device.online, False)
 
     async def test_refresh_valid_response(self) -> None:
-        """Test that a refresh() with any response marks a device as online."""
+        """Test that a refresh() with any valid response marks a device as online and supported."""
         TEST_RESPONSE = bytes.fromhex(
             "aa63cc0000000000000301fe00000043005001728c79010100728c728c797900010141ff010203000603010000000300000001030103010000000000000000000001000100010000000000000000000000000001000200000100000101000102ff02ff6a")
 
         # Create a dummy device
         device = CC(0, 0, 0)
 
+        # Assert device is offline and unsupported
+        self.assertEqual(device.online, False)
+        self.assertEqual(device.supported, False)
+
         # Patch _send_command to return a valid state response
         with patch("msmart.base_device.Device._send_command", return_value=[TEST_RESPONSE]) as patched_method:
-
-            # Assert device is offline and unsupported
-            self.assertEqual(device.online, False)
-            self.assertEqual(device.supported, False)
 
             # Refresh device
             await device.refresh()
 
-            # Assert patch method was awaited
+            # Assert patched method was awaited
             patched_method.assert_awaited()
 
             # Assert device is now online and supported
             self.assertEqual(device.online, True)
             self.assertEqual(device.supported, True)
+
+    async def test_refresh_one_response(self) -> None:
+        """Test that a refresh() with only one response stays online."""
+        TEST_RESPONSE = bytes.fromhex(
+            "aa63cc0000000000000301fe00000043005001728c8000d200728c728c7b7b00010141ff010203000602010008000000000001000103010000000000000000000001000100010000000000000000000000000001000200000100000101000102ff02ff8e")
+
+        # Create a dummy device
+        device = CC(0, 0, 0)
+
+        # Force device online
+        device._online = True
+        self.assertEqual(device.online, True)
+
+        # Dummy method to only respond to state commands
+        packet_count = 0
+
+        async def _get_responses_sometimes(self, command) -> list[bytes]:
+            nonlocal packet_count
+
+            packet_count += 1
+            if isinstance(command, QueryCommand):
+                return [TEST_RESPONSE]
+            else:
+                return []
+
+        # Patch _send_command to return test responses
+        with patch("msmart.base_device.Device._send_command", new=_get_responses_sometimes):
+
+            # Refresh device
+            await device.refresh()
+
+        # Assert expected number of packets was sent
+        self.assertEqual(packet_count, 1)
+
+        # Assert device is still online
+        self.assertEqual(device.online, True)
+        self.assertEqual(device.supported, True)
+
+    async def test_refresh_supported_sticky(self) -> None:
+        """Test that once set, the supported property remains true if the device doesn't respond."""
+        TEST_RESPONSE = bytes.fromhex(
+            "aa63cc0000000000000301fe00000043005000728c7b00d200728c728c7b7b00010141ff010203000602010008000000000001000103010000000000000000000001000100010000000000000000000000000001000200000100000101000102ff02ff94")
+
+        # Create a dummy device
+        device = CC(0, 0, 0)
+
+        # Assert device starts offline and unsupported
+        self.assertEqual(device.online, False)
+        self.assertEqual(device.supported, False)
+
+        # Patch _send_command to return response
+        with patch("msmart.base_device.Device._send_command", return_value=[TEST_RESPONSE]) as patched_method:
+
+            # Refresh device
+            await device.refresh()
+
+            # Assert patched method was awaited
+            patched_method.assert_awaited()
+
+        # Assert device is online and supported
+        self.assertEqual(device.online, True)
+        self.assertEqual(device.supported, True)
+
+        # Patch _send_command to return no response
+        with patch("msmart.base_device.Device._send_command", return_value=[]) as patched_method:
+
+            # Refresh device again
+            await device.refresh()
+
+            # Assert patched method was awaited
+            patched_method.assert_awaited()
+
+        # Assert device is now offline and but still supported
+        self.assertEqual(device.online, False)
+        self.assertEqual(device.supported, True)
+
+    async def test_refresh_incorrect_device_type_response(self) -> None:
+        """Test that a refresh() with a response from the wrong device type marks a device as online but unsupported."""
+        TEST_RESPONSE = bytes.fromhex(
+            "aa23ac00000000000303c00145660000003c0010045c6b20000000000000000000020d79")
+
+        # Create a dummy device
+        device = CC(0, 0, 0)
+
+        # Assert device starts offline and unsupported
+        self.assertEqual(device.online, False)
+        self.assertEqual(device.supported, False)
+
+        # Patch _send_command to return response
+        with patch("msmart.base_device.Device._send_command", return_value=[TEST_RESPONSE]) as patched_method:
+
+            with self.assertLogs("msmart", logging.ERROR) as log:
+                # Refresh device
+                await device.refresh()
+
+                # Check for error message
+                self.assertRegex("\n".join(log.output),
+                                 "Received device type.*expected device type 0xCC")
+
+            # Assert patch method was awaited
+            patched_method.assert_awaited()
+
+            # Assert device is online but unsupported
+            self.assertEqual(device.online, True)
+            self.assertEqual(device.supported, False)
+
+    async def test_get_capabilities_no_response(self):
+        """Test that get_capabilities() with no response outputs an error."""
+
+        # Create a dummy device
+        device = CC(0, 0, 0)
+
+        # Patch _send_command to return test response
+        with patch("msmart.base_device.Device._send_command", return_value=[]) as patched_method:
+            # Get device capabilities
+            with self.assertLogs("msmart", logging.DEBUG) as log:
+                await device.get_capabilities()
+
+                self.assertRegex("\n".join(log.output),
+                                 "Failed to query capabilities from device.*")
+
+            # Assert patch method was awaited
+            patched_method.assert_awaited()
+
+    async def test_get_capabilities_bad_response(self):
+        """Test that get_capabilities() with an unexpected response outputs an error."""
+        WRONG_RESPONSE = bytes.fromhex(
+            "aa16cc0000000000000200000101ff00030180ff000098")
+
+        # Create a dummy device
+        device = CC(0, 0, 0)
+
+        # Patch _send_command to return test response
+        with patch("msmart.base_device.Device._send_command", return_value=[WRONG_RESPONSE]) as patched_method:
+            # Get device capabilities
+            with self.assertLogs("msmart", logging.DEBUG) as log:
+                await device.get_capabilities()
+
+                self.assertRegex("\n".join(log.output),
+                                 "Unexpected response from device.*")
+
+            # Assert patch method was awaited
+            patched_method.assert_awaited()
 
 
 if __name__ == "__main__":
