@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, cast
+from typing import Any, Optional, Union, cast
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum
 
-from .command import (ControlCommand, ControlId, InvalidResponseException,
-                      QueryCommand, QueryResponse, Response)
+from .command import (Command, ControlCommand, ControlId,
+                      InvalidResponseException, QueryCommand, QueryResponse,
+                      Response)
 
 _LOGGER = logging.getLogger(__name__)
 
