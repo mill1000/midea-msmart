@@ -156,4 +156,4 @@ class Device():
             return CommercialAirConditioner(**kwargs)
 
         # Unknown type return generic device
-        return Device(**kwargs)
+        return Device(device_type=type, **kwargs)
