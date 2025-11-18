@@ -41,8 +41,6 @@ class ControlId(IntEnum):
 
         if self == ControlId.TARGET_TEMPERATURE:
             return (data[0] / 2.0) - 40
-        elif self == ControlId.PURIFIER:
-            return data[0] == 0x01
         else:
             return data[0]
 
@@ -50,10 +48,7 @@ class ControlId(IntEnum):
         """Encode controls into raw form."""
 
         if self == ControlId.TARGET_TEMPERATURE:
-            return bytes([(2 * int(args[0])) + 80])
-        elif self == ControlId.PURIFIER:
-            # TODO Auto = 0 if supported
-            return bytes([0x01 if args[0] else 0x02])
+            return bytes([int((2 * args[0]) + 80)])
         else:
             return bytes(args[0:1])
 
