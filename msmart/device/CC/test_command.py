@@ -410,7 +410,7 @@ class TestControlResponse(_TestResponseBase):
 
     def test_zero_length_entry(self) -> None:
         """Test we ignore entries with a length of zero."""
-        # Response to malformed request, 4entries, 2 of zero length
+        # Response to malformed request, 4 entries, 2 of zero length
         # https://github.com/mill1000/midea-msmart/pull/233#issuecomment-3332107433
         TEST_PAYLOAD = bytes.fromhex(
             "00000000ff00200100ff00000000ff00000100ff00000000")
@@ -418,6 +418,90 @@ class TestControlResponse(_TestResponseBase):
         resp = self._test_payload(TEST_PAYLOAD)
 
         self.assertEqual(len(resp._states), 2)
+
+
+class TestResponseConstruct(_TestResponseBase):
+    """Test construction of responses from raw data."""
+
+    def test_invalid_checksum(self) -> None:
+        """Test that invalid checksums raise exceptions."""
+        TEST_RESPONSE_BAD_CHECKSUM = bytes.fromhex(
+            "aa1bcc0000000000000200000101ff003a0101ff00000000ff0000FF")
+
+        with self.assertRaises(InvalidFrameException):
+            Response.construct(TEST_RESPONSE_BAD_CHECKSUM)
+
+    def test_short_packet(self) -> None:
+        """Test that a short frame raise exceptions."""
+        # https://github.com/mill1000/midea-msmart/issues/234#issuecomment-3299199631
+        TEST_RESPONSE_SHORT_FRAME = bytes.fromhex("01000000")
+
+        with self.assertRaises(InvalidFrameException):
+            Response.construct(TEST_RESPONSE_SHORT_FRAME)
+
+    def test_invalid_device_type(self) -> None:
+        """Test that responses with an incorrect device type raise exceptions."""
+        TEST_RESPONSE_TYPE_CC = bytes.fromhex(
+            "aa18ac00000000000302b0020a0000013209001101000089a4")
+
+        with self.assertRaises(InvalidFrameException):
+            Response.construct(TEST_RESPONSE_TYPE_CC)
+
+
+class TestCommandId(unittest.TestCase):
+    def test_decode(self) -> None:
+        """Test decoding of bytes objects to control values."""
+        TEST_DECODES = {
+            # Target temperature x / 2 - 40
+            (ControlId.TARGET_TEMPERATURE, bytes([0x72])): 17.0,
+            (ControlId.TARGET_TEMPERATURE, bytes([0x79])): 20.5,
+            (ControlId.TARGET_TEMPERATURE, bytes([0x8c])): 30,
+
+            # Everything else is passthru
+            (ControlId.POWER, bytes([0x01])): 0x01,
+            (ControlId.POWER, bytes([0x00])): 0x00,
+            (ControlId.POWER, bytes([0x02])): 0x02,
+        }
+
+        for (prop, data), expected_value in TEST_DECODES.items():
+            self.assertEqual(prop.decode(data), expected_value,
+                             msg=f"""Decode {repr(prop)}, Data: {data}, Expected: {expected_value}""")
+
+    def test_encode(self) -> None:
+        """Test encoding of control values to bytes objects."""
+        TEST_ENCODES = {
+            # Target temperature 2x + 80
+            (ControlId.TARGET_TEMPERATURE, 17.0): bytes([0x72]),
+            (ControlId.TARGET_TEMPERATURE, 20.5): bytes([0x79]),
+            (ControlId.TARGET_TEMPERATURE, 30): bytes([0x8c]),
+
+            # Everything else is passthru
+            (ControlId.AUX_MODE, 0x04): bytes([0x04]),
+            (ControlId.AUX_MODE, 0x00): bytes([0x00]),
+        }
+
+        for (prop, value), expected_data in TEST_ENCODES.items():
+            self.assertEqual(prop.encode(value), expected_data,
+                             msg=f"""Encode {repr(prop)}, Value: {value}, Expected: {expected_data}""")
+
+
+class TestControlCommand(unittest.TestCase):
+
+    def test_payload(self) -> None:
+        """Test that we encode control command payloads correctly."""
+        # https://github.com/mill1000/midea-msmart/pull/233#issuecomment-3537179647
+        PAYLOAD = bytes.fromhex("00000101ff00120102ff001c0104ff028b")
+        CONTROLS = {ControlId.POWER: True,
+                    ControlId.MODE: 2, ControlId.VERT_SWING_ANGLE: 4}
+
+        # Build command
+        command = ControlCommand(CONTROLS)
+
+        # Fetch payload
+        payload = command.tobytes()[10:-1]
+
+        # Test against payload that device accepted
+        self.assertEqual(payload, PAYLOAD)
 
 
 if __name__ == "__main__":
