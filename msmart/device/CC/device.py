@@ -440,7 +440,7 @@ class CommercialAirConditioner(Device):
         if self._vertical_swing_angle == self.SwingAngle.AUTO:
             swing_mode |= self.SwingMode.VERTICAL
 
-        return cast(self.SwingMode, swing_mode)
+        return self.SwingMode(swing_mode)
 
     @swing_mode.setter
     def swing_mode(self, mode: SwingMode) -> None:
