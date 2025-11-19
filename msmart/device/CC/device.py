@@ -456,12 +456,22 @@ class CommercialAirConditioner(Device):
             self._vertical_swing_angle = self.SwingAngle.DEFAULT
 
     @property
+    def supports_horizontal_swing_angle(self) -> bool:
+        # If device can swing it can control the angle
+        return self.SwingMode.HORIZONTAL in self._supported_swing_modes
+
+    @property
     def horizontal_swing_angle(self) -> SwingAngle:
         return self._horizontal_swing_angle
 
     @horizontal_swing_angle.setter
     def horizontal_swing_angle(self, angle: SwingAngle) -> None:
         self._horizontal_swing_angle = angle
+
+    @property
+    def supports_vertical_swing_angle(self) -> bool:
+        # If device can swing it can control the angle
+        return self.SwingMode.VERTICAL in self._supported_swing_modes
 
     @property
     def vertical_swing_angle(self) -> SwingAngle:
@@ -566,6 +576,8 @@ class CommercialAirConditioner(Device):
         return {
             "supported_modes": self.supported_operation_modes,
             "supported_swing_modes": self.supported_swing_modes,
+            "supports_horizontal_swing_angle": self.supports_horizontal_swing_angle,
+            "supports_vertical_swing_angle": self.supports_vertical_swing_angle,
             "supported_fan_speeds": self.supported_fan_speeds,
             "min_target_temperature": self.min_target_temperature,
             "max_target_temperature": self.max_target_temperature,
