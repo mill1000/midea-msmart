@@ -71,6 +71,23 @@ class CommercialAirConditioner(Device):
 
         DEFAULT = OFF
 
+    # Map control IDs to device properties
+    _CONTROL_MAP = {
+        ControlId.POWER: lambda s: s._power_state,
+        ControlId.TARGET_TEMPERATURE: lambda s: s._target_temperature,
+        ControlId.TEMPERATURE_UNIT: lambda s: s._fahrenheit,
+        ControlId.TARGET_HUMIDITY: lambda s: s._target_humidity,
+        ControlId.MODE: lambda s: s._operational_mode,
+        ControlId.FAN_SPEED: lambda s: s._fan_speed,
+        ControlId.HORZ_SWING_ANGLE: lambda s: s._horizontal_swing_angle,
+        ControlId.VERT_SWING_ANGLE: lambda s: s._vertical_swing_angle,
+        ControlId.ECO: lambda s: s._eco,
+        ControlId.SILENT: lambda s: False,
+        ControlId.SLEEP: lambda s: False,
+        ControlId.PURIFIER: lambda s: s._purifier,
+        ControlId.AUX_MODE: lambda s: s._aux_mode,
+    }
+
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
         # Remove possible duplicate device_type kwarg
         kwargs.pop("device_type", None)
@@ -97,6 +114,8 @@ class CommercialAirConditioner(Device):
         self._aux_mode = self.AuxHeatMode.DEFAULT
 
         # self._display_on = True # TODO
+
+        self._updated_controls: set[ControlId] = set()
 
         # Setup default capabilities
         self._min_target_temperature = 17
@@ -289,58 +308,75 @@ class CommercialAirConditioner(Device):
 
     async def apply(self) -> None:
         """Apply the local state to the device."""
+        # Check if nothing to apply
+        if not len(self._updated_controls):
+            return
+
         # Warn if trying to apply unsupported modes
-        if self._operational_mode not in self._supported_op_modes:
+        if (ControlId.MODE in self._updated_controls and
+                self._operational_mode not in self._supported_op_modes):
             _LOGGER.warning(
                 "Device %s is not capable of operational mode %r.",  self.id, self._operational_mode)
 
-        if self._fan_speed not in self._supported_fan_speeds:
+        if (ControlId.FAN_SPEED in self._updated_controls and
+                self._fan_speed not in self._supported_fan_speeds):
             _LOGGER.warning(
                 "Device %s is not capable of fan speed %r.",  self.id, self._fan_speed)
 
-        if self._eco and not self._supports_eco:
-            _LOGGER.warning("Device %s is not capable of eco mode.",  self.id)
-
-        if self._silent and not self._supports_silent:
-            _LOGGER.warning("Device %s is not capable of eco mode.",  self.id)
-
-        if self._sleep and not self._supports_sleep:
-            _LOGGER.warning("Device %s is not capable of eco mode.",  self.id)
-
-        if self._purifier != self.PurifierMode.OFF and self._purifier not in self._supported_purifier_modes:
+        if (ControlId.ECO in self._updated_controls and
+                self._eco and not self._supports_eco):
             _LOGGER.warning(
-                "Device is not capable of purifier mode %r.", self._aux_mode)
+                "Device %s is not capable of eco preset.",  self.id)
 
-        if self._aux_mode != self.AuxHeatMode.OFF and self._aux_mode not in self._supported_aux_modes:
+        if (ControlId.SILENT in self._updated_controls and
+                self._silent and not self._supports_silent):
+            _LOGGER.warning(
+                "Device %s is not capable of silent preset.",  self.id)
+
+        if (ControlId.SLEEP in self._updated_controls and
+                self._sleep and not self._supports_sleep):
+            _LOGGER.warning(
+                "Device %s is not capable of sleep preset.",  self.id)
+
+        if (ControlId.PURIFIER in self._updated_controls and
+            self._purifier != self.PurifierMode.OFF and
+                self._purifier not in self._supported_purifier_modes):
+            _LOGGER.warning(
+                "Device is not capable of purifier mode %r.",
+                self._purifier)
+
+        if (ControlId.AUX_MODE in self._updated_controls and
+            self._aux_mode != self.AuxHeatMode.OFF and
+                self._aux_mode not in self._supported_aux_modes):
             _LOGGER.warning(
                 "Device is not capable of aux mode %r.", self._aux_mode)
 
-        # Define function to return value or a default if value is None
-        def or_default(v, d) -> Any: return v if v is not None else d
-
+        # Get current state of updated controls
         controls = {
-            ControlId.POWER: or_default(self._power_state, False),
-            ControlId.TARGET_TEMPERATURE: or_default(self._target_temperature, 25),
-            ControlId.TEMPERATURE_UNIT: self._fahrenheit,
-            ControlId.TARGET_HUMIDITY: self._target_humidity,
-            ControlId.MODE: self._operational_mode,
-            ControlId.FAN_SPEED: self._fan_speed,
-            ControlId.HORZ_SWING_ANGLE: self._horizontal_swing_angle,
-            ControlId.VERT_SWING_ANGLE: self._vertical_swing_angle,
-            ControlId.ECO: or_default(self._eco, False),
-            ControlId.SILENT: or_default(self._silent, False),
-            ControlId.SLEEP: or_default(self._sleep, False),
-            ControlId.PURIFIER: self._purifier,
-            ControlId.AUX_MODE: self._aux_mode,
-            # TODO unexpected behavior
-            # ControlId.DISPLAY: self._display_on
-            # ControlId.BEEP: self._beep
+            k: self._CONTROL_MAP[k](self)
+            for k in self._updated_controls & self._CONTROL_MAP.keys()
         }
-        cmd = ControlCommand(controls)
+
+        # If powering off device, send the control in a second command
+        power_off_cmd = None
+        if (_ := controls.pop(ControlId.POWER, None)) is False:
+            power_off_cmd = ControlCommand({ControlId.POWER: False})
+
+        # Build list of commands
+        cmds: list[Command] = []
+
+        if controls:
+            cmds.append(ControlCommand(controls))
+
+        if power_off_cmd:
+            cmds.append(power_off_cmd)
 
         # Process any state responses from the device
-        for response in await self._send_commands_get_responses(cmd):
+        for response in await self._send_commands_get_responses(cmds):
             self._update_state(response)
+
+        # Clear control
+        self._updated_controls.clear()
 
     @property
     def power_state(self) -> Optional[bool]:
@@ -349,6 +385,7 @@ class CommercialAirConditioner(Device):
     @power_state.setter
     def power_state(self, state: bool) -> None:
         self._power_state = state
+        self._updated_controls.add(ControlId.POWER)
 
     @property
     def min_target_temperature(self) -> int:
@@ -365,6 +402,7 @@ class CommercialAirConditioner(Device):
     @target_temperature.setter
     def target_temperature(self, temperature_celsius: float) -> None:
         self._target_temperature = temperature_celsius
+        self._updated_controls.add(ControlId.TARGET_TEMPERATURE)
 
     @property
     def indoor_temperature(self) -> Optional[float]:
@@ -381,6 +419,7 @@ class CommercialAirConditioner(Device):
     @fahrenheit.setter
     def fahrenheit(self, enabled: bool) -> None:
         self._fahrenheit = enabled
+        self._updated_controls.add(ControlId.TEMPERATURE_UNIT)
 
     @property
     def supports_humidity(self) -> bool:
@@ -393,6 +432,7 @@ class CommercialAirConditioner(Device):
     @target_humidity.setter
     def target_humidity(self, humidity: int) -> None:
         self._target_humidity = humidity
+        self._updated_controls.add(ControlId.TARGET_HUMIDITY)
 
     @property
     def indoor_humidity(self) -> Optional[int]:
@@ -409,6 +449,7 @@ class CommercialAirConditioner(Device):
     @operational_mode.setter
     def operational_mode(self, mode: OperationalMode) -> None:
         self._operational_mode = mode
+        self._updated_controls.add(ControlId.MODE)
 
     @property
     def supported_fan_speeds(self) -> list[FanSpeed]:
@@ -425,6 +466,7 @@ class CommercialAirConditioner(Device):
             speed = int(speed)
 
         self._fan_speed = speed
+        self._updated_controls.add(ControlId.FAN_SPEED)
 
     @property
     def supported_swing_modes(self) -> list[SwingMode]:
@@ -444,16 +486,22 @@ class CommercialAirConditioner(Device):
 
     @swing_mode.setter
     def swing_mode(self, mode: SwingMode) -> None:
-        # Enable swing on correct axises
-        if mode & self.SwingMode.HORIZONTAL:
-            self._horizontal_swing_angle = self.SwingAngle.AUTO
-        else:
-            self._horizontal_swing_angle = self.SwingAngle.DEFAULT
 
-        if mode & self.SwingMode.VERTICAL:
-            self._vertical_swing_angle = self.SwingAngle.AUTO
-        else:
-            self._vertical_swing_angle = self.SwingAngle.DEFAULT
+        def get_angle(swing, enum, state) -> Optional[self.SwingAngle]:
+            if swing & enum:
+                return self.SwingAngle.AUTO
+            elif state == self.SwingAngle.AUTO:
+                return self.SwingAngle.DEFAULT
+            return None
+
+        # Enable swing on correct axises
+        if horz_angle := get_angle(mode, self.SwingMode.HORIZONTAL, self._horizontal_swing_angle):
+            self._horizontal_swing_angle = horz_angle
+            self._updated_controls.add(ControlId.HORZ_SWING_ANGLE)
+
+        if vert_angle := get_angle(mode, self.SwingMode.VERTICAL, self._vertical_swing_angle):
+            self._vertical_swing_angle = vert_angle
+            self._updated_controls.add(ControlId.VERT_SWING_ANGLE)
 
     @property
     def supports_horizontal_swing_angle(self) -> bool:
@@ -467,6 +515,7 @@ class CommercialAirConditioner(Device):
     @horizontal_swing_angle.setter
     def horizontal_swing_angle(self, angle: SwingAngle) -> None:
         self._horizontal_swing_angle = angle
+        self._updated_controls.add(ControlId.HORZ_SWING_ANGLE)
 
     @property
     def supports_vertical_swing_angle(self) -> bool:
@@ -480,6 +529,7 @@ class CommercialAirConditioner(Device):
     @vertical_swing_angle.setter
     def vertical_swing_angle(self, angle: SwingAngle) -> None:
         self._vertical_swing_angle = angle
+        self._updated_controls.add(ControlId.VERT_SWING_ANGLE)
 
     @property
     def supports_eco(self) -> bool:
@@ -492,6 +542,7 @@ class CommercialAirConditioner(Device):
     @eco.setter
     def eco(self, enabled: bool) -> None:
         self._eco = enabled
+        self._updated_controls.add(ControlId.ECO)
 
     @property
     def supports_silent(self) -> bool:
@@ -504,6 +555,7 @@ class CommercialAirConditioner(Device):
     @silent.setter
     def silent(self, enabled: bool) -> None:
         self._silent = enabled
+        self._updated_controls.add(ControlId.SILENT)
 
     @property
     def supports_sleep(self) -> bool:
@@ -516,6 +568,7 @@ class CommercialAirConditioner(Device):
     @sleep.setter
     def sleep(self, enabled: bool) -> None:
         self._sleep = enabled
+        self._updated_controls.add(ControlId.SLEEP)
 
     @property
     def supported_purifier_modes(self) -> list[PurifierMode]:
@@ -528,6 +581,7 @@ class CommercialAirConditioner(Device):
     @purifier.setter
     def purifier(self, mode: PurifierMode) -> None:
         self._purifier = mode
+        self._updated_controls.add(ControlId.PURIFIER)
 
     @property
     def supported_aux_modes(self) -> list[AuxHeatMode]:
@@ -540,6 +594,7 @@ class CommercialAirConditioner(Device):
     @aux_mode.setter
     def aux_mode(self, mode: AuxHeatMode) -> None:
         self._aux_mode = mode
+        self._updated_controls.add(ControlId.AUX_MODE)
 
     # TODO
     # @property

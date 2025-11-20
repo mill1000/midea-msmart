@@ -118,6 +118,26 @@ class TestSwingMode(unittest.TestCase):
         self.assertEqual(device._horizontal_swing_angle, CC.SwingAngle.AUTO)
         self.assertEqual(device._vertical_swing_angle, CC.SwingAngle.AUTO)
 
+        # Verify that axis are taken out of auto mode when disabling the swing
+        device.horizontal_swing_angle = CC.SwingAngle.AUTO
+        device.vertical_swing_angle = CC.SwingAngle.AUTO
+        device.swing_mode = CC.SwingMode.OFF
+        self.assertEqual(device._horizontal_swing_angle, CC.SwingAngle.DEFAULT)
+        self.assertEqual(device._vertical_swing_angle, CC.SwingAngle.DEFAULT)
+
+        # Verify that setting swing mode on one axis doesn't effect the other if it's not swinging
+        device.horizontal_swing_angle = CC.SwingAngle.POS_1
+        device.vertical_swing_angle = CC.SwingAngle.POS_1
+        device.swing_mode = CC.SwingMode.VERTICAL
+        self.assertEqual(device._horizontal_swing_angle, CC.SwingAngle.POS_1)
+        self.assertEqual(device._vertical_swing_angle, CC.SwingAngle.AUTO)
+
+        device.horizontal_swing_angle = CC.SwingAngle.POS_1
+        device.vertical_swing_angle = CC.SwingAngle.POS_5
+        device.swing_mode = CC.SwingMode.HORIZONTAL
+        self.assertEqual(device._horizontal_swing_angle, CC.SwingAngle.AUTO)
+        self.assertEqual(device._vertical_swing_angle, CC.SwingAngle.POS_5)
+
 
 class TestUpdateStateFromResponse(unittest.TestCase):
     """Test updating device state from responses."""
@@ -263,6 +283,130 @@ class TestCapabilities(unittest.TestCase):
             CC.PurifierMode.OFF, CC.PurifierMode.ON])
         self.assertCountEqual(device.supported_aux_modes, [
             CC.AuxHeatMode.OFF, CC.AuxHeatMode.ON, CC.AuxHeatMode.AUTO])
+
+
+class TestSetState(unittest.IsolatedAsyncioTestCase):
+    """Test setting device state."""
+
+    async def test_controls(self) -> None:
+        """Test that apply() sends the appropriate changed controls"""
+
+        # Create dummy device
+        device = CC(0, 0, 0)
+
+        # Set some controls
+        device.power_state = True
+        device.operational_mode = CC.OperationalMode.HEAT
+        device.fan_speed = CC.FanSpeed.AUTO
+        device.target_temperature = 24
+        device.eco = True
+
+        # Assert correct controls are being updated
+        self.assertIn(ControlId.POWER, device._updated_controls)
+        self.assertIn(ControlId.MODE, device._updated_controls)
+        self.assertIn(ControlId.FAN_SPEED, device._updated_controls)
+        self.assertIn(ControlId.TARGET_TEMPERATURE, device._updated_controls)
+        self.assertIn(ControlId.ECO, device._updated_controls)
+
+        self.assertEqual(len(device._updated_controls), 5)
+
+        # Patch to prevent network access
+        with patch("msmart.device.CC.device.CommercialAirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
+
+            # Apply changed settings
+            await device.apply()
+
+            # Assert patched method was awaited
+            patched_method.assert_awaited_once()
+
+            # Get call arguments
+            args, kwargs = patched_method.call_args
+            commands = args[0]
+
+            # Only 1 command should be sent
+            self.assertEqual(len(commands), 1)
+
+        # Ensure no controls remain
+        self.assertEqual(len(device._updated_controls), 0)
+
+    async def test_controls_with_power_off(self) -> None:
+        """Test that a power off state is sent after any other controls."""
+
+        # Create dummy device
+        device = CC(0, 0, 0)
+
+        # Set some controls
+        device.power_state = False
+        device.operational_mode = CC.OperationalMode.HEAT
+        device.target_temperature = 24
+
+        # Assert correct controls are being updated
+        self.assertIn(ControlId.POWER, device._updated_controls)
+        self.assertIn(ControlId.MODE, device._updated_controls)
+        self.assertIn(ControlId.TARGET_TEMPERATURE, device._updated_controls)
+
+        self.assertEqual(len(device._updated_controls), 3)
+
+        # Patch to prevent network access
+        with patch("msmart.device.CC.device.CommercialAirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
+
+            # Apply changed settings
+            await device.apply()
+
+            # Assert patched method was awaited
+            patched_method.assert_awaited_once()
+
+            # Get call arguments
+            args, kwargs = patched_method.call_args
+            commands = args[0]
+
+            # Verify 2 commands sent
+            self.assertEqual(len(commands), 2)
+
+            # Verify first command had no power control, and second command did
+            first, second = commands
+
+            self.assertEqual(len(first._controls), 2)
+            self.assertNotIn(ControlId.POWER, first._controls)
+
+            self.assertEqual(len(second._controls), 1)
+            self.assertIn(ControlId.POWER, second._controls)
+
+        # Ensure no controls remain
+        self.assertEqual(len(device._updated_controls), 0)
+
+    async def test_controls_power_off_only(self) -> None:
+        """Test that a power off state is sent after any other controls."""
+
+        # Create dummy device
+        device = CC(0, 0, 0)
+
+        # Only set power off
+        device.power_state = False
+
+        # Assert correct controls are being updated
+        self.assertIn(ControlId.POWER, device._updated_controls)
+
+        self.assertEqual(len(device._updated_controls), 1)
+
+        # Patch to prevent network access
+        with patch("msmart.device.CC.device.CommercialAirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
+
+            # Apply changed settings
+            await device.apply()
+
+            # Assert patched method was awaited
+            patched_method.assert_awaited_once()
+
+            # Get call arguments
+            args, kwargs = patched_method.call_args
+            commands = args[0]
+
+            # Verify only 1 commands sent
+            self.assertEqual(len(commands), 1)
+
+        # Ensure no controls remain
+        self.assertEqual(len(device._updated_controls), 0)
 
 
 class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
