@@ -73,7 +73,8 @@ async def _connect(args) -> Union[AC, CC]:
             exit(1)
     else:
         device = Device.construct(
-            type=DEVICE_TYPES[args.device_type],
+            type=DEVICE_TYPES.get(
+                args.device_type, DeviceType.AIR_CONDITIONER),
             ip=args.host,
             port=6444,
             device_id=args.device_id
@@ -142,7 +143,8 @@ async def _control(args) -> None:
             exit(1)
 
     # Create a dummy device instance for property validation
-    device_type = DEVICE_TYPES[args.device_type]
+    device_type = DEVICE_TYPES.get(
+        args.device_type, DeviceType.AIR_CONDITIONER)
     dummy_device = Device.construct(
         type=device_type,
         ip="0.0.0.0",
@@ -360,8 +362,7 @@ def main() -> NoReturn:
                               action="store_true")
     query_parser.add_argument("--device_type",
                               help="Type of device.",
-                              choices=DEVICE_TYPES.keys(),
-                              default="AC")
+                              choices=DEVICE_TYPES.keys())
     query_parser.add_argument("--auto",
                               help="Automatically identify, connect and authenticate with the device.",
                               action="store_true")
@@ -390,8 +391,7 @@ def main() -> NoReturn:
                                 action="store_true")
     control_parser.add_argument("--device_type",
                                 help="Type of device.",
-                                choices=DEVICE_TYPES.keys(),
-                                default="AC")
+                                choices=DEVICE_TYPES.keys())
     control_parser.add_argument("--auto",
                                 help="Automatically identify, connect and authenticate with the device.",
                                 action="store_true")
