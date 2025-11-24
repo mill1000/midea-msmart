@@ -13,7 +13,7 @@ This library supports air conditioners from Midea and several associated brands 
 * Toshiba AC NA (com.midea.toshiba)
 * 美的美居 (com.midea.ai.appliances)
   
-__Note: Only air conditioners (type 0xAC) are supported. See the [usage](#usage) section for how to check compatibility.__ 
+__Note: Only air conditioners (type 0xAC and 0xCC) are supported. See the [usage](#usage) section for how to check compatibility.__ 
 
 ## Note On Cloud Usage
 This library (and its Home Assistant integration [midea-ac-py](https://github.com/mill1000/midea-ac-py)) works locally. No internet connection is required to control your device. 
@@ -118,6 +118,7 @@ $ msmart-ng query <HOST>
 Add `--capabilities` to list available capabilities of the device.
 
 **Note:** Version 3 devices need to specify either the `--auto` argument or the `--token`, `--key` and `--id` arguments to make a connection.
+**Note:** For CC devices, either the `--auto` argument or the `--device_type` argument must be specified.
 
 #### Control
 Control a device with the `msmart-ng control` subcommand. The command takes key-value pairs of settings to control.
@@ -133,6 +134,7 @@ $ msmart-ng control <HOST> operational_mode=cool target_temperature=20.5 fan_spe
 ```
 
 **Note:** Version 3 devices need to specify either the `--auto` argument or the `--token`, `--key` and `--id` arguments to make a connection.
+**Note:** For CC devices, either the `--auto` argument or the `--device_type` argument must be specified.
 
 ### Home Assistant
 To control your Midea AC units via Home Assistant, use this [midea-ac-py](https://github.com/mill1000/midea-ac-py) fork.

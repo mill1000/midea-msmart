@@ -3,6 +3,7 @@ import unittest
 import unittest.mock as mock
 from unittest.mock import patch
 
+from msmart.base_device import Device
 from msmart.const import DISCOVERY_MSG, DeviceType
 from msmart.device import AirConditioner as AC
 from msmart.discover import _IPV4_BROADCAST, Discover
@@ -40,13 +41,12 @@ class TestDiscover(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(info["name"], "net_ac_F7B4")
         self.assertEqual(info["sn"], "000000P0000000Q1F0C9D153F7B40000")
 
-        # Check class is correct
-        device_class = Discover._get_device_class(info["device_type"])
-        self.assertEqual(device_class, AC)
+        # Build device
+        device = Device.construct(type=info["device_type"], **info)
 
-        # Check that device can be built
-        device = device_class(**info)
         self.assertIsNotNone(device)
+        self.assertIsInstance(device, AC)
+        self.assertEqual(device.version, 2)
 
     async def test_discover_v3(self) -> None:
         """Test that we can parse a V3 discovery response."""
@@ -72,13 +72,12 @@ class TestDiscover(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(info["name"], "net_ac_63BA")
         self.assertEqual(info["sn"], "000000P0000000Q1B88C29C963BA0000")
 
-        # Check class is correct
-        device_class = Discover._get_device_class(info["device_type"])
-        self.assertEqual(device_class, AC)
+        # Build device
+        device = Device.construct(type=info["device_type"], **info)
 
-        # Check that device can be built
-        device = device_class(**info)
         self.assertIsNotNone(device)
+        self.assertIsInstance(device, AC)
+        self.assertEqual(device.version, 3)
 
 
 class TestDiscoverProtocol(unittest.IsolatedAsyncioTestCase):
