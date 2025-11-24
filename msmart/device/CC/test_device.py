@@ -330,7 +330,7 @@ class TestSetState(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(device._updated_controls), 0)
 
     async def test_controls_with_power_off(self) -> None:
-        """Test that a power off state is sent after any other controls."""
+        """Test that a power off state is sent alone, and other controls are dropped."""
 
         # Create dummy device
         device = CC(0, 0, 0)
@@ -351,7 +351,12 @@ class TestSetState(unittest.IsolatedAsyncioTestCase):
         with patch("msmart.device.CC.device.CommercialAirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
 
             # Apply changed settings
-            await device.apply()
+            with self.assertLogs("msmart", logging.WARNING) as log:
+                await device.apply()
+
+                # Check log for warning about dropped controls
+                self.assertRegex("\n".join(log.output),
+                                 "Device.*powering off.*Dropped.*control.*MODE.*TARGET_TEMPERATURE.*")
 
             # Assert patched method was awaited
             patched_method.assert_awaited_once()
@@ -360,23 +365,23 @@ class TestSetState(unittest.IsolatedAsyncioTestCase):
             args, kwargs = patched_method.call_args
             commands = args[0]
 
-            # Verify 2 commands sent
-            self.assertEqual(len(commands), 2)
+            # Verify only 1 commands sent
+            self.assertEqual(len(commands), 1)
 
-            # Verify first command had no power control, and second command did
-            first, second = commands
+            # Assert power control present
+            controls = commands[0]._controls
+            self.assertEqual(len(controls), 1)
+            self.assertIn(ControlId.POWER, controls)
 
-            self.assertEqual(len(first._controls), 2)
-            self.assertNotIn(ControlId.POWER, first._controls)
-
-            self.assertEqual(len(second._controls), 1)
-            self.assertIn(ControlId.POWER, second._controls)
+            # Assert no other controls preset
+            self.assertNotIn(ControlId.MODE, controls)
+            self.assertNotIn(ControlId.TARGET_TEMPERATURE, controls)
 
         # Ensure no controls remain
         self.assertEqual(len(device._updated_controls), 0)
 
     async def test_controls_power_off_only(self) -> None:
-        """Test that a power off state is sent after any other controls."""
+        """Test that a power off state is sent alone."""
 
         # Create dummy device
         device = CC(0, 0, 0)

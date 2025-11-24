@@ -320,36 +320,35 @@ class CommercialAirConditioner(Device):
 
         if (ControlId.FAN_SPEED in self._updated_controls and
                 self._fan_speed not in self._supported_fan_speeds):
-            _LOGGER.warning(
-                "Device %s is not capable of fan speed %r.",  self.id, self._fan_speed)
+            _LOGGER.warning("Device %s is not capable of fan speed %r.",
+                            self.id, self._fan_speed)
 
         if (ControlId.ECO in self._updated_controls and
                 self._eco and not self._supports_eco):
-            _LOGGER.warning(
-                "Device %s is not capable of eco preset.",  self.id)
+            _LOGGER.warning("Device %s is not capable of eco preset.",
+                            self.id)
 
         if (ControlId.SILENT in self._updated_controls and
                 self._silent and not self._supports_silent):
-            _LOGGER.warning(
-                "Device %s is not capable of silent preset.",  self.id)
+            _LOGGER.warning("Device %s is not capable of silent preset.",
+                            self.id)
 
         if (ControlId.SLEEP in self._updated_controls and
                 self._sleep and not self._supports_sleep):
-            _LOGGER.warning(
-                "Device %s is not capable of sleep preset.",  self.id)
+            _LOGGER.warning("Device %s is not capable of sleep preset.",
+                            self.id)
 
         if (ControlId.PURIFIER in self._updated_controls and
             self._purifier != self.PurifierMode.OFF and
                 self._purifier not in self._supported_purifier_modes):
-            _LOGGER.warning(
-                "Device is not capable of purifier mode %r.",
-                self._purifier)
+            _LOGGER.warning("Device %s is not capable of purifier mode %r.",
+                            self.id, self._purifier)
 
         if (ControlId.AUX_MODE in self._updated_controls and
             self._aux_mode != self.AuxHeatMode.OFF and
                 self._aux_mode not in self._supported_aux_modes):
-            _LOGGER.warning(
-                "Device is not capable of aux mode %r.", self._aux_mode)
+            _LOGGER.warning("Device %s is not capable of aux mode %r.",
+                            self.id, self._aux_mode)
 
         # Get current state of updated controls
         controls = {
@@ -357,19 +356,16 @@ class CommercialAirConditioner(Device):
             for k in self._updated_controls & self._CONTROL_MAP.keys()
         }
 
-        # If powering off device, send the control in a second command
-        power_off_cmd = None
-        if (_ := controls.pop(ControlId.POWER, None)) is False:
-            power_off_cmd = ControlCommand({ControlId.POWER: False})
-
-        # Build list of commands
+        # If powering off device, only send the power control
         cmds: list[Command] = []
-
-        if controls:
+        if controls.get(ControlId.POWER, None) is False:
+            if len(controls) > 1:
+                _LOGGER.warning("Device %s powering off. Dropped additional control updates: %s",
+                                self.id,
+                                {k: v for k, v in controls.items() if k != ControlId.POWER})
+            cmds.append(ControlCommand({ControlId.POWER: False}))
+        else:
             cmds.append(ControlCommand(controls))
-
-        if power_off_cmd:
-            cmds.append(power_off_cmd)
 
         # Process any state responses from the device
         for response in await self._send_commands_get_responses(cmds):
