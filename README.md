@@ -118,6 +118,7 @@ $ msmart-ng query <HOST>
 Add `--capabilities` to list available capabilities of the device.
 
 **Note:** Version 3 devices need to specify either the `--auto` argument or the `--token`, `--key` and `--id` arguments to make a connection.
+
 **Note:** For CC devices, either the `--auto` argument or the `--device_type` argument must be specified.
 
 #### Control
@@ -134,6 +135,7 @@ $ msmart-ng control <HOST> operational_mode=cool target_temperature=20.5 fan_spe
 ```
 
 **Note:** Version 3 devices need to specify either the `--auto` argument or the `--token`, `--key` and `--id` arguments to make a connection.
+
 **Note:** For CC devices, either the `--auto` argument or the `--device_type` argument must be specified.
 
 ### Home Assistant
@@ -160,5 +162,6 @@ This project is a fork of [mac-zhou/midea-msmart](https://github.com/mac-zhou/mi
 * [NeoAcheron/midea-ac-py](https://github.com/NeoAcheron/midea-ac-py)
 * [andersonshatch/midea-ac-py](https://github.com/andersonshatch/midea-ac-py)
 * [yitsushi/midea-air-condition](https://github.com/yitsushi/midea-air-condition)
+
 
 
