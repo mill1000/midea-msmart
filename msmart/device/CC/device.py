@@ -195,11 +195,11 @@ class CommercialAirConditioner(Device):
         self._supports_humidity = res.supports_humidity
 
         # Build list of supported operation modes
-        assert res.supported_modes
+        assert res.supported_op_modes
         self._supported_op_modes = cast(
             list[self.OperationalMode], [
                 self.OperationalMode.get_from_value(mode)
-                for mode in res.supported_modes
+                for mode in res.supported_op_modes
                 if mode in {m.value for m in self.OperationalMode}
             ])
 
