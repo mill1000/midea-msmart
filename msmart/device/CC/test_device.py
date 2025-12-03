@@ -1,7 +1,7 @@
 import logging
 import unittest
 from typing import cast
-from unittest.mock import MagicMock,  patch
+from unittest.mock import MagicMock, patch
 
 from .command import *
 from .device import CommercialAirConditioner as CC
