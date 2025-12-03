@@ -1,7 +1,7 @@
 import logging
 import unittest
 from typing import cast
-from unittest.mock import patch
+from unittest.mock import MagicMock,  patch
 
 from .command import *
 from .device import CommercialAirConditioner as CC
@@ -283,6 +283,81 @@ class TestCapabilities(unittest.TestCase):
             CC.PurifierMode.OFF, CC.PurifierMode.ON])
         self.assertCountEqual(device.supported_aux_modes, [
             CC.AuxHeatMode.OFF, CC.AuxHeatMode.ON, CC.AuxHeatMode.AUTO])
+
+    def test_swing_mode(self) -> None:
+        """Test swing mode/angle capabilities."""
+
+        # Test with only vertical swing angle control
+        resp = MagicMock()
+        resp.supports_horz_swing_angle = False
+        resp.supports_vert_swing_angle = True
+
+        # Create a dummy device and process the response
+        device = CC(0, 0, 0)
+        device._update_capabilities(resp)
+
+        self.assertCountEqual(device.supported_swing_modes, [
+            CC.SwingMode.OFF,
+            CC.SwingMode.VERTICAL
+        ])
+
+        self.assertEqual(device.supports_horizontal_swing_angle, False)
+        self.assertEqual(device.supports_vertical_swing_angle, True)
+
+        # Test with only horizontal swing angle control
+        resp.supports_horz_swing_angle = True
+        resp.supports_vert_swing_angle = False
+
+        # Update capabilities
+        device._update_capabilities(resp)
+
+        self.assertCountEqual(device.supported_swing_modes, [
+            CC.SwingMode.OFF,
+            CC.SwingMode.HORIZONTAL
+        ])
+
+        self.assertEqual(device.supports_horizontal_swing_angle, True)
+        self.assertEqual(device.supports_vertical_swing_angle, False)
+
+        # Test with both controls
+        resp.supports_horz_swing_angle = True
+        resp.supports_vert_swing_angle = True
+
+        # Update capabilities
+        device._update_capabilities(resp)
+
+        self.assertCountEqual(device.supported_swing_modes, [
+            CC.SwingMode.OFF,
+            CC.SwingMode.HORIZONTAL,
+            CC.SwingMode.VERTICAL,
+            CC.SwingMode.BOTH,
+        ])
+
+        self.assertEqual(device.supports_horizontal_swing_angle, True)
+        self.assertEqual(device.supports_vertical_swing_angle, True)
+
+    def test_aux_modes(self) -> None:
+        """Test aux mode capabilities."""
+
+        # Test with invalid mode
+        resp = MagicMock()
+        resp.supported_aux_modes = [0xFF]
+
+        # Create a dummy device and process the response
+        device = CC(0, 0, 0)
+        device._update_capabilities(resp)
+
+        self.assertCountEqual(device.supported_aux_modes, [])
+
+        # Test with valid mode
+        resp.supported_aux_modes = [0]
+
+        # Update capabilities
+        device._update_capabilities(resp)
+
+        self.assertCountEqual(device.supported_aux_modes, [
+            CC.AuxHeatMode.AUTO
+        ])
 
 
 class TestSetState(unittest.IsolatedAsyncioTestCase):

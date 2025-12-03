@@ -212,11 +212,11 @@ class CommercialAirConditioner(Device):
 
         # Build list of supported swing modes
         swing_modes = [self.SwingMode.OFF]
-        if res.horz_swing_angle:
+        if res.supports_horz_swing_angle:
             swing_modes.append(self.SwingMode.HORIZONTAL)
-        if res.vert_swing_angle:
+        if res.supports_vert_swing_angle:
             swing_modes.append(self.SwingMode.VERTICAL)
-        if res.horz_swing_angle and res.vert_swing_angle:
+        if res.supports_horz_swing_angle and res.supports_vert_swing_angle:
             swing_modes.append(self.SwingMode.BOTH)
 
         self._supported_swing_modes = swing_modes
@@ -239,7 +239,7 @@ class CommercialAirConditioner(Device):
         self._supported_aux_modes = cast(
             list[self.AuxHeatMode], [
                 self.AuxHeatMode.get_from_value(mode)
-                for mode in res.supported_modes
+                for mode in res.supported_aux_modes
                 if mode in {m.value for m in self.AuxHeatMode}
             ])
 
