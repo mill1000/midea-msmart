@@ -494,7 +494,7 @@ class TestSetState(unittest.TestCase):
 
         # Create dummy device with breeze control
         device = AC(0, 0, 0)
-        device._supported_properties.add(PropertyId.BREEZE_CONTROL)
+        device._capabilities.set(AC.Capability.BREEZE_CONTROL)
 
         # Enable a breeze mode
         device.breeze_mild = True
@@ -524,7 +524,7 @@ class TestSetState(unittest.TestCase):
 
         # Create dummy device with breeze control
         device = AC(0, 0, 0)
-        device._supported_properties.add(PropertyId.BREEZELESS)
+        device._capabilities.set(AC.Capability.BREEZELESS)
 
         # Enable breezeless
         device.breezeless = True
@@ -543,7 +543,7 @@ class TestSetState(unittest.TestCase):
 
         # Create dummy device with breeze control
         device = AC(0, 0, 0)
-        device._supported_properties.add(PropertyId.BREEZE_AWAY)
+        device._capabilities.set(AC.Capability.BREEZE_AWAY)
 
         # Enable breezeless
         device.breeze_away = True
@@ -562,7 +562,7 @@ class TestSetState(unittest.TestCase):
 
         # Create dummy device with jet fool
         device = AC(0, 0, 0)
-        device._supported_properties.add(PropertyId.JET_COOL)
+        device._capabilities.set(AC.Capability.JET_COOL)
 
         # Enable breezeless
         device.flash_cool = True
@@ -578,7 +578,7 @@ class TestSetState(unittest.TestCase):
 
         # Create dummy device with cascade
         device = AC(0, 0, 0)
-        device._supported_properties.add(PropertyId.CASCADE)
+        device._capabilities.set(AC.Capability.CASCADE)
 
         # Enable a cascade mode
         device.cascade_mode = AC.CascadeMode.DOWN
@@ -669,7 +669,7 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
 
             # Force additional features so refresh() sends multiple requests are sent
             device._request_energy_usage = True
-            device._supports_humidity = True
+            device._capabilities.set(AC.Capability.HUMIDITY)
 
             # Refresh device
             await device.refresh()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from enum import Flag, auto
 from typing import Any, Optional, Union, cast
 
 from msmart.base_device import Device
@@ -114,6 +115,66 @@ class AirConditioner(Device):
         PropertyId.CASCADE: lambda s: s._cascade_mode,
     }
 
+    class Capability(Flag):
+        # Fan
+        CUSTOM_FAN_SPEED = auto()
+
+        # Presets
+        ECO = auto()
+        FREEZE_PROTECTION = auto()
+        IECO = auto()
+        TURBO = auto()
+
+        # UI
+        DISPLAY_CONTROL = auto()
+        ENERGY_STATS = auto()
+        FILTER_REMINDER = auto()
+
+        HUMIDITY = auto()
+        TARGET_HUMIDITY = auto()
+
+        # Swing
+        SWING_VERTICAL_ANGLE = auto()
+        SWING_HORIZONTAL_ANGLE = auto()
+
+        # Breeze control
+        BREEZE_AWAY = auto()
+        BREEZE_CONTROL = auto()
+        BREEZELESS = auto()
+
+        # Misc
+        CASCADE = auto()
+        JET_COOL = auto()
+        PURIFIER = auto()
+        RATE_SELECT = auto()
+        SELF_CLEAN = auto()
+
+        DEFAULT = (
+            CUSTOM_FAN_SPEED |
+            ECO | TURBO | FREEZE_PROTECTION |
+            DISPLAY_CONTROL | FILTER_REMINDER |
+            PURIFIER
+        )
+
+    class Capabilities():
+        """Minimal wrapper class to make mutable capability flags."""
+
+        def __init__(self, default: AirConditioner.Capability) -> None:
+            self._flags: AirConditioner.Capability = default
+
+        @property
+        def value(self) -> int:
+            return self._flags.value
+
+        def has(self, flag: AirConditioner.Capability) -> bool:
+            return bool(self._flags & flag)
+
+        def set(self, flag: AirConditioner.Capability, enable: bool = True) -> None:
+            if enable:
+                self._flags |= flag
+            else:
+                self._flags &= ~flag
+
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
         # Remove possible duplicate device_type kwarg
         kwargs.pop("device_type", None)
@@ -145,15 +206,10 @@ class AirConditioner(Device):
             list[AirConditioner.SwingMode], AirConditioner.SwingMode.list())
         self._supported_fan_speeds = cast(
             list[AirConditioner.FanSpeed], AirConditioner.FanSpeed.list())
-        self._supports_custom_fan_speed = True
-        self._supports_eco = True
-        self._supports_turbo = True
-        self._supports_freeze_protection = True
-        self._supports_display_control = True
-        self._supports_filter_reminder = True
-        self._supports_purifier = True
-        self._supports_humidity = False
-        self._supports_target_humidity = False
+
+        self._capabilities = AirConditioner.Capabilities(
+            AirConditioner.Capability.DEFAULT)
+
         self._min_target_temperature = 16
         self._max_target_temperature = 30
 
@@ -213,7 +269,7 @@ class AirConditioner(Device):
                 AirConditioner.OperationalMode,
                 AirConditioner.OperationalMode.get_from_value(res.operational_mode))
 
-            if self._supports_custom_fan_speed:
+            if self.supports_custom_fan_speed:
                 # Attempt to fetch enum of fan speed, but fallback to raw int if custom
                 try:
                     self._fan_speed = AirConditioner.FanSpeed(
@@ -369,15 +425,20 @@ class AirConditioner(Device):
             fan_speeds.append(AirConditioner.FanSpeed.MAX)
 
         self._supported_fan_speeds = fan_speeds
-        self._supports_custom_fan_speed = res.fan_custom
+        self._capabilities.set(
+            AirConditioner.Capability.CUSTOM_FAN_SPEED, res.fan_custom)
 
-        self._supports_eco = res.eco
-        self._supports_turbo = res.turbo
-        self._supports_freeze_protection = res.freeze_protection
+        self._capabilities.set(AirConditioner.Capability.ECO, res.eco)
+        self._capabilities.set(AirConditioner.Capability.TURBO, res.turbo)
+        self._capabilities.set(
+            AirConditioner.Capability.FREEZE_PROTECTION, res.freeze_protection)
 
-        self._supports_display_control = res.display_control
-        self._supports_filter_reminder = res.filter_reminder
-        self._supports_purifier = res.anion
+        self._capabilities.set(
+            AirConditioner.Capability.DISPLAY_CONTROL, res.display_control)
+        self._capabilities.set(
+            AirConditioner.Capability.FILTER_REMINDER, res.filter_reminder)
+
+        self._capabilities.set(AirConditioner.Capability.PURIFIER, res.anion)
 
         # Build list of supported aux heating modes
         aux_modes = [AirConditioner.AuxHeatMode.OFF]
@@ -395,28 +456,23 @@ class AirConditioner(Device):
         # We've seen devices that claim no capability but return energy data
         self._request_energy_usage |= res.energy_stats
 
-        self._supports_humidity = res.humidity
-        self._supports_target_humidity = res.target_humidity
+        self._capabilities.set(
+            AirConditioner.Capability.HUMIDITY, res.humidity)
+        self._capabilities.set(
+            AirConditioner.Capability.TARGET_HUMIDITY, res.target_humidity)
 
-        # Add supported properties based on capabilities
-        self._supported_properties.clear()
+        self._capabilities.set(
+            AirConditioner.Capability.SWING_VERTICAL_ANGLE, res.swing_vertical_angle)
+        self._capabilities.set(
+            AirConditioner.Capability.SWING_HORIZONTAL_ANGLE, res.swing_horizontal_angle)
 
-        if res.swing_vertical_angle:
-            self._supported_properties.add(PropertyId.SWING_UD_ANGLE)
+        self._capabilities.set(AirConditioner.Capability.CASCADE, res.cascade)
 
-        if res.swing_horizontal_angle:
-            self._supported_properties.add(PropertyId.SWING_LR_ANGLE)
-
-        if res.cascade:
-            self._supported_properties.add(PropertyId.CASCADE)
-
-        if res.self_clean:
-            self._supported_properties.add(PropertyId.SELF_CLEAN)
+        self._capabilities.set(
+            AirConditioner.Capability.SELF_CLEAN, res.self_clean)
 
         # Add supported rate select levels
         if (rates := res.rate_select_levels) is not None:
-            self._supported_properties.add(PropertyId.RATE_SELECT)
-
             if rates > 2:
                 self._supported_rate_selects = [
                     AirConditioner.RateSelect.OFF,
@@ -434,20 +490,42 @@ class AirConditioner(Device):
                 ]
 
         # Breeze control supersedes breeze away and breezeless
-        if res.breeze_control:
-            self._supported_properties.add(PropertyId.BREEZE_CONTROL)
-        else:
-            if res.breeze_away:
-                self._supported_properties.add(PropertyId.BREEZE_AWAY)
+        self._capabilities.set(
+            AirConditioner.Capability.BREEZE_CONTROL, res.breeze_control)
+        if not res.breeze_control:
+            self._capabilities.set(
+                AirConditioner.Capability.BREEZE_AWAY, res.breeze_away)
+            self._capabilities.set(
+                AirConditioner.Capability.BREEZELESS, res.breezeless)
 
-            if res.breezeless:
-                self._supported_properties.add(PropertyId.BREEZELESS)
+        self._capabilities.set(AirConditioner.Capability.IECO, res.ieco)
+        self._capabilities.set(
+            AirConditioner.Capability.JET_COOL, res.jet_cool)
 
-        if res.ieco:
-            self._supported_properties.add(PropertyId.IECO)
+        self._update_supported_properties()
 
-        if res.jet_cool:
-            self._supported_properties.add(PropertyId.JET_COOL)
+    def _update_supported_properties(self) -> None:
+        """Update supported properties based on device capabilities."""
+        # Map of capability flag to property ID
+        _CAPABILITY_MAP = {
+            AirConditioner.Capability.BREEZE_AWAY: PropertyId.BREEZE_AWAY,
+            AirConditioner.Capability.BREEZE_CONTROL: PropertyId.BREEZE_CONTROL,
+            AirConditioner.Capability.BREEZELESS: PropertyId.BREEZELESS,
+            AirConditioner.Capability.CASCADE: PropertyId.CASCADE,
+            AirConditioner.Capability.IECO: PropertyId.IECO,
+            AirConditioner.Capability.JET_COOL: PropertyId.JET_COOL,
+            AirConditioner.Capability.RATE_SELECT: PropertyId.RATE_SELECT,
+            AirConditioner.Capability.SELF_CLEAN: PropertyId.SELF_CLEAN,
+            AirConditioner.Capability.SWING_HORIZONTAL_ANGLE: PropertyId.SWING_LR_ANGLE,
+            AirConditioner.Capability.SWING_VERTICAL_ANGLE: PropertyId.SWING_UD_ANGLE,
+        }
+        # Clear existing properties
+        self._supported_properties.clear()
+
+        # Test each capability
+        for cap, prop in _CAPABILITY_MAP.items():
+            if self._capabilities.has(cap):
+                self._supported_properties.add(prop)
 
     async def _send_commands_get_responses(self, commands: Union[Command, list[Command]]) -> list[Response]:
         """Send a list of commands and return all valid responses."""
@@ -529,7 +607,7 @@ class AirConditioner(Device):
     async def toggle_display(self) -> None:
         """Toggle the device display if the device supports it."""
 
-        if not self._supports_display_control:
+        if not self.supports_display_control:
             _LOGGER.warning(
                 "Device %s is not capable of display control.", self.id)
 
@@ -562,7 +640,7 @@ class AirConditioner(Device):
             commands.append(GetEnergyUsageCommand())
 
         # Fetch humidity if supported
-        if self._supports_humidity:
+        if self.supports_humidity:
             commands.append(GetHumidityCommand())
 
         # Update supported properties
@@ -601,7 +679,7 @@ class AirConditioner(Device):
                 "Device %s is not capable of operational mode %r.",  self.id, self._operational_mode)
 
         if (self._fan_speed not in self._supported_fan_speeds
-                and not self._supports_custom_fan_speed):
+                and not self.supports_custom_fan_speed):
             _LOGGER.warning(
                 "Device %s is not capable of fan speed %r.",  self.id, self._fan_speed)
 
@@ -609,13 +687,13 @@ class AirConditioner(Device):
             _LOGGER.warning(
                 "Device %s is not capable of swing mode %r.",  self.id, self._swing_mode)
 
-        if self._turbo and not self._supports_turbo:
+        if self._turbo and not self.supports_turbo:
             _LOGGER.warning("Device %s is not capable of turbo mode.", self.id)
 
-        if self._eco and not self._supports_eco:
+        if self._eco and not self.supports_eco:
             _LOGGER.warning("Device %s is not capable of eco mode.",  self.id)
 
-        if self._freeze_protection and not self._supports_freeze_protection:
+        if self._freeze_protection and not self.supports_freeze_protection:
             _LOGGER.warning(
                 "Device %s is not capable of freeze protection.", self.id)
 
@@ -735,7 +813,7 @@ class AirConditioner(Device):
 
     @property
     def supports_custom_fan_speed(self) -> bool:
-        return self._supports_custom_fan_speed
+        return self._capabilities.has(AirConditioner.Capability.CUSTOM_FAN_SPEED)
 
     @property
     def fan_speed(self) -> FanSpeed | int:
@@ -751,8 +829,7 @@ class AirConditioner(Device):
 
     @property
     def supports_breeze_away(self) -> bool:
-        return (PropertyId.BREEZE_AWAY in self._supported_properties
-                or PropertyId.BREEZE_CONTROL in self._supported_properties)
+        return self._capabilities.has(AirConditioner.Capability.BREEZE_AWAY | AirConditioner.Capability.BREEZE_CONTROL)
 
     @property
     def breeze_away(self) -> Optional[bool]:
@@ -764,12 +841,12 @@ class AirConditioner(Device):
                              else AirConditioner.BreezeMode.OFF)
 
         self._updated_properties.add(
-            PropertyId.BREEZE_CONTROL if PropertyId.BREEZE_CONTROL in self._supported_properties
+            PropertyId.BREEZE_CONTROL if self._capabilities.has(AirConditioner.Capability.BREEZE_CONTROL)
             else PropertyId.BREEZE_AWAY)
 
     @property
     def supports_breeze_mild(self) -> bool:
-        return PropertyId.BREEZE_CONTROL in self._supported_properties
+        return self._capabilities.has(AirConditioner.Capability.BREEZE_CONTROL)
 
     @property
     def breeze_mild(self) -> Optional[bool]:
@@ -784,8 +861,7 @@ class AirConditioner(Device):
 
     @property
     def supports_breezeless(self) -> bool:
-        return (PropertyId.BREEZELESS in self._supported_properties
-                or PropertyId.BREEZE_CONTROL in self._supported_properties)
+        return self._capabilities.has(AirConditioner.Capability.BREEZELESS | AirConditioner.Capability.BREEZE_CONTROL)
 
     @property
     def breezeless(self) -> Optional[bool]:
@@ -797,7 +873,7 @@ class AirConditioner(Device):
                              else AirConditioner.BreezeMode.OFF)
 
         self._updated_properties.add(
-            PropertyId.BREEZE_CONTROL if PropertyId.BREEZE_CONTROL in self._supported_properties
+            PropertyId.BREEZE_CONTROL if self._capabilities.has(AirConditioner.Capability.BREEZE_CONTROL)
             else PropertyId.BREEZELESS)
 
     @property
@@ -814,7 +890,7 @@ class AirConditioner(Device):
 
     @property
     def supports_horizontal_swing_angle(self) -> bool:
-        return PropertyId.SWING_LR_ANGLE in self._supported_properties
+        return self._capabilities.has(AirConditioner.Capability.SWING_HORIZONTAL_ANGLE)
 
     @property
     def horizontal_swing_angle(self) -> SwingAngle:
@@ -827,7 +903,7 @@ class AirConditioner(Device):
 
     @property
     def supports_vertical_swing_angle(self) -> bool:
-        return PropertyId.SWING_UD_ANGLE in self._supported_properties
+        return self._capabilities.has(AirConditioner.Capability.SWING_VERTICAL_ANGLE)
 
     @property
     def vertical_swing_angle(self) -> SwingAngle:
@@ -840,7 +916,7 @@ class AirConditioner(Device):
 
     @property
     def supports_cascade(self) -> bool:
-        return PropertyId.CASCADE in self._supported_properties
+        return self._capabilities.has(AirConditioner.Capability.CASCADE)
 
     @property
     def cascade_mode(self) -> CascadeMode:
@@ -853,7 +929,7 @@ class AirConditioner(Device):
 
     @property
     def supports_eco(self) -> bool:
-        return self._supports_eco
+        return self._capabilities.has(AirConditioner.Capability.ECO)
 
     @property
     def eco(self) -> Optional[bool]:
@@ -865,7 +941,7 @@ class AirConditioner(Device):
 
     @property
     def supports_ieco(self) -> bool:
-        return PropertyId.IECO in self._supported_properties
+        return self._capabilities.has(AirConditioner.Capability.IECO)
 
     @property
     def ieco(self) -> Optional[bool]:
@@ -878,7 +954,7 @@ class AirConditioner(Device):
 
     @property
     def supports_flash_cool(self) -> bool:
-        return PropertyId.JET_COOL in self._supported_properties
+        return self._capabilities.has(AirConditioner.Capability.JET_COOL)
 
     @property
     def flash_cool(self) -> Optional[bool]:
@@ -891,7 +967,7 @@ class AirConditioner(Device):
 
     @property
     def supports_turbo(self) -> bool:
-        return self._supports_turbo
+        return self._capabilities.has(AirConditioner.Capability.TURBO)
 
     @property
     def turbo(self) -> Optional[bool]:
@@ -903,7 +979,7 @@ class AirConditioner(Device):
 
     @property
     def supports_freeze_protection(self) -> bool:
-        return self._supports_freeze_protection
+        return self._capabilities.has(AirConditioner.Capability.FREEZE_PROTECTION)
 
     @property
     def freeze_protection(self) -> Optional[bool]:
@@ -931,7 +1007,7 @@ class AirConditioner(Device):
 
     @property
     def supports_purifier(self) -> bool:
-        return self._supports_purifier
+        return self._capabilities.has(AirConditioner.Capability.PURIFIER)
 
     @property
     def purifier(self) -> Optional[bool]:
@@ -943,7 +1019,7 @@ class AirConditioner(Device):
 
     @property
     def supports_display_control(self) -> bool:
-        return self._supports_display_control
+        return self._capabilities.has(AirConditioner.Capability.DISPLAY_CONTROL)
 
     @property
     def display_on(self) -> Optional[bool]:
@@ -951,7 +1027,7 @@ class AirConditioner(Device):
 
     @property
     def supports_filter_reminder(self) -> bool:
-        return self._supports_filter_reminder
+        return self._capabilities.has(AirConditioner.Capability.FILTER_REMINDER)
 
     @property
     def filter_alert(self) -> Optional[bool]:
@@ -976,7 +1052,7 @@ class AirConditioner(Device):
 
     @property
     def supports_humidity(self) -> bool:
-        return self._supports_humidity
+        return self._capabilities.has(AirConditioner.Capability.HUMIDITY)
 
     @property
     def indoor_humidity(self) -> Optional[int]:
@@ -984,7 +1060,7 @@ class AirConditioner(Device):
 
     @property
     def supports_target_humidity(self) -> bool:
-        return self._supports_target_humidity
+        return self._capabilities.has(AirConditioner.Capability.TARGET_HUMIDITY)
 
     @property
     def target_humidity(self) -> Optional[int]:
@@ -996,7 +1072,7 @@ class AirConditioner(Device):
 
     @property
     def supports_self_clean(self) -> bool:
-        return PropertyId.SELF_CLEAN in self._supported_properties
+        return self._capabilities.has(AirConditioner.Capability.SELF_CLEAN)
 
     @property
     def self_clean_active(self) -> bool:
