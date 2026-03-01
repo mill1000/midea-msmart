@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 
 from .command import (CapabilitiesResponse, EnergyUsageResponse,
-                      GetStateCommand, HumidityResponse, PropertiesResponse,
+                      GetStateCommand, Group5Response, PropertiesResponse,
                       Response, StateResponse)
 from .device import AirConditioner as AC
 from .device import PropertyId
@@ -310,7 +310,7 @@ class TestUpdateStateFromResponse(unittest.TestCase):
             self.assertIsNotNone(resp)
 
             # Assert response is a state response
-            self.assertEqual(type(resp), HumidityResponse)
+            self.assertEqual(type(resp), Group5Response)
 
             # Create a dummy device and process the response
             device = AC(0, 0, 0)

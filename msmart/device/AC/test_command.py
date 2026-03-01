@@ -1337,8 +1337,8 @@ class TestGroupDataResponse(_TestResponseBase):
             resp = self._test_build_response(response)
 
             # Assert response is a correct type
-            self.assertEqual(type(resp), HumidityResponse)
-            resp = cast(HumidityResponse, resp)
+            self.assertEqual(type(resp), Group5Response)
+            resp = cast(Group5Response, resp)
 
             self.assertEqual(resp.humidity, humidity)
 
