@@ -7,7 +7,7 @@ from typing import Any, Optional, Union, cast
 from msmart.base_device import Device
 from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
-from msmart.utils import MideaIntEnum, deprecated
+from msmart.utils import CapabilityManager, MideaIntEnum, deprecated
 
 from .command import (CapabilitiesResponse, Command, EnergyUsageResponse,
                       GetCapabilitiesCommand, GetEnergyUsageCommand,
@@ -102,19 +102,6 @@ class AirConditioner(Device):
         BCD = 0
         BINARY = 1
 
-    # Create a dict to map attributes to property values
-    _PROPERTY_MAP = {
-        PropertyId.BREEZE_AWAY: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZE_AWAY,
-        PropertyId.BREEZE_CONTROL: lambda s: s._breeze_mode,
-        PropertyId.BREEZELESS: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZELESS,
-        PropertyId.IECO: lambda s: s._ieco,
-        PropertyId.JET_COOL: lambda s: s._flash_cool,
-        PropertyId.RATE_SELECT: lambda s: s._rate_select,
-        PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
-        PropertyId.SWING_UD_ANGLE: lambda s: s._vertical_swing_angle,
-        PropertyId.CASCADE: lambda s: s._cascade_mode,
-    }
-
     class Capability(Flag):
         # Fan
         CUSTOM_FAN_SPEED = auto()
@@ -134,8 +121,8 @@ class AirConditioner(Device):
         TARGET_HUMIDITY = auto()
 
         # Swing
-        SWING_VERTICAL_ANGLE = auto()
         SWING_HORIZONTAL_ANGLE = auto()
+        SWING_VERTICAL_ANGLE = auto()
 
         # Breeze control
         BREEZE_AWAY = auto()
@@ -156,24 +143,18 @@ class AirConditioner(Device):
             PURIFIER
         )
 
-    class Capabilities():
-        """Minimal wrapper class to make mutable capability flags."""
-
-        def __init__(self, default: AirConditioner.Capability) -> None:
-            self._flags: AirConditioner.Capability = default
-
-        @property
-        def value(self) -> int:
-            return self._flags.value
-
-        def has(self, flag: AirConditioner.Capability) -> bool:
-            return bool(self._flags & flag)
-
-        def set(self, flag: AirConditioner.Capability, enable: bool = True) -> None:
-            if enable:
-                self._flags |= flag
-            else:
-                self._flags &= ~flag
+    # Create a dict to map attributes to property values
+    _PROPERTY_MAP = {
+        PropertyId.BREEZE_AWAY: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZE_AWAY,
+        PropertyId.BREEZE_CONTROL: lambda s: s._breeze_mode,
+        PropertyId.BREEZELESS: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZELESS,
+        PropertyId.IECO: lambda s: s._ieco,
+        PropertyId.JET_COOL: lambda s: s._flash_cool,
+        PropertyId.RATE_SELECT: lambda s: s._rate_select,
+        PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
+        PropertyId.SWING_UD_ANGLE: lambda s: s._vertical_swing_angle,
+        PropertyId.CASCADE: lambda s: s._cascade_mode,
+    }
 
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
         # Remove possible duplicate device_type kwarg
@@ -207,7 +188,7 @@ class AirConditioner(Device):
         self._supported_fan_speeds = cast(
             list[AirConditioner.FanSpeed], AirConditioner.FanSpeed.list())
 
-        self._capabilities = AirConditioner.Capabilities(
+        self._capabilities: CapabilityManager = CapabilityManager(
             AirConditioner.Capability.DEFAULT)
 
         self._min_target_temperature = 16
