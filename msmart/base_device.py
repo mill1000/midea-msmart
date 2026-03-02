@@ -139,6 +139,9 @@ class Device():
             "key": self.key,
             "token": self.token
         }
+    
+    async def capabilities_dict(self) -> None:
+        raise NotImplementedError()
 
     def __str__(self) -> str:
         return str(self.to_dict())
