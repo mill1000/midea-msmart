@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import logging
 import time
+from enum import Enum
 from typing import TYPE_CHECKING, Optional, Union
+
+import yaml
 
 from msmart.const import DeviceType
 from msmart.frame import Frame
@@ -145,6 +148,28 @@ class Device():
 
     def __str__(self) -> str:
         return str(self.to_dict())
+
+    def dump_capabilities(self, filename):
+        def _serializable(value):
+            """Recursively convert value into YAML-safe primitives."""
+
+            if isinstance(value, Enum):
+                return value.name
+
+            if isinstance(value, dict):
+                return {k: _serializable(v) for k, v in value.items()}
+
+            if isinstance(value, (list, tuple)):
+                return [_serializable(v) for v in value]
+
+            if isinstance(value, set):
+                return sorted(_serializable(v) for v in value)
+
+            return value
+
+        caps = _serializable(self.capabilities_dict())
+        with open(filename, "w") as f:
+            yaml.safe_dump(caps, f)
 
     @classmethod
     def construct(cls, *, type: DeviceType, **kwargs) -> Union[AirConditioner, CommercialAirConditioner, Device]:
