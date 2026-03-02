@@ -100,32 +100,37 @@ async def _query(args) -> None:
     # Connect to the device
     device = await _connect(args)
 
-    if args.capabilities:
+    if args.capabilities: 
         _LOGGER.info("Querying device capabilities.")
         await device.get_capabilities()
 
-        if not device.online:
-            _LOGGER.error("Device is not online.")
+        # if not device.online:
+            # _LOGGER.error("Device is not online.")
+            # exit(1)
+
+        if isinstance(args.capabilities, str):
+            filename = args.capabilities
+            _LOGGER.info("Writing capabilities to '%s'.", filename)
+            device.dump_capabilities(filename)
+        else:
+            _LOGGER.info("%s", device.capabilities_dict())
+
+    # Enable energy requests
+    if args.energy:
+        if hasattr(device, "enable_energy_usage_requests"):
+            device.enable_energy_usage_requests = True
+        else:
+            _LOGGER.error("Device does not support energy data.")
             exit(1)
 
-        _LOGGER.info("%s", device.capabilities_dict())
-    else:
-        # Enable energy requests
-        if args.energy:
-            if hasattr(device, "enable_energy_usage_requests"):
-                device.enable_energy_usage_requests = True
-            else:
-                _LOGGER.error("Device does not support energy data.")
-                exit(1)
+    _LOGGER.info("Querying device state.")
+    await device.refresh()
 
-        _LOGGER.info("Querying device state.")
-        await device.refresh()
+    if not device.online:
+        _LOGGER.error("Device is not online.")
+        exit(1)
 
-        if not device.online:
-            _LOGGER.error("Device is not online.")
-            exit(1)
-
-        _LOGGER.info("%s", device)
+    _LOGGER.info("%s", device)
 
 
 async def _control(args) -> None:
@@ -359,7 +364,9 @@ def main() -> NoReturn:
                               help="Hostname or IP address of device.")
     query_parser.add_argument("--capabilities",
                               help="Query device capabilities instead of state.",
-                              action="store_true")
+                              metavar="FILE",
+                              nargs="?",
+                              const=True,)
     query_parser.add_argument("--device_type",
                               help="Type of device.",
                               choices=DEVICE_TYPES.keys())
