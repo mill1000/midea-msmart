@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from enum import Enum
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Any, NoReturn, Optional, Union
 
 import yaml
 
@@ -62,10 +62,10 @@ class Device():
 
         return responses
 
-    async def refresh(self) -> None:
+    async def refresh(self) -> NoReturn:
         raise NotImplementedError()
 
-    async def apply(self) -> None:
+    async def apply(self) -> NoReturn:
         raise NotImplementedError()
 
     async def authenticate(self, token: Token, key: Key) -> None:
@@ -142,15 +142,15 @@ class Device():
             "key": self.key,
             "token": self.token
         }
-    
-    async def capabilities_dict(self) -> None:
+
+    async def capabilities_dict(self) -> NoReturn:
         raise NotImplementedError()
 
     def __str__(self) -> str:
         return str(self.to_dict())
 
-    def dump_capabilities(self, filename):
-        def _serializable(value):
+    def dump_capabilities(self, filename) -> None:
+        def _serializable(value) -> Any:
             """Recursively convert value into YAML-safe primitives."""
 
             if isinstance(value, Enum):
@@ -163,13 +163,16 @@ class Device():
                 return [_serializable(v) for v in value]
 
             if isinstance(value, set):
-                return sorted(_serializable(v) for v in value)
+                return [_serializable(v) for v in value]
 
             return value
 
+        # Convert capabilities into basic type
         caps = _serializable(self.capabilities_dict())
-        with open(filename, "w") as f:
-            yaml.safe_dump(caps, f)
+
+        # Dump as YAML
+        with open(filename, "w") as file:
+            yaml.safe_dump(caps, file, sort_keys=False)
 
     @classmethod
     def construct(cls, *, type: DeviceType, **kwargs) -> Union[AirConditioner, CommercialAirConditioner, Device]:
