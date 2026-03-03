@@ -657,5 +657,5 @@ class CommercialAirConditioner(Device):
             "supported_fan_speeds": self.supported_fan_speeds,
             "supported_aux_modes": self.supported_aux_modes,
             "supported_purifier_modes": self.supported_purifier_modes,
-            "supported_capabilities": self._capabilities.flags
+            "additional_capabilities": self._capabilities.flags
         }
