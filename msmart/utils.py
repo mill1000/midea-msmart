@@ -31,6 +31,10 @@ class CapabilityManager(Generic[CapabilityFlag]):
         else:
             self._flags &= ~flag
 
+    @property
+    def flags(self) -> list[CapabilityFlag]:
+        return list(self._flags)
+
 
 class MideaIntEnum(IntEnum):
     """Helper class to convert IntEnums to/from strings."""
