@@ -22,6 +22,10 @@ class CapabilityManager(Generic[CapabilityFlag]):
     def value(self) -> int:
         return self._flags.value
 
+    @property
+    def flags(self) -> list[CapabilityFlag]:
+        return list(self._flags)
+
     def has(self, flag: CapabilityFlag) -> bool:
         return bool(self._flags & flag)
 
@@ -30,10 +34,6 @@ class CapabilityManager(Generic[CapabilityFlag]):
             self._flags |= flag
         else:
             self._flags &= ~flag
-
-    @property
-    def flags(self) -> list[CapabilityFlag]:
-        return list(self._flags)
 
 
 class MideaIntEnum(IntEnum):
