@@ -341,12 +341,12 @@ class CommercialAirConditioner(Device):
 
         # Warn if trying to apply unsupported modes
         if (ControlId.MODE in self._updated_controls and
-                self._operational_mode not in self._supported_op_modes):
+                self._operational_mode not in self.supported_operation_modes):
             _LOGGER.warning(
                 "Device %s is not capable of operational mode %r.",  self.id, self._operational_mode)
 
         if (ControlId.FAN_SPEED in self._updated_controls and
-                self._fan_speed not in self._supported_fan_speeds):
+                self._fan_speed not in self.supported_fan_speeds):
             _LOGGER.warning("Device %s is not capable of fan speed %r.",
                             self.id, self._fan_speed)
 
@@ -367,13 +367,13 @@ class CommercialAirConditioner(Device):
 
         if (ControlId.PURIFIER in self._updated_controls and
             self._purifier != self.PurifierMode.OFF and
-                self._purifier not in self._supported_purifier_modes):
+                self._purifier not in self.supported_purifier_modes):
             _LOGGER.warning("Device %s is not capable of purifier mode %r.",
                             self.id, self._purifier)
 
         if (ControlId.AUX_MODE in self._updated_controls and
             self._aux_mode != self.AuxHeatMode.OFF and
-                self._aux_mode not in self._supported_aux_modes):
+                self._aux_mode not in self.supported_aux_modes):
             _LOGGER.warning("Device %s is not capable of aux mode %r.",
                             self.id, self._aux_mode)
 

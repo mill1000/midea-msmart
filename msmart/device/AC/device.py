@@ -655,16 +655,16 @@ class AirConditioner(Device):
         """Apply the local state to the device."""
 
         # Warn if trying to apply unsupported modes
-        if self._operational_mode not in self._supported_op_modes:
+        if self._operational_mode not in self.supported_operation_modes:
             _LOGGER.warning(
                 "Device %s is not capable of operational mode %r.",  self.id, self._operational_mode)
 
-        if (self._fan_speed not in self._supported_fan_speeds
+        if (self._fan_speed not in self.supported_fan_speeds
                 and not self.supports_custom_fan_speed):
             _LOGGER.warning(
                 "Device %s is not capable of fan speed %r.",  self.id, self._fan_speed)
 
-        if self._swing_mode not in self._supported_swing_modes:
+        if self._swing_mode not in self.supported_swing_modes:
             _LOGGER.warning(
                 "Device %s is not capable of swing mode %r.",  self.id, self._swing_mode)
 
@@ -678,11 +678,11 @@ class AirConditioner(Device):
             _LOGGER.warning(
                 "Device %s is not capable of freeze protection.", self.id)
 
-        if self._rate_select != AirConditioner.RateSelect.OFF and self._rate_select not in self._supported_rate_selects:
+        if self._rate_select != AirConditioner.RateSelect.OFF and self._rate_select not in self.supported_rate_selects:
             _LOGGER.warning(
                 "Device %s is not capable of rate select %r.",  self.id, self._rate_select)
 
-        if self._aux_mode != AirConditioner.AuxHeatMode.OFF and self._aux_mode not in self._supported_aux_modes:
+        if self._aux_mode != AirConditioner.AuxHeatMode.OFF and self._aux_mode not in self.supported_aux_modes:
             _LOGGER.warning(
                 "Device is not capable of aux mode %r.", self._aux_mode)
 
