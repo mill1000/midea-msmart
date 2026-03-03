@@ -100,20 +100,20 @@ async def _query(args) -> None:
     # Connect to the device
     device = await _connect(args)
 
-    if args.capabilities: 
+    if args.capabilities:
         _LOGGER.info("Querying device capabilities.")
         await device.get_capabilities()
 
-        # if not device.online:
-            # _LOGGER.error("Device is not online.")
-            # exit(1)
+        if not device.online:
+            _LOGGER.error("Device is not online.")
+            exit(1)
 
         if isinstance(args.capabilities, str):
             filename = args.capabilities
             _LOGGER.info("Writing capabilities to '%s'.", filename)
             device.dump_capabilities(filename)
         else:
-            _LOGGER.info("%s", device.capabilities_dict())
+            _LOGGER.info("Device capabilities: %s", device.capabilities_dict())
 
     # Enable energy requests
     if args.energy:
@@ -130,7 +130,7 @@ async def _query(args) -> None:
         _LOGGER.error("Device is not online.")
         exit(1)
 
-    _LOGGER.info("%s", device)
+    _LOGGER.info("Device state: %s", device)
 
 
 async def _control(args) -> None:
@@ -363,10 +363,10 @@ def main() -> NoReturn:
     query_parser.add_argument("host",
                               help="Hostname or IP address of device.")
     query_parser.add_argument("--capabilities",
-                              help="Query device capabilities instead of state.",
+                              help="Query device capabilities before state. If FILE is provided, write capabilities as YAML to the file.",
                               metavar="FILE",
                               nargs="?",
-                              const=True,)
+                              const=True)
     query_parser.add_argument("--device_type",
                               help="Type of device.",
                               choices=DEVICE_TYPES.keys())
