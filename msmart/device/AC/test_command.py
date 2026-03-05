@@ -1322,7 +1322,7 @@ class TestGroupDataResponse(_TestResponseBase):
             self.assertEqual(resp.real_time_power_binary, real_time)
 
     def test_humidity(self) -> None:
-        """Test we decode humidity responses correctly."""
+        """Test we decode humidity from group 5 responses correctly."""
         TEST_RESPONSES = {
             # Device supports humidity
             # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2218019069
@@ -1341,6 +1341,24 @@ class TestGroupDataResponse(_TestResponseBase):
             resp = cast(Group5Response, resp)
 
             self.assertEqual(resp.humidity, humidity)
+
+    def test_defrost(self) -> None:
+        """Test we decode defrost status from group 5 payloads correctly."""
+        TEST_PAYLOADS = {
+            # Defrosting state 1
+            # https://github.com/mill1000/midea-msmart/issues/248#issue-4000765033
+            bytes.fromhex("c12101451e4f2b5e003c01000000692900cf7e0001bb38"): True,
+
+            # Not defrosting
+            # https://github.com/mill1000/midea-msmart/issues/248#issuecomment-3982072261
+            bytes.fromhex("c12101451e4dcf5e611f00000052ad2900cf7e0002"): False
+        }
+
+        for payload, defrost in TEST_PAYLOADS.items():
+            with memoryview(payload) as mv_payload:
+                resp = Group5Response(mv_payload)
+
+            self.assertEqual(resp.defrost, defrost)
 
 
 if __name__ == "__main__":
