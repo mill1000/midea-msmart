@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import logging
 import time
-from enum import Enum
-from typing import TYPE_CHECKING, Any, NoReturn, Optional, Union
+from enum import Enum, Flag
+from typing import TYPE_CHECKING, Any, NoReturn, Optional, Union, cast
 
 import yaml
 
 from msmart.const import DeviceType
 from msmart.frame import Frame
 from msmart.lan import LAN, AuthenticationError, Key, ProtocolError, Token
+from msmart.utils import CapabilityManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,6 +20,8 @@ if TYPE_CHECKING:
 
 
 class Device():
+
+    _SUPPORTED_CAPABILITY_OVERRIDES: dict[str, tuple[str, type]] = {}
 
     def __init__(self, *, ip: str, port: int, device_id: int, device_type: DeviceType, **kwargs) -> None:
         self._ip = ip
@@ -143,13 +146,14 @@ class Device():
             "token": self.token
         }
 
-    async def capabilities_dict(self) -> NoReturn:
+    async def capabilities_dict(self) -> dict:
         raise NotImplementedError()
 
     def __str__(self) -> str:
         return str(self.to_dict())
 
-    def dump_capabilities(self, filename) -> None:
+    def dump_capabilities(self) -> str:
+        """Dump device capabilitites as YAML."""
         def _serializable(value) -> Any:
             """Recursively convert value into YAML-safe primitives."""
 
@@ -171,8 +175,65 @@ class Device():
         caps = _serializable(self.capabilities_dict())
 
         # Dump as YAML
-        with open(filename, "w") as file:
-            yaml.safe_dump(caps, file, sort_keys=False)
+        return yaml.safe_dump(caps, sort_keys=False)
+
+    def override_capabilities(self, override_yaml: str) -> None:
+        """Override device capabilities via YAML."""
+
+        # Load incoming YAML
+        overrides = yaml.safe_load(override_yaml)
+
+        # Get supported overrides
+        supported_overrides = self._SUPPORTED_CAPABILITY_OVERRIDES
+
+        # Convert and appy each override
+        for key, value in overrides.items():
+            # Check if override is allowed
+            if key not in supported_overrides:
+                raise ValueError(f"Unsupported capabilities override '{key}'.")
+
+            # Get target attribute and value type
+            attr_name, value_type = supported_overrides[key]
+
+            # Handle numberic overrides
+            if value_type is float:
+                # Check if value is numeric
+                if not isinstance(value, (float, int)):
+                    raise ValueError(f"'{key}' must be a number.")
+
+                # Coerce to float and apply
+                setattr(self, attr_name, float(value))
+                continue
+
+            # Handle enum overrides
+            if issubclass(value_type, Enum):
+                # Value should be a list of enum names
+                if not isinstance(value, list):
+                    raise ValueError(f"'{key}' must be a list.")
+
+                # Attempt to convert from names
+                try:
+                    members = [value_type[v] for v in value]
+                except KeyError as e:
+                    raise ValueError(
+                        f"Invalid value '{e.args[0]!r}' for '{key}'.")
+
+                # Handle regular enums
+                if not issubclass(value_type, Flag):
+                    setattr(self, attr_name, list(members))
+                    continue
+
+                # Merge Flag enums into a single value
+                flags = value_type(0)
+                for m in members:
+                    flags |= cast(Flag, m)
+
+                # Handle special case for capability manager
+                attr = getattr(self, attr_name)
+                if isinstance(attr, CapabilityManager):
+                    attr.flags = flags
+                else:
+                    setattr(self, attr_name, flags)
 
     @classmethod
     def construct(cls, *, type: DeviceType, **kwargs) -> Union[AirConditioner, CommercialAirConditioner, Device]:

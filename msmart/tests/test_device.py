@@ -1,6 +1,9 @@
 import logging
 import unittest
+from enum import Enum
 from unittest.mock import patch
+
+import yaml
 
 from msmart.base_device import Device
 from msmart.const import DeviceType, FrameType
@@ -58,6 +61,119 @@ class TestSendCommand(unittest.IsolatedAsyncioTestCase):
 
             # Assrt empty list was returned
             self.assertEqual(responses, [])
+
+
+class TestOverridecapabilities(unittest.TestCase):
+    """Test overriding capabilities via YAML."""
+
+    def test_invalid_yaml(self) -> None:
+        """Test invalid YAML throw an exception."""
+
+        # Create dummy device
+        device = Device(
+            device_type=DeviceType.AIR_CONDITIONER,
+            device_id=0,
+            ip="0",
+            port=0
+        )
+
+        # Override with invalid YAML
+        with self.assertRaises(yaml.scanner.ScannerError):
+            device.override_capabilities("""
+            playlist
+                name: My Playlist
+                tracks: 5""")
+
+    def test_unsupported_override(self) -> None:
+        """Test an unsupported overrides throw a ValueError."""
+
+        # Create dummy device which defaults to no overrides
+        device = Device(
+            device_type=DeviceType.AIR_CONDITIONER,
+            device_id=0,
+            ip="0",
+            port=0
+        )
+
+        with self.assertRaisesRegex(ValueError, "Unsupported capabilities override .*"):
+            device.override_capabilities("supports_eco: True")
+
+    def test_numeric_invalid(self) -> None:
+        """Test invalid numberic values throw a ValueError."""
+
+        # Create dummy device
+        device = Device(
+            device_type=DeviceType.AIR_CONDITIONER,
+            device_id=0,
+            ip="0",
+            port=0
+        )
+
+        # Allow some numeric overrides
+        device._SUPPORTED_CAPABILITY_OVERRIDES = {
+            "min_target_temperature": ("_dummy_attr", float),
+            "max_target_temperature": ("_dummy_attr", float)
+        }
+
+        with self.assertRaisesRegex(ValueError, "'min_target_temperature' must be a number"):
+            device.override_capabilities("min_target_temperature: apple")
+
+        with self.assertRaisesRegex(ValueError, "'max_target_temperature' must be a number"):
+            device.override_capabilities(
+                "max_target_temperature: [20 50]")
+
+    def test_enums_invalid_name(self) -> None:
+        """Test invalid enum names throw a ValueError."""
+
+        # Create dummy device
+        device = Device(
+            device_type=DeviceType.AIR_CONDITIONER,
+            device_id=0,
+            ip="0",
+            port=0
+        )
+
+        # Create dummy enum for test
+        class TestEnum(Enum):
+            VALUE = 1
+
+        # Allow override for TestEnum
+        device._SUPPORTED_CAPABILITY_OVERRIDES = {
+            "supported_modes": ("_dummy_attr", TestEnum),
+        }
+
+        # Expect value errors for invalid enum name
+        with self.assertRaisesRegex(ValueError, "Invalid value .*? for .*"):
+            device.override_capabilities("supported_modes: [bad_enum_name]")
+
+    def test_enums_invalid_format(self) -> None:
+        """Test invalid enum values throw a ValueError."""
+        TEST_OVERRIDES = {
+            "supported_aux_modes: HEAT",
+            "supported_aux_modes: 1.0",
+        }
+
+        # Create dummy device
+        device = Device(
+            device_type=DeviceType.AIR_CONDITIONER,
+            device_id=0,
+            ip="0",
+            port=0
+        )
+
+        # Create dummy enum for test
+        class TestEnum(Enum):
+            VALUE = 1
+
+        # Allow override for TestEnum
+        device._SUPPORTED_CAPABILITY_OVERRIDES = {
+            "supported_aux_modes": ("_dummy_attr", TestEnum),
+        }
+
+        # Expect value errors for each invalid enum value
+        for override in TEST_OVERRIDES:
+            with self.assertRaisesRegex(ValueError, ".* must be a list"):
+                device.override_capabilities(override)
 
 
 if __name__ == "__main__":
