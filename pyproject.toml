@@ -23,7 +23,8 @@ classifiers = [
 ]
 dependencies = [
   "httpx",
-  "pycryptodome"
+  "pycryptodome",
+  "pyyaml"
 ]
 dynamic = ["version"]
 
