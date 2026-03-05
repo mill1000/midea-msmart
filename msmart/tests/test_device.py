@@ -35,7 +35,7 @@ class TestSendCommand(unittest.IsolatedAsyncioTestCase):
             # Assert patched method was awaited
             patched_method.assert_awaited()
 
-            # Assrt empty list was returned
+            # Assert empty list was returned
             self.assertEqual(responses, [])
 
     async def test_protocol_error(self) -> None:
@@ -59,11 +59,11 @@ class TestSendCommand(unittest.IsolatedAsyncioTestCase):
             # Assert patched method was awaited
             patched_method.assert_awaited()
 
-            # Assrt empty list was returned
+            # Assert empty list was returned
             self.assertEqual(responses, [])
 
 
-class TestOverridecapabilities(unittest.TestCase):
+class TestOverrideCapabilities(unittest.TestCase):
     """Test overriding capabilities via YAML."""
 
     def test_invalid_yaml(self) -> None:
@@ -99,7 +99,7 @@ class TestOverridecapabilities(unittest.TestCase):
             device.override_capabilities("supports_eco: True")
 
     def test_numeric_invalid(self) -> None:
-        """Test invalid numberic values throw a ValueError."""
+        """Test invalid numeric values throw a ValueError."""
 
         # Create dummy device
         device = Device(

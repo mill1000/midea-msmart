@@ -153,7 +153,7 @@ class Device():
         return str(self.to_dict())
 
     def dump_capabilities(self) -> str:
-        """Dump device capabilitites as YAML."""
+        """Dump device capabilities as YAML."""
         def _serializable(value) -> Any:
             """Recursively convert value into YAML-safe primitives."""
 
@@ -186,7 +186,7 @@ class Device():
         # Get supported overrides
         supported_overrides = self._SUPPORTED_CAPABILITY_OVERRIDES
 
-        # Convert and appy each override
+        # Convert and apply each override
         for key, value in overrides.items():
             # Check if override is allowed
             if key not in supported_overrides:
@@ -195,7 +195,7 @@ class Device():
             # Get target attribute and value type
             attr_name, value_type = supported_overrides[key]
 
-            # Handle numberic overrides
+            # Handle numeric overrides
             if value_type is float:
                 # Check if value is numeric
                 if not isinstance(value, (float, int)):
