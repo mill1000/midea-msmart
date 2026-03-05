@@ -683,7 +683,6 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
             patched_method.assert_awaited()
 
 
-
 class TestCapabilityOverrides(unittest.TestCase):
     """Test overriding device capabilities via YAML."""
     # pylint: disable=protected-access
@@ -785,7 +784,6 @@ class TestCapabilityOverrides(unittest.TestCase):
         device.override_capabilities(TEST_OVERRIDE)
 
         self.assertEqual(device.supported_aux_modes, EXPECTED_VALUE)
-
 
     def test_purifier_modes(self) -> None:
         """Test overriding purifier modes."""
