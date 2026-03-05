@@ -1,4 +1,4 @@
-"""Command and repsonse messages for 0xCC devices."""
+"""Command and response messages for 0xCC devices."""
 from __future__ import annotations
 
 import logging
@@ -192,7 +192,7 @@ class QueryResponse(Response):
         self.display = False
         self.aux_mode = 0
 
-        # Capablities
+        # Capabilities
         self.target_temperature_min = 17
         self.target_temperature_max = 30
         self.supports_humidity = None
@@ -265,7 +265,7 @@ class QueryResponse(Response):
         self.vert_swing_angle = payload[41]  # Replicated at payload[36]?
         self.horz_swing_angle = payload[43]  # Not replicated?
 
-        # 0 - "Close", 1 - Follow, 2 - Avoid, 3 - Soft, 4 - Stong
+        # 0 - "Close", 1 - Follow, 2 - Avoid, 3 - Soft, 4 - Strong
         self.wind_sense = payload[45]
 
         # TODO fault codes at payload[47:50]
@@ -292,7 +292,7 @@ class QueryResponse(Response):
         self.beep = bool(payload[80])
         self.display = bool(payload[81])
 
-        # 0 - Auto, 1 - On, 2 - Off, 4 - "Seperate"
+        # 0 - Auto, 1 - On, 2 - Off, 4 - "Separate"
         self.aux_mode = payload[87]
 
     def parse_capabilities(self) -> None:

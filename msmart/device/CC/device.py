@@ -188,7 +188,7 @@ class CommercialAirConditioner(Device):
                           self.id, res)
 
     def _update_capabilities(self, res: QueryResponse) -> None:
-        """Update device capabiltiies."""
+        """Update device capabilities."""
         self._min_target_temperature = res.target_temperature_min
         self._max_target_temperature = res.target_temperature_max
 
@@ -270,7 +270,7 @@ class CommercialAirConditioner(Device):
 
     async def get_capabilities(self) -> None:
         """Fetch the device capabilities."""
-        # Capabilties are part of query response
+        # Capabilities are part of query response
         cmd = QueryCommand()
         responses = await self._send_commands_get_responses(cmd)
         if len(responses) == 0:
@@ -285,7 +285,7 @@ class CommercialAirConditioner(Device):
             return
 
         # Get capabilities from query response
-        _LOGGER.debug("Parsing capabiltiies from query response payload from device %s: %s",
+        _LOGGER.debug("Parsing capabilities from query response payload from device %s: %s",
                       self.id, response)
         response.parse_capabilities()
 

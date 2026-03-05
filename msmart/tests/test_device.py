@@ -32,7 +32,7 @@ class TestSendCommand(unittest.IsolatedAsyncioTestCase):
             # Assert patched method was awaited
             patched_method.assert_awaited()
 
-            # Assrt empty list was returned
+            # Assert empty list was returned
             self.assertEqual(responses, [])
 
     async def test_protocol_error(self) -> None:
@@ -56,7 +56,7 @@ class TestSendCommand(unittest.IsolatedAsyncioTestCase):
             # Assert patched method was awaited
             patched_method.assert_awaited()
 
-            # Assrt empty list was returned
+            # Assert empty list was returned
             self.assertEqual(responses, [])
 
 
