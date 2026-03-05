@@ -26,6 +26,10 @@ class CapabilityManager(Generic[CapabilityFlag]):
     def flags(self) -> list[CapabilityFlag]:
         return list(self._flags)
 
+    @flags.setter
+    def flags(self, flags: CapabilityFlag) -> None:
+        self._flags = flags
+
     def has(self, flag: CapabilityFlag) -> bool:
         return bool(self._flags & flag)
 
