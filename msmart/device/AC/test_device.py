@@ -948,8 +948,8 @@ class TestCapabilityOverrides(unittest.TestCase):
         # Alter default capabilities
         device._capabilities.set(AC.Capability.CUSTOM_FAN_SPEED, False)
         device._capabilities.set(AC.Capability.ECO, False)
-        device._capabilities.set(AC.Capability.TURBO)
-        device._capabilities.set(AC.Capability.SELF_CLEAN)
+        device._capabilities.set(AC.Capability.TURBO, True)
+        device._capabilities.set(AC.Capability.SELF_CLEAN, True)
 
         # Assert the capabilities match
         self.assertEqual(device.supports_custom_fan_speed, False)
@@ -967,6 +967,64 @@ class TestCapabilityOverrides(unittest.TestCase):
         self.assertEqual(device.supports_freeze_protection, True)
         self.assertEqual(device.supports_turbo, False)
         self.assertEqual(device.supports_self_clean, False)
+
+    def test_supported_properties(self) -> None:
+        """Test overriding capabilities updated supported properties as needed."""
+        TEST_OVERRIDE = """
+        additional_capabilities:
+        - SWING_VERTICAL_ANGLE
+        - JET_COOL
+        """
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        # Process capability responses to add additional capabilities and supported properties
+        # https://github.com/mill1000/midea-msmart/issues/150#issuecomment-2276158338
+        CAPABILITIES_PAYLOAD_0 = bytes.fromhex(
+            "b50a12020101430001011402010115020101160201001a020101100201011f020103250207203c203c203c05400001000100")
+        CAPABILITIES_PAYLOAD_1 = bytes.fromhex(
+            "b5051e020101130201012202010019020100390001010000")
+
+        with memoryview(CAPABILITIES_PAYLOAD_0) as payload0, memoryview(CAPABILITIES_PAYLOAD_1) as payload1:
+            resp0 = CapabilitiesResponse(payload0)
+            resp1 = CapabilitiesResponse(payload1)
+
+            resp0.merge(resp1)
+            device._update_capabilities(resp0)
+
+        # Assert expected capabilities and supported properties
+        self.assertEqual(device.supports_breeze_away, True)
+        self.assertEqual(device.supports_breeze_mild, True)
+        self.assertEqual(device.supports_breezeless, True)
+
+        self.assertIn(PropertyId.BREEZE_CONTROL, device._supported_properties)
+
+        # Assert overrides aren't already supported
+        self.assertEqual(device.supports_vertical_swing_angle, False)
+        self.assertEqual(device.supports_flash_cool, False)
+
+        self.assertNotIn(PropertyId.SWING_UD_ANGLE,
+                         device._supported_properties)
+        self.assertNotIn(PropertyId.JET_COOL, device._supported_properties)
+
+        # Override capabilities
+        device.override_capabilities(TEST_OVERRIDE)
+
+        # Verify overrides are now supported and in supported properties
+        self.assertEqual(device.supports_vertical_swing_angle, True)
+        self.assertEqual(device.supports_flash_cool, True)
+
+        self.assertIn(PropertyId.SWING_UD_ANGLE, device._supported_properties)
+        self.assertIn(PropertyId.JET_COOL, device._supported_properties)
+
+        # Verify overrides removed the original capabilities
+        self.assertEqual(device.supports_breeze_away, False)
+        self.assertEqual(device.supports_breeze_mild, False)
+        self.assertEqual(device.supports_breezeless, False)
+
+        self.assertNotIn(PropertyId.BREEZE_CONTROL,
+                         device._supported_properties)
 
 
 if __name__ == "__main__":

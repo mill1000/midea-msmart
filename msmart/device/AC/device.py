@@ -494,6 +494,7 @@ class AirConditioner(Device):
         self._capabilities.set(
             AirConditioner.Capability.JET_COOL, res.jet_cool)
 
+        # Update supported properties from capabilities
         self._update_supported_properties()
 
     def _update_supported_properties(self) -> None:
@@ -511,6 +512,7 @@ class AirConditioner(Device):
             AirConditioner.Capability.SWING_HORIZONTAL_ANGLE: PropertyId.SWING_LR_ANGLE,
             AirConditioner.Capability.SWING_VERTICAL_ANGLE: PropertyId.SWING_UD_ANGLE,
         }
+
         # Clear existing properties
         self._supported_properties.clear()
 
@@ -738,6 +740,14 @@ class AirConditioner(Device):
 
         # Reset updated properties set
         self._updated_properties.clear()
+
+    def override_capabilities(self, override_yaml: str) -> None:
+        """Override device capabilities via YAML."""
+        # Apply overrides
+        super().override_capabilities(override_yaml)
+
+        # Update supported properties
+        self._update_supported_properties()
 
     @property
     def beep(self) -> bool:
