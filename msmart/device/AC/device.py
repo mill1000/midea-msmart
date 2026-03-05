@@ -199,6 +199,7 @@ class AirConditioner(Device):
 
         self._error_code = None
 
+        self._request_group5_data = False
         self._defrost_active = False
 
     def _update_state(self, res: Response) -> None:
@@ -318,7 +319,7 @@ class AirConditioner(Device):
 
         elif isinstance(res, Group5Response):
             _LOGGER.debug(
-                "Humidity response payload from device %s: %s", self.id, res)
+                "Group 5 response payload from device %s: %s", self.id, res)
 
             self._indoor_humidity = res.humidity
             self._defrost_active = res.defrost
@@ -564,8 +565,8 @@ class AirConditioner(Device):
         if self._request_energy_usage:
             commands.append(GetEnergyUsageCommand())
 
-        # Fetch humidity if supported
-        if self._supports_humidity:
+        # Request Group 5 data if humidity is supported or otherwise enabled
+        if self._supports_humidity or self._request_group5_data:
             commands.append(GetGroup5Command())
 
         # Update supported properties
@@ -1033,6 +1034,14 @@ class AirConditioner(Device):
     @property
     def error_code(self) -> Optional[int]:
         return self._error_code
+
+    @property
+    def enable_group5_data_requests(self) -> bool:
+        return self._request_group5_data
+
+    @enable_group5_data_requests.setter
+    def enable_group5_data_requests(self, enable: bool) -> None:
+        self._request_group5_data = enable
 
     @property
     def defrost_active(self) -> Optional[bool]:
