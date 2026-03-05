@@ -156,6 +156,17 @@ class AirConditioner(Device):
         PropertyId.CASCADE: lambda s: s._cascade_mode,
     }
 
+    _SUPPORTED_CAPABILITY_OVERRIDES = {
+        "min_target_temperature": ("_min_target_temperature", float),
+        "max_target_temperature": ("_max_target_temperature", float),
+        "supported_modes": ("_supported_op_modes", OperationalMode),
+        "supported_swing_modes": ("_supported_swing_modes", SwingMode),
+        "supported_fan_speeds": ("_supported_fan_speeds", FanSpeed),
+        "supported_aux_modes": ("_supported_aux_modes", AuxHeatMode),
+        "supported_rate_selects": ("_supported_rate_selects", RateSelect),
+        "additional_capabilities": ("_capabilities", Capability),
+    }
+
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
         # Remove possible duplicate device_type kwarg
         kwargs.pop("device_type", None)

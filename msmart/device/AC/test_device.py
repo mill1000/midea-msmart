@@ -810,5 +810,164 @@ class TestDeprecation(unittest.TestCase):
                              "'use_alternate_energy_format' is deprecated.")
 
 
+class TestCapabilityOverrides(unittest.TestCase):
+    """Test overriding device capabilities via YAML."""
+    # pylint: disable=protected-access
+
+    def test_target_temperatures(self) -> None:
+        """Test min/max target temperature overrides are applied."""
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        device.override_capabilities("min_target_temperature: 22.5")
+        self.assertEqual(device.min_target_temperature, 22.5)
+
+        device.override_capabilities("max_target_temperature: 40")
+        self.assertEqual(device.max_target_temperature, 40.0)
+
+    def test_operational_modes(self) -> None:
+        """Test overriding operational modes."""
+        TEST_OVERRIDE = """
+        supported_modes:
+        - HEAT
+        - COOL
+        - AUTO
+        """
+        EXPECTED_VALUE = [
+            AC.OperationalMode.HEAT,
+            AC.OperationalMode.COOL,
+            AC.OperationalMode.AUTO,
+        ]
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_operation_modes, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_operation_modes, EXPECTED_VALUE)
+
+    def test_swing_modes(self) -> None:
+        """Test overriding swing modes."""
+        TEST_OVERRIDE = """
+        supported_swing_modes:
+        - BOTH
+        - HORIZONTAL
+        """
+        EXPECTED_VALUE = [
+            AC.SwingMode.BOTH,
+            AC.SwingMode.HORIZONTAL,
+        ]
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_swing_modes, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_swing_modes, EXPECTED_VALUE)
+
+    def test_fan_speeds(self) -> None:
+        """Test overriding fan speeds."""
+        TEST_OVERRIDE = """
+        supported_fan_speeds:
+        - AUTO
+        - HIGH
+        """
+        EXPECTED_VALUE = [
+            AC.FanSpeed.AUTO,
+            AC.FanSpeed.HIGH,
+        ]
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_fan_speeds, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_fan_speeds, EXPECTED_VALUE)
+
+    def test_aux_modes(self) -> None:
+        """Test overriding aux heat modes."""
+        TEST_OVERRIDE = """
+        supported_aux_modes:
+        - 'OFF'
+        - AUX_ONLY
+        """
+        EXPECTED_VALUE = [
+            AC.AuxHeatMode.OFF,
+            AC.AuxHeatMode.AUX_ONLY,
+        ]
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_aux_modes, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_aux_modes, EXPECTED_VALUE)
+
+    def test_rate_selects(self) -> None:
+        """Test overriding rate selects."""
+        TEST_OVERRIDE = """
+        supported_rate_selects:
+        - 'OFF'
+        - LEVEL_5
+        """
+        EXPECTED_VALUE = [
+            AC.RateSelect.OFF,
+            AC.RateSelect.LEVEL_5,
+        ]
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_rate_selects, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_rate_selects, EXPECTED_VALUE)
+
+    def test_additional_capabilities(self) -> None:
+        """Test overriding additional capabilities."""
+        TEST_OVERRIDE = """
+        additional_capabilities:
+        - CUSTOM_FAN_SPEED
+        - ECO
+        - FREEZE_PROTECTION
+        """
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        # Alter default capabilities
+        device._capabilities.set(AC.Capability.CUSTOM_FAN_SPEED, False)
+        device._capabilities.set(AC.Capability.ECO, False)
+        device._capabilities.set(AC.Capability.TURBO)
+        device._capabilities.set(AC.Capability.SELF_CLEAN)
+
+        # Assert the capabilities match
+        self.assertEqual(device.supports_custom_fan_speed, False)
+        self.assertEqual(device.supports_eco, False)
+        self.assertEqual(device.supports_freeze_protection, True)
+        self.assertEqual(device.supports_turbo, True)
+        self.assertEqual(device.supports_self_clean, True)
+
+        # Override capabilities
+        device.override_capabilities(TEST_OVERRIDE)
+
+        # Assert they match
+        self.assertEqual(device.supports_custom_fan_speed, True)
+        self.assertEqual(device.supports_eco, True)
+        self.assertEqual(device.supports_freeze_protection, True)
+        self.assertEqual(device.supports_turbo, False)
+        self.assertEqual(device.supports_self_clean, False)
+
+
 if __name__ == "__main__":
     unittest.main()
