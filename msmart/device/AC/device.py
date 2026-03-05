@@ -764,11 +764,11 @@ class AirConditioner(Device):
         self._fahrenheit_unit = enabled
 
     @property
-    def min_target_temperature(self) -> int:
+    def min_target_temperature(self) -> float:
         return self._min_target_temperature
 
     @property
-    def max_target_temperature(self) -> int:
+    def max_target_temperature(self) -> float:
         return self._max_target_temperature
 
     @property
