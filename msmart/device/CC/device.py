@@ -384,12 +384,12 @@ class CommercialAirConditioner(Device):
         self._updated_controls.add(ControlId.POWER)
 
     @property
-    def min_target_temperature(self) -> int:
-        return int(self._min_target_temperature)
+    def min_target_temperature(self) -> float:
+        return self._min_target_temperature
 
     @property
-    def max_target_temperature(self) -> int:
-        return int(self._max_target_temperature)
+    def max_target_temperature(self) -> float:
+        return self._max_target_temperature
 
     @property
     def target_temperature(self) -> Optional[float]:
