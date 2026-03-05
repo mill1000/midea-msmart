@@ -3,8 +3,9 @@ import unittest
 from unittest.mock import patch
 
 from .command import (CapabilitiesResponse, EnergyUsageResponse,
-                      GetStateCommand, Group5Response, PropertiesResponse,
-                      Response, StateResponse)
+                      GetEnergyUsageCommand, GetGroup5Command,
+                      GetPropertiesCommand, GetStateCommand, Group5Response,
+                      PropertiesResponse, Response, StateResponse)
 from .device import AirConditioner as AC
 from .device import PropertyId
 
@@ -294,7 +295,7 @@ class TestUpdateStateFromResponse(unittest.TestCase):
                 AC.EnergyDataFormat.BINARY), real_time)
 
     def test_humidity_response(self) -> None:
-        """Test parsing of HumidityResponses into device state."""
+        """Test parsing of humidity data in Group5Response into device state."""
         TEST_RESPONSES = {
             # Device supports humidity
             # https://github.com/mill1000/midea-msmart/pull/116#issuecomment-2218019069
@@ -588,6 +589,113 @@ class TestSetState(unittest.TestCase):
 
         # Assert correct property is being updated
         self.assertIn(PropertyId.CASCADE, device._updated_properties)
+
+
+class TestRefresh(unittest.IsolatedAsyncioTestCase):
+
+    async def test_refresh_get_state(self) -> None:
+        """Test that refresh() sends the GetStateCommand."""
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        # Patch _send_commands_get_responses so we can inspect the commands sent
+        with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
+            await device.refresh()
+
+            # Assert patched method was awaited
+            patched_method.assert_awaited_once()
+
+            # Get call arguments
+            args, kwargs = patched_method.call_args
+            commands = args[0]
+
+            self.assertTrue(any(isinstance(cmd, GetStateCommand)
+                            for cmd in commands))
+
+    async def test_refresh_energy_usage(self) -> None:
+        """Test that refresh() sends the GetEnergyUsageCommand when enabled."""
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+        device.enable_energy_usage_requests = True
+
+        # Patch _send_commands_get_responses so we can inspect the commands sent
+        with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
+            await device.refresh()
+
+            # Assert patched method was awaited
+            patched_method.assert_awaited_once()
+
+            # Get call arguments
+            args, kwargs = patched_method.call_args
+            commands = args[0]
+
+            self.assertTrue(any(isinstance(cmd, GetEnergyUsageCommand)
+                            for cmd in commands))
+
+    async def test_refresh_group5_humidity(self) -> None:
+        """Test that refresh() sends the GetGroup5Command when humidity is supported."""
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+        device._supports_humidity = True
+
+        # Patch _send_commands_get_responses so we can inspect the commands sent
+        with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
+            await device.refresh()
+
+            # Assert patched method was awaited
+            patched_method.assert_awaited_once()
+
+            # Get call arguments
+            args, kwargs = patched_method.call_args
+            commands = args[0]
+
+            self.assertTrue(any(isinstance(cmd, GetGroup5Command)
+                            for cmd in commands))
+
+    async def test_refresh_group5_enabled(self) -> None:
+        """Test that refresh() sends the GetGroup5Command when enabled."""
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+        device.enable_group5_data_requests = True
+
+        # Patch _send_commands_get_responses so we can inspect the commands sent
+        with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
+            await device.refresh()
+
+            # Assert patched method was awaited
+            patched_method.assert_awaited_once()
+
+            # Get call arguments
+            args, kwargs = patched_method.call_args
+            commands = args[0]
+
+            self.assertTrue(any(isinstance(cmd, GetGroup5Command)
+                            for cmd in commands))
+
+    async def test_refresh_properties(self) -> None:
+        """Test that refresh() sends the GetPropertiesCommand when supported properties are present."""
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+        device._supported_properties.add(PropertyId.BREEZE_CONTROL)
+
+        # Patch _send_commands_get_responses so we can inspect the commands sent
+        with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
+            await device.refresh()
+
+            # Assert patched method was awaited
+            patched_method.assert_awaited_once()
+
+            # Get call arguments
+            args, kwargs = patched_method.call_args
+            commands = args[0]
+
+            self.assertTrue(any(isinstance(cmd, GetPropertiesCommand)
+                            for cmd in commands))
 
 
 class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
