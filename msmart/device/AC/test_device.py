@@ -933,6 +933,9 @@ class TestCapabilityOverrides(unittest.TestCase):
 
         self.assertEqual(device.supported_rate_selects, EXPECTED_VALUE)
 
+        # Rate selects is unique in that it is property based
+        self.assertIn(PropertyId.RATE_SELECT, device._supported_properties)
+
     def test_additional_capabilities(self) -> None:
         """Test overriding additional capabilities."""
         TEST_OVERRIDE = """
