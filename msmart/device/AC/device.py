@@ -11,11 +11,11 @@ from msmart.utils import CapabilityManager, MideaIntEnum, deprecated
 
 from .command import (CapabilitiesResponse, Command, EnergyUsageResponse,
                       GetCapabilitiesCommand, GetEnergyUsageCommand,
-                      GetHumidityCommand, GetPropertiesCommand,
-                      GetStateCommand, HumidityResponse,
-                      InvalidResponseException, PropertiesResponse, PropertyId,
-                      Response, SetPropertiesCommand, SetStateCommand,
-                      StateResponse, ToggleDisplayCommand)
+                      GetGroup5Command, GetPropertiesCommand, GetStateCommand,
+                      Group5Response, InvalidResponseException,
+                      PropertiesResponse, PropertyId, Response,
+                      SetPropertiesCommand, SetStateCommand, StateResponse,
+                      ToggleDisplayCommand)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -246,6 +246,9 @@ class AirConditioner(Device):
 
         self._error_code = None
 
+        self._request_group5_data = False
+        self._defrost_active = False
+
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
 
@@ -361,11 +364,12 @@ class AirConditioner(Device):
             self._real_time_power_usage = {AirConditioner.EnergyDataFormat.BCD: res.real_time_power,
                                            AirConditioner.EnergyDataFormat.BINARY: res.real_time_power_binary}
 
-        elif isinstance(res, HumidityResponse):
+        elif isinstance(res, Group5Response):
             _LOGGER.debug(
-                "Humidity response payload from device %s: %s", self.id, res)
+                "Group 5 response payload from device %s: %s", self.id, res)
 
             self._indoor_humidity = res.humidity
+            self._defrost_active = res.defrost
 
         else:
             _LOGGER.debug("Ignored unknown response from device %s: %s",
@@ -635,9 +639,9 @@ class AirConditioner(Device):
         if self._request_energy_usage:
             commands.append(GetEnergyUsageCommand())
 
-        # Fetch humidity if supported
-        if self.supports_humidity:
-            commands.append(GetHumidityCommand())
+        # Request Group 5 data if humidity is supported or otherwise enabled
+        if self.supports_humidity or self._request_group5_data:
+            commands.append(GetGroup5Command())
 
         # Update supported properties
         if len(self._supported_properties):
@@ -1111,6 +1115,18 @@ class AirConditioner(Device):
     def error_code(self) -> Optional[int]:
         return self._error_code
 
+    @property
+    def enable_group5_data_requests(self) -> bool:
+        return self._request_group5_data
+
+    @enable_group5_data_requests.setter
+    def enable_group5_data_requests(self, enable: bool) -> None:
+        self._request_group5_data = enable
+
+    @property
+    def defrost_active(self) -> Optional[bool]:
+        return self._defrost_active
+
     def to_dict(self) -> dict:
         return {**super().to_dict(), **{
             "power": self.power_state,
@@ -1142,6 +1158,7 @@ class AirConditioner(Device):
             "rate_select": self.rate_select,
             "aux_mode": self.aux_mode,
             "error_code": self.error_code,
+            "defrost": self.defrost_active,
         }}
 
     def capabilities_dict(self) -> dict:

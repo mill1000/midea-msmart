@@ -230,8 +230,8 @@ class GetEnergyUsageCommand(Command):
         return super().tobytes(payload)
 
 
-class GetHumidityCommand(Command):
-    """Command to query indoor humidity from device."""
+class GetGroup5Command(Command):
+    """Command to query group 5 data from device."""
 
     def __init__(self) -> None:
         super().__init__(frame_type=FrameType.QUERY)
@@ -490,7 +490,7 @@ class Response():
                 if group == 4:
                     response_class = EnergyUsageResponse
                 elif group == 5:
-                    response_class = HumidityResponse
+                    response_class = Group5Response
 
             # Validate the payload CRC
             # ...except for properties which certain devices send invalid CRCs
@@ -657,7 +657,7 @@ class CapabilitiesResponse(Response):
                     caps[9] if size > 6 else caps[2]) != 0
 
             elif capability_id == CapabilityId._UNKNOWN:
-                # Supress warnings from unknown capability
+                # Suppress warnings from unknown capability
                 _LOGGER.debug(
                     "Ignored unknown capability ID: 0x%04X, Size: %d.", capability_id, size)
 
@@ -889,7 +889,7 @@ class StateResponse(Response):
         # Temperature parsing lifted from https://github.com/dudanov/MideaUART
         temperature = (data - 50) / 2
 
-        # In Celcius, use additional precision from decimals if present
+        # In Celsius, use additional precision from decimals if present
         if not fahrenheit and decimals:
             return int(temperature) + (decimals if temperature >= 0 else -decimals)
 
@@ -1124,18 +1124,19 @@ class EnergyUsageResponse(Response):
         self.real_time_power_binary = real_time_power_binary if valid else None
 
 
-class HumidityResponse(Response):
-    """Response to a GetHumidityCommand."""
+class Group5Response(Response):
+    """Group 5 response with humidity, defrost and more."""
 
     def __init__(self, payload: memoryview) -> None:
         super().__init__(payload)
 
         self.humidity = None
+        self.defrost = None
 
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
-        # Response is technically a "group data 5" response
-        # and may contain other interesting data
 
         self.humidity = payload[4] if payload[4] != 0 else None
+
+        self.defrost = bool(payload[10])

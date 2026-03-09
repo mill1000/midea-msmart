@@ -257,7 +257,7 @@ class TestQueryResponse(_TestResponseBase):
             self.assertEqual(resp.horz_swing_angle, lr_angle)
 
     def test_misc_properties(self) -> None:
-        """Test parsing of miscalenous properties from payloads."""
+        """Test parsing of miscellaneous properties from payloads."""
         TEST_PAYLOADS = [
             # https://github.com/mill1000/midea-msmart/pull/233#issuecomment-3272675291
             [{"sleep": True, "silent": False, "purifier": 2, "eco": False, "soft": False},
