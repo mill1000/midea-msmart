@@ -115,7 +115,7 @@ Query device state and capabilities with the `msmart-ng query` subcommand.
 $ msmart-ng query <HOST>
 ```
 
-Add `--capabilities` to query capabilities of the device before requesting its state.
+Add `--capabilities` to query capabilities of the device before requesting the state.
 
 **Note:** Version 3 devices need to specify either the `--auto` argument or the `--token`, `--key` and `--id` arguments to make a connection.
 
