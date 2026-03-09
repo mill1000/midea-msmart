@@ -108,24 +108,24 @@ async def _query(args) -> None:
             _LOGGER.error("Device is not online.")
             exit(1)
 
-        _LOGGER.info("%s", device.capabilities_dict())
-    else:
-        # Enable energy requests
-        if args.energy:
-            if hasattr(device, "enable_energy_usage_requests"):
-                device.enable_energy_usage_requests = True
-            else:
-                _LOGGER.error("Device does not support energy data.")
-                exit(1)
+        _LOGGER.info("Device capabilities: %s", device.capabilities_dict())
 
-        _LOGGER.info("Querying device state.")
-        await device.refresh()
-
-        if not device.online:
-            _LOGGER.error("Device is not online.")
+    # Enable energy requests
+    if args.energy:
+        if hasattr(device, "enable_energy_usage_requests"):
+            device.enable_energy_usage_requests = True
+        else:
+            _LOGGER.error("Device does not support energy data.")
             exit(1)
 
-        _LOGGER.info("%s", device)
+    _LOGGER.info("Querying device state.")
+    await device.refresh()
+
+    if not device.online:
+        _LOGGER.error("Device is not online.")
+        exit(1)
+
+    _LOGGER.info("Device state: %s", device)
 
 
 async def _control(args) -> None:
