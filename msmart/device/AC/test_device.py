@@ -639,7 +639,7 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
 
         # Create dummy device
         device = AC(0, 0, 0)
-        device._supports_humidity = True
+        device._capabilities.set(AC.Capability.HUMIDITY)
 
         # Patch _send_commands_get_responses so we can inspect the commands sent
         with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
