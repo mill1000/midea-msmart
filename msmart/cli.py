@@ -363,7 +363,7 @@ def main() -> NoReturn:
     query_parser.add_argument("host",
                               help="Hostname or IP address of device.")
     query_parser.add_argument("--capabilities",
-                              help="Query device capabilities before state. If FILE is provided, write capabilities as YAML to the file.",
+                              help="Query device capabilities before state. If FILE is provided, write capabilities as JSON to the file.",
                               metavar="FILE",
                               nargs="?",
                               const=True)
