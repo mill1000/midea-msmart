@@ -1048,7 +1048,7 @@ class AirConditioner(Device):
     @property
     def defrost_active(self) -> Optional[bool]:
         return self._defrost_active
-    
+
     @property
     def outdoor_fan_speed(self) -> Optional[int]:
         return self._outdoor_fan_speed
