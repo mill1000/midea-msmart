@@ -200,7 +200,7 @@ class AirConditioner(Device):
         self._error_code = None
 
         self._request_group5_data = False
-        self._defrost_active = None
+        self._defrost_active = False
         self._outdoor_fan_speed = None
 
     def _update_state(self, res: Response) -> None:
