@@ -99,7 +99,7 @@ class TestOverrideCapabilities(unittest.TestCase):
             device.override_capabilities({"min_target_temperature": "apple"})
 
         with self.assertRaisesRegex(ValueError, "'max_target_temperature' must be a number"):
-            device.override_capabilities( {"max_target_temperature": [20, 50]})
+            device.override_capabilities({"max_target_temperature": [20, 50]})
 
     def test_enums_invalid_name(self) -> None:
         """Test invalid enum names throw a ValueError."""
@@ -123,7 +123,8 @@ class TestOverrideCapabilities(unittest.TestCase):
 
         # Expect value errors for invalid enum name
         with self.assertRaisesRegex(ValueError, "Invalid value .*? for .*"):
-            device.override_capabilities({"supported_modes": ["bad_enum_name"]})
+            device.override_capabilities(
+                {"supported_modes": ["bad_enum_name"]})
 
     def test_enums_invalid_format(self) -> None:
         """Test invalid enum values throw a ValueError."""
