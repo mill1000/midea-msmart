@@ -1132,11 +1132,14 @@ class Group5Response(Response):
 
         self.humidity = None
         self.defrost = None
+        self.outdoor_fan_speed = None
 
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
 
         self.humidity = payload[4] if payload[4] != 0 else None
+
+        self.outdoor_fan_speed = 8 * payload[8]
 
         self.defrost = bool(payload[10])

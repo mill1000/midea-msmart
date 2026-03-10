@@ -201,6 +201,7 @@ class AirConditioner(Device):
 
         self._request_group5_data = False
         self._defrost_active = False
+        self._outdoor_fan_speed = None
 
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
@@ -322,6 +323,7 @@ class AirConditioner(Device):
                 "Group 5 response payload from device %s: %s", self.id, res)
 
             self._indoor_humidity = res.humidity
+            self._outdoor_fan_speed = res.outdoor_fan_speed
             self._defrost_active = res.defrost
 
         else:
@@ -1046,6 +1048,10 @@ class AirConditioner(Device):
     @property
     def defrost_active(self) -> Optional[bool]:
         return self._defrost_active
+
+    @property
+    def outdoor_fan_speed(self) -> Optional[int]:
+        return self._outdoor_fan_speed
 
     def to_dict(self) -> dict:
         return {**super().to_dict(), **{
