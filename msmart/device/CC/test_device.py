@@ -684,7 +684,7 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
 
 
 class TestCapabilityOverrides(unittest.TestCase):
-    """Test overriding device capabilities via YAML."""
+    """Test overriding device capabilities via serialized dict."""
     # pylint: disable=protected-access
 
     def test_target_temperatures(self) -> None:
@@ -693,20 +693,18 @@ class TestCapabilityOverrides(unittest.TestCase):
         # Create dummy device
         device = CC(0, 0, 0)
 
-        device.override_capabilities("min_target_temperature: 22.5")
+        device.override_capabilities({"min_target_temperature": 22.5})
         self.assertEqual(device.min_target_temperature, 22.5)
 
-        device.override_capabilities("max_target_temperature: 40")
+        device.override_capabilities({"max_target_temperature": 40})
         self.assertEqual(device.max_target_temperature, 40.0)
 
     def test_operational_modes(self) -> None:
         """Test overriding operational modes."""
-        TEST_OVERRIDE = """
-        supported_modes:
-        - HEAT
-        - COOL
-        - AUTO
-        """
+        TEST_OVERRIDE = {
+            "supported_modes": ["HEAT", "COOL", "AUTO"]
+        }
+
         EXPECTED_VALUE = [
             CC.OperationalMode.HEAT,
             CC.OperationalMode.COOL,
@@ -724,11 +722,9 @@ class TestCapabilityOverrides(unittest.TestCase):
 
     def test_swing_modes(self) -> None:
         """Test overriding swing modes."""
-        TEST_OVERRIDE = """
-        supported_swing_modes:
-        - BOTH
-        - HORIZONTAL
-        """
+        TEST_OVERRIDE = {
+            "supported_swing_modes": ["BOTH", "HORIZONTAL"]
+        }
         EXPECTED_VALUE = [
             CC.SwingMode.BOTH,
             CC.SwingMode.HORIZONTAL,
@@ -745,11 +741,9 @@ class TestCapabilityOverrides(unittest.TestCase):
 
     def test_fan_speeds(self) -> None:
         """Test overriding fan speeds."""
-        TEST_OVERRIDE = """
-        supported_fan_speeds:
-        - AUTO
-        - L6
-        """
+        TEST_OVERRIDE = {
+            "supported_fan_speeds": ["AUTO", "L6"]
+        }
         EXPECTED_VALUE = [
             CC.FanSpeed.AUTO,
             CC.FanSpeed.L6,
@@ -766,11 +760,9 @@ class TestCapabilityOverrides(unittest.TestCase):
 
     def test_aux_modes(self) -> None:
         """Test overriding aux heat modes."""
-        TEST_OVERRIDE = """
-        supported_aux_modes:
-        - 'OFF'
-        - 'ON'
-        """
+        TEST_OVERRIDE = {
+            "supported_aux_modes": ["OFF", "ON"]
+        }
         EXPECTED_VALUE = [
             CC.AuxHeatMode.OFF,
             CC.AuxHeatMode.ON,
@@ -787,11 +779,9 @@ class TestCapabilityOverrides(unittest.TestCase):
 
     def test_purifier_modes(self) -> None:
         """Test overriding purifier modes."""
-        TEST_OVERRIDE = """
-        supported_purifier_modes:
-        - 'OFF'
-        - AUTO
-        """
+        TEST_OVERRIDE = {
+            "supported_purifier_modes": ["OFF", "AUTO"]
+        }
         EXPECTED_VALUE = [
             CC.PurifierMode.OFF,
             CC.PurifierMode.AUTO,
@@ -808,11 +798,9 @@ class TestCapabilityOverrides(unittest.TestCase):
 
     def test_additional_capabilities(self) -> None:
         """Test overriding additional capabilities."""
-        TEST_OVERRIDE = """
-        additional_capabilities:
-        - ECO
-        - SLEEP
-        """
+        TEST_OVERRIDE = {
+            "additional_capabilities": ["ECO", "SLEEP"]
+        }
 
         # Create dummy device
         device = CC(0, 0, 0)

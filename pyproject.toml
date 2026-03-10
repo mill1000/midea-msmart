@@ -23,10 +23,12 @@ classifiers = [
 ]
 dependencies = [
   "httpx",
-  "pycryptodome",
-  "pyyaml"
+  "pycryptodome"
 ]
 dynamic = ["version"]
+
+[project.optional-dependencies]
+yaml = ["pyyaml"]
 
 [project.urls]
 Repository = "https://github.com/mill1000/midea-msmart"

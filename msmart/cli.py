@@ -109,9 +109,21 @@ async def _query(args) -> None:
             exit(1)
 
         if isinstance(args.capabilities, str):
+            # Attempt to load yaml dependency
+            try:
+                import yaml
+            except ModuleNotFoundError:
+                _LOGGER.fatal(
+                    "Dumping capabilities to YAML requires the PyYAML module.")
+                exit(1)
+
             filename = args.capabilities
             _LOGGER.info("Writing capabilities to '%s'.", filename)
-            device.dump_capabilities(filename)
+
+            caps = device.serialize_capabilities()
+            with open(filename, "w") as f:
+                yaml.safe_dump(caps, f, sort_keys=False)
+
         else:
             _LOGGER.info("Device capabilities: %s", device.capabilities_dict())
 

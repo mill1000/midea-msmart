@@ -5,8 +5,6 @@ import time
 from enum import Enum, Flag
 from typing import TYPE_CHECKING, Any, NoReturn, Optional, Union, cast
 
-import yaml
-
 from msmart.const import DeviceType
 from msmart.frame import Frame
 from msmart.lan import LAN, AuthenticationError, Key, ProtocolError, Token
@@ -152,36 +150,30 @@ class Device():
     def __str__(self) -> str:
         return str(self.to_dict())
 
-    def dump_capabilities(self) -> str:
-        """Dump device capabilities as YAML."""
-        def _serializable(value) -> Any:
-            """Recursively convert value into YAML-safe primitives."""
+    def serialize_capabilities(self) -> dict[str, Any]:
+        """Dump device capabilities as an easily serializable dict."""
+        def _serialize(value) -> Any:
+            """Recursively convert values into serializable primitives."""
 
             if isinstance(value, Enum):
                 return value.name
 
             if isinstance(value, dict):
-                return {k: _serializable(v) for k, v in value.items()}
+                return {k: _serialize(v) for k, v in value.items()}
 
             if isinstance(value, (list, tuple)):
-                return [_serializable(v) for v in value]
+                return [_serialize(v) for v in value]
 
             if isinstance(value, set):
-                return [_serializable(v) for v in value]
+                return [_serialize(v) for v in value]
 
             return value
 
-        # Convert capabilities into basic type
-        caps = _serializable(self.capabilities_dict())
+        # Serialize capabilities into basic types
+        return _serialize(self.capabilities_dict())
 
-        # Dump as YAML
-        return yaml.safe_dump(caps, sort_keys=False)
-
-    def override_capabilities(self, override_yaml: str) -> None:
-        """Override device capabilities via YAML."""
-
-        # Load incoming YAML
-        overrides = yaml.safe_load(override_yaml)
+    def override_capabilities(self, overrides: dict[str, Any]) -> None:
+        """Override device capabilities via serialized dict."""
 
         # Get supported overrides
         supported_overrides = self._SUPPORTED_CAPABILITY_OVERRIDES
