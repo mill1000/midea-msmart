@@ -108,7 +108,24 @@ async def _query(args) -> None:
             _LOGGER.error("Device is not online.")
             exit(1)
 
-        _LOGGER.info("Device capabilities: %s", device.capabilities_dict())
+        if isinstance(args.capabilities, str):
+            # Attempt to load yaml dependency
+            try:
+                import yaml
+            except ModuleNotFoundError:
+                _LOGGER.fatal(
+                    "Dumping capabilities to YAML requires the PyYAML module.")
+                exit(1)
+
+            filename = args.capabilities
+            _LOGGER.info("Writing capabilities to '%s'.", filename)
+
+            caps = device.serialize_capabilities()
+            with open(filename, "w") as f:
+                yaml.safe_dump(caps, f, sort_keys=False)
+
+        else:
+            _LOGGER.info("Device capabilities: %s", device.capabilities_dict())
 
     # Enable energy requests
     if args.energy:
@@ -358,8 +375,10 @@ def main() -> NoReturn:
     query_parser.add_argument("host",
                               help="Hostname or IP address of device.")
     query_parser.add_argument("--capabilities",
-                              help="Query device capabilities instead of state.",
-                              action="store_true")
+                              help="Query device capabilities before state. If FILE is provided, write capabilities as YAML to the file.",
+                              metavar="FILE",
+                              nargs="?",
+                              const=True)
     query_parser.add_argument("--device_type",
                               help="Type of device.",
                               choices=DEVICE_TYPES.keys())

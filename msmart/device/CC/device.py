@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import logging
+from enum import Flag, auto
 from typing import Any, Optional, Union, cast
 
 from msmart.base_device import Device
 from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
-from msmart.utils import MideaIntEnum
+from msmart.utils import CapabilityManager, MideaIntEnum
 
 from .command import (Command, ControlCommand, ControlId,
                       InvalidResponseException, QueryCommand, QueryResponse,
@@ -71,6 +72,26 @@ class CommercialAirConditioner(Device):
 
         DEFAULT = OFF
 
+    class Capability(Flag):
+        # Presets
+        ECO = auto()
+        SILENT = auto()
+        SLEEP = auto()
+
+        # Swing
+        SWING_HORIZONTAL_ANGLE = auto()
+        SWING_VERTICAL_ANGLE = auto()
+
+        # Misc
+        HUMIDITY = auto()
+        PURIFIER = auto()
+
+        DEFAULT = (
+            ECO | SILENT | SLEEP |
+            SWING_HORIZONTAL_ANGLE | SWING_VERTICAL_ANGLE |
+            HUMIDITY
+        )
+
     # Map control IDs to device properties
     _CONTROL_MAP = {
         ControlId.POWER: lambda s: s._power_state,
@@ -86,6 +107,17 @@ class CommercialAirConditioner(Device):
         ControlId.SLEEP: lambda s: False,
         ControlId.PURIFIER: lambda s: s._purifier,
         ControlId.AUX_MODE: lambda s: s._aux_mode,
+    }
+
+    _SUPPORTED_CAPABILITY_OVERRIDES = {
+        "min_target_temperature": ("_min_target_temperature", float),
+        "max_target_temperature": ("_max_target_temperature", float),
+        "supported_modes": ("_supported_op_modes", OperationalMode),
+        "supported_swing_modes": ("_supported_swing_modes", SwingMode),
+        "supported_fan_speeds": ("_supported_fan_speeds", FanSpeed),
+        "supported_aux_modes": ("_supported_aux_modes", AuxHeatMode),
+        "supported_purifier_modes": ("_supported_purifier_modes", PurifierMode),
+        "additional_capabilities": ("_capabilities", Capability),
     }
 
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
@@ -121,21 +153,21 @@ class CommercialAirConditioner(Device):
         self._min_target_temperature = 17
         self._max_target_temperature = 30
 
-        self._supports_humidity = True
+        self._capabilities = CapabilityManager(
+            CommercialAirConditioner.Capability.DEFAULT)
 
         self._supported_op_modes = cast(
             list[self.OperationalMode], self.OperationalMode.list())
+
         self._supported_swing_modes = cast(
             list[self.SwingMode], self.SwingMode.list())
+
         self._supported_fan_speeds = cast(
             list[self.FanSpeed], self.FanSpeed.list())
 
-        self._supports_eco = True
-        self._supports_silent = True
-        self._supports_sleep = True
-
         self._supported_purifier_modes = cast(
             list[self.PurifierMode], self.PurifierMode.list())
+
         self._supported_aux_modes = cast(
             list[self.AuxHeatMode], self.AuxHeatMode.list())
 
@@ -192,7 +224,7 @@ class CommercialAirConditioner(Device):
         self._min_target_temperature = res.target_temperature_min
         self._max_target_temperature = res.target_temperature_max
 
-        self._supports_humidity = res.supports_humidity
+        self._capabilities.set(self.Capability.HUMIDITY, res.supports_humidity)
 
         # Build list of supported operation modes
         assert res.supported_op_modes
@@ -221,9 +253,15 @@ class CommercialAirConditioner(Device):
 
         self._supported_swing_modes = swing_modes
 
-        self._supports_eco = res.supports_eco
-        self._supports_silent = res.supports_silent
-        self._supports_sleep = res.supports_sleep
+        # If device can swing it can control the angle
+        self._capabilities.set(self.Capability.SWING_HORIZONTAL_ANGLE,
+                               self.SwingMode.HORIZONTAL in self._supported_swing_modes)
+        self._capabilities.set(self.Capability.SWING_VERTICAL_ANGLE,
+                               self.SwingMode.VERTICAL in self._supported_swing_modes)
+
+        self._capabilities.set(self.Capability.ECO, res.supports_eco)
+        self._capabilities.set(self.Capability.SILENT, res.supports_silent)
+        self._capabilities.set(self.Capability.SLEEP, res.supports_sleep)
 
         # Build list of supported purifier modes
         purifier_modes = [self.PurifierMode.OFF]
@@ -314,39 +352,39 @@ class CommercialAirConditioner(Device):
 
         # Warn if trying to apply unsupported modes
         if (ControlId.MODE in self._updated_controls and
-                self._operational_mode not in self._supported_op_modes):
+                self._operational_mode not in self.supported_operation_modes):
             _LOGGER.warning(
                 "Device %s is not capable of operational mode %r.",  self.id, self._operational_mode)
 
         if (ControlId.FAN_SPEED in self._updated_controls and
-                self._fan_speed not in self._supported_fan_speeds):
+                self._fan_speed not in self.supported_fan_speeds):
             _LOGGER.warning("Device %s is not capable of fan speed %r.",
                             self.id, self._fan_speed)
 
         if (ControlId.ECO in self._updated_controls and
-                self._eco and not self._supports_eco):
+                self._eco and not self.supports_eco):
             _LOGGER.warning("Device %s is not capable of eco preset.",
                             self.id)
 
         if (ControlId.SILENT in self._updated_controls and
-                self._silent and not self._supports_silent):
+                self._silent and not self.supports_silent):
             _LOGGER.warning("Device %s is not capable of silent preset.",
                             self.id)
 
         if (ControlId.SLEEP in self._updated_controls and
-                self._sleep and not self._supports_sleep):
+                self._sleep and not self.supports_sleep):
             _LOGGER.warning("Device %s is not capable of sleep preset.",
                             self.id)
 
         if (ControlId.PURIFIER in self._updated_controls and
             self._purifier != self.PurifierMode.OFF and
-                self._purifier not in self._supported_purifier_modes):
+                self._purifier not in self.supported_purifier_modes):
             _LOGGER.warning("Device %s is not capable of purifier mode %r.",
                             self.id, self._purifier)
 
         if (ControlId.AUX_MODE in self._updated_controls and
             self._aux_mode != self.AuxHeatMode.OFF and
-                self._aux_mode not in self._supported_aux_modes):
+                self._aux_mode not in self.supported_aux_modes):
             _LOGGER.warning("Device %s is not capable of aux mode %r.",
                             self.id, self._aux_mode)
 
@@ -419,7 +457,7 @@ class CommercialAirConditioner(Device):
 
     @property
     def supports_humidity(self) -> bool:
-        return self._supports_humidity or False
+        return self._capabilities.has(self.Capability.HUMIDITY)
 
     @property
     def target_humidity(self) -> Optional[int]:
@@ -501,8 +539,7 @@ class CommercialAirConditioner(Device):
 
     @property
     def supports_horizontal_swing_angle(self) -> bool:
-        # If device can swing it can control the angle
-        return self.SwingMode.HORIZONTAL in self._supported_swing_modes
+        return self._capabilities.has(self.Capability.SWING_HORIZONTAL_ANGLE)
 
     @property
     def horizontal_swing_angle(self) -> SwingAngle:
@@ -515,8 +552,7 @@ class CommercialAirConditioner(Device):
 
     @property
     def supports_vertical_swing_angle(self) -> bool:
-        # If device can swing it can control the angle
-        return self.SwingMode.VERTICAL in self._supported_swing_modes
+        return self._capabilities.has(self.Capability.SWING_VERTICAL_ANGLE)
 
     @property
     def vertical_swing_angle(self) -> SwingAngle:
@@ -529,7 +565,7 @@ class CommercialAirConditioner(Device):
 
     @property
     def supports_eco(self) -> bool:
-        return self._supports_eco or False
+        return self._capabilities.has(self.Capability.ECO)
 
     @property
     def eco(self) -> Optional[bool]:
@@ -542,7 +578,7 @@ class CommercialAirConditioner(Device):
 
     @property
     def supports_silent(self) -> bool:
-        return self._supports_silent or False
+        return self._capabilities.has(self.Capability.SILENT)
 
     @property
     def silent(self) -> Optional[bool]:
@@ -555,7 +591,7 @@ class CommercialAirConditioner(Device):
 
     @property
     def supports_sleep(self) -> bool:
-        return self._supports_sleep or False
+        return self._capabilities.has(self.Capability.SLEEP)
 
     @property
     def sleep(self) -> Optional[bool]:
@@ -625,17 +661,12 @@ class CommercialAirConditioner(Device):
 
     def capabilities_dict(self) -> dict:
         return {
-            "supported_modes": self.supported_operation_modes,
-            "supported_swing_modes": self.supported_swing_modes,
-            "supports_horizontal_swing_angle": self.supports_horizontal_swing_angle,
-            "supports_vertical_swing_angle": self.supports_vertical_swing_angle,
-            "supported_fan_speeds": self.supported_fan_speeds,
             "min_target_temperature": self.min_target_temperature,
             "max_target_temperature": self.max_target_temperature,
-            "supports_humidity": self.supports_humidity,
-            "supports_eco": self.supports_eco,
-            "supports_silent": self.supports_silent,
-            "supports_sleep": self.supports_sleep,
-            "supported_purifier_modes": self.supported_purifier_modes,
+            "supported_modes": self.supported_operation_modes,
+            "supported_swing_modes": self.supported_swing_modes,
+            "supported_fan_speeds": self.supported_fan_speeds,
             "supported_aux_modes": self.supported_aux_modes,
+            "supported_purifier_modes": self.supported_purifier_modes,
+            "additional_capabilities": self._capabilities.flags
         }

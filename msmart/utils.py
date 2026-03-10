@@ -3,10 +3,41 @@ from __future__ import annotations
 
 import functools
 import logging
-from enum import IntEnum
-from typing import Any, Callable, Optional, cast
+from enum import Flag, IntEnum
+from typing import Any, Callable, Generic, Optional, TypeVar, cast
 
 _LOGGER = logging.getLogger(__name__)
+
+
+CapabilityFlag = TypeVar("CapabilityFlag", bound=Flag)
+
+
+class CapabilityManager(Generic[CapabilityFlag]):
+    """Minimal wrapper class to make mutable capability flags."""
+
+    def __init__(self, default: CapabilityFlag) -> None:
+        self._flags: CapabilityFlag = default
+
+    @property
+    def value(self) -> int:
+        return self._flags.value
+
+    @property
+    def flags(self) -> list[CapabilityFlag]:
+        return list(self._flags)
+
+    @flags.setter
+    def flags(self, flags: CapabilityFlag) -> None:
+        self._flags = flags
+
+    def has(self, flag: CapabilityFlag) -> bool:
+        return bool(self._flags & flag)
+
+    def set(self, flag: CapabilityFlag, enable: bool = True) -> None:
+        if enable:
+            self._flags |= flag
+        else:
+            self._flags &= ~flag
 
 
 class MideaIntEnum(IntEnum):

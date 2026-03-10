@@ -195,7 +195,7 @@ class QueryResponse(Response):
         # Capabilities
         self.target_temperature_min = 17
         self.target_temperature_max = 30
-        self.supports_humidity = None
+        self.supports_humidity = False
         self.supported_op_modes = None
         self.supports_fan_speed = False
         self.supports_vert_swing_angle = False

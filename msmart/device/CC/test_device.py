@@ -683,5 +683,146 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
             patched_method.assert_awaited()
 
 
+class TestCapabilityOverrides(unittest.TestCase):
+    """Test overriding device capabilities via serialized dict."""
+    # pylint: disable=protected-access
+
+    def test_target_temperatures(self) -> None:
+        """Test min/max target temperature overrides are applied."""
+
+        # Create dummy device
+        device = CC(0, 0, 0)
+
+        device.override_capabilities({"min_target_temperature": 22.5})
+        self.assertEqual(device.min_target_temperature, 22.5)
+
+        device.override_capabilities({"max_target_temperature": 40})
+        self.assertEqual(device.max_target_temperature, 40.0)
+
+    def test_operational_modes(self) -> None:
+        """Test overriding operational modes."""
+        TEST_OVERRIDE = {
+            "supported_modes": ["HEAT", "COOL", "AUTO"]
+        }
+
+        EXPECTED_VALUE = [
+            CC.OperationalMode.HEAT,
+            CC.OperationalMode.COOL,
+            CC.OperationalMode.AUTO,
+        ]
+
+        # Create dummy device
+        device = CC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_operation_modes, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_operation_modes, EXPECTED_VALUE)
+
+    def test_swing_modes(self) -> None:
+        """Test overriding swing modes."""
+        TEST_OVERRIDE = {
+            "supported_swing_modes": ["BOTH", "HORIZONTAL"]
+        }
+        EXPECTED_VALUE = [
+            CC.SwingMode.BOTH,
+            CC.SwingMode.HORIZONTAL,
+        ]
+
+        # Create dummy device
+        device = CC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_swing_modes, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_swing_modes, EXPECTED_VALUE)
+
+    def test_fan_speeds(self) -> None:
+        """Test overriding fan speeds."""
+        TEST_OVERRIDE = {
+            "supported_fan_speeds": ["AUTO", "L6"]
+        }
+        EXPECTED_VALUE = [
+            CC.FanSpeed.AUTO,
+            CC.FanSpeed.L6,
+        ]
+
+        # Create dummy device
+        device = CC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_fan_speeds, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_fan_speeds, EXPECTED_VALUE)
+
+    def test_aux_modes(self) -> None:
+        """Test overriding aux heat modes."""
+        TEST_OVERRIDE = {
+            "supported_aux_modes": ["OFF", "ON"]
+        }
+        EXPECTED_VALUE = [
+            CC.AuxHeatMode.OFF,
+            CC.AuxHeatMode.ON,
+        ]
+
+        # Create dummy device
+        device = CC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_aux_modes, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_aux_modes, EXPECTED_VALUE)
+
+    def test_purifier_modes(self) -> None:
+        """Test overriding purifier modes."""
+        TEST_OVERRIDE = {
+            "supported_purifier_modes": ["OFF", "AUTO"]
+        }
+        EXPECTED_VALUE = [
+            CC.PurifierMode.OFF,
+            CC.PurifierMode.AUTO,
+        ]
+
+        # Create dummy device
+        device = CC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_purifier_modes, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_purifier_modes, EXPECTED_VALUE)
+
+    def test_additional_capabilities(self) -> None:
+        """Test overriding additional capabilities."""
+        TEST_OVERRIDE = {
+            "additional_capabilities": ["ECO", "SLEEP"]
+        }
+
+        # Create dummy device
+        device = CC(0, 0, 0)
+
+        # Alter default capabilities
+        device._capabilities.set(CC.Capability.ECO, False)
+        device._capabilities.set(CC.Capability.SILENT, True)
+        device._capabilities.set(CC.Capability.SLEEP, False)
+
+        # Assert the capabilities match
+        self.assertEqual(device.supports_eco, False)
+        self.assertEqual(device.supports_silent, True)
+        self.assertEqual(device.supports_sleep, False)
+
+        # Override capabilities
+        device.override_capabilities(TEST_OVERRIDE)
+
+        # Assert they match
+        self.assertEqual(device.supports_eco, True)
+        self.assertEqual(device.supports_silent, False)
+        self.assertEqual(device.supports_sleep, True)
+
+
 if __name__ == "__main__":
     unittest.main()

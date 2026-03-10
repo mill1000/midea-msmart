@@ -27,6 +27,9 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.optional-dependencies]
+yaml = ["pyyaml"]
+
 [project.urls]
 Repository = "https://github.com/mill1000/midea-msmart"
 Issues = "https://github.com/mill1000/midea-msmart/issues"

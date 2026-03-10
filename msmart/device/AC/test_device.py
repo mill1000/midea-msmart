@@ -495,7 +495,7 @@ class TestSetState(unittest.TestCase):
 
         # Create dummy device with breeze control
         device = AC(0, 0, 0)
-        device._supported_properties.add(PropertyId.BREEZE_CONTROL)
+        device._capabilities.set(AC.Capability.BREEZE_CONTROL)
 
         # Enable a breeze mode
         device.breeze_mild = True
@@ -525,7 +525,7 @@ class TestSetState(unittest.TestCase):
 
         # Create dummy device with breeze control
         device = AC(0, 0, 0)
-        device._supported_properties.add(PropertyId.BREEZELESS)
+        device._capabilities.set(AC.Capability.BREEZELESS)
 
         # Enable breezeless
         device.breezeless = True
@@ -544,7 +544,7 @@ class TestSetState(unittest.TestCase):
 
         # Create dummy device with breeze control
         device = AC(0, 0, 0)
-        device._supported_properties.add(PropertyId.BREEZE_AWAY)
+        device._capabilities.set(AC.Capability.BREEZE_AWAY)
 
         # Enable breezeless
         device.breeze_away = True
@@ -563,7 +563,7 @@ class TestSetState(unittest.TestCase):
 
         # Create dummy device with jet fool
         device = AC(0, 0, 0)
-        device._supported_properties.add(PropertyId.JET_COOL)
+        device._capabilities.set(AC.Capability.JET_COOL)
 
         # Enable breezeless
         device.flash_cool = True
@@ -579,7 +579,7 @@ class TestSetState(unittest.TestCase):
 
         # Create dummy device with cascade
         device = AC(0, 0, 0)
-        device._supported_properties.add(PropertyId.CASCADE)
+        device._capabilities.set(AC.Capability.CASCADE)
 
         # Enable a cascade mode
         device.cascade_mode = AC.CascadeMode.DOWN
@@ -639,7 +639,7 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
 
         # Create dummy device
         device = AC(0, 0, 0)
-        device._supports_humidity = True
+        device._capabilities.set(AC.Capability.HUMIDITY)
 
         # Patch _send_commands_get_responses so we can inspect the commands sent
         with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
@@ -777,7 +777,7 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
 
             # Force additional features so refresh() sends multiple requests are sent
             device._request_energy_usage = True
-            device._supports_humidity = True
+            device._capabilities.set(AC.Capability.HUMIDITY)
 
             # Refresh device
             await device.refresh()
@@ -916,6 +916,211 @@ class TestDeprecation(unittest.TestCase):
 
             self.assertRegex("\n".join(log.output),
                              "'use_alternate_energy_format' is deprecated.")
+
+
+class TestCapabilityOverrides(unittest.TestCase):
+    """Test overriding device capabilities via serialized dict."""
+    # pylint: disable=protected-access
+
+    def test_target_temperatures(self) -> None:
+        """Test min/max target temperature overrides are applied."""
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        device.override_capabilities({"min_target_temperature": 22.5})
+        self.assertEqual(device.min_target_temperature, 22.5)
+
+        device.override_capabilities({"max_target_temperature": 40})
+        self.assertEqual(device.max_target_temperature, 40.0)
+
+    def test_operational_modes(self) -> None:
+        """Test overriding operational modes."""
+        TEST_OVERRIDE = {
+            "supported_modes": ["HEAT", "COOL", "AUTO"]
+        }
+
+        EXPECTED_VALUE = [
+            AC.OperationalMode.HEAT,
+            AC.OperationalMode.COOL,
+            AC.OperationalMode.AUTO,
+        ]
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_operation_modes, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_operation_modes, EXPECTED_VALUE)
+
+    def test_swing_modes(self) -> None:
+        """Test overriding swing modes."""
+        TEST_OVERRIDE = {
+            "supported_swing_modes": ["BOTH", "HORIZONTAL"]
+        }
+        EXPECTED_VALUE = [
+            AC.SwingMode.BOTH,
+            AC.SwingMode.HORIZONTAL,
+        ]
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_swing_modes, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_swing_modes, EXPECTED_VALUE)
+
+    def test_fan_speeds(self) -> None:
+        """Test overriding fan speeds."""
+        TEST_OVERRIDE = {
+            "supported_fan_speeds": ["AUTO", "HIGH"]
+        }
+        EXPECTED_VALUE = [
+            AC.FanSpeed.AUTO,
+            AC.FanSpeed.HIGH,
+        ]
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_fan_speeds, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_fan_speeds, EXPECTED_VALUE)
+
+    def test_aux_modes(self) -> None:
+        """Test overriding aux heat modes."""
+        TEST_OVERRIDE = {
+            "supported_aux_modes": ["OFF", "AUX_ONLY"]
+        }
+        EXPECTED_VALUE = [
+            AC.AuxHeatMode.OFF,
+            AC.AuxHeatMode.AUX_ONLY,
+        ]
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_aux_modes, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_aux_modes, EXPECTED_VALUE)
+
+    def test_rate_selects(self) -> None:
+        """Test overriding rate selects."""
+        TEST_OVERRIDE = {
+            "supported_rate_selects": ["OFF", "LEVEL_5"]
+        }
+        EXPECTED_VALUE = [
+            AC.RateSelect.OFF,
+            AC.RateSelect.LEVEL_5,
+        ]
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        self.assertNotEqual(device.supported_rate_selects, EXPECTED_VALUE)
+
+        device.override_capabilities(TEST_OVERRIDE)
+
+        self.assertEqual(device.supported_rate_selects, EXPECTED_VALUE)
+
+        # Rate selects is unique in that it is property based
+        self.assertIn(PropertyId.RATE_SELECT, device._supported_properties)
+
+    def test_additional_capabilities(self) -> None:
+        """Test overriding additional capabilities."""
+        TEST_OVERRIDE = {
+            "additional_capabilities": ["CUSTOM_FAN_SPEED", "ECO", "FREEZE_PROTECTION"]
+        }
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        # Alter default capabilities
+        device._capabilities.set(AC.Capability.CUSTOM_FAN_SPEED, False)
+        device._capabilities.set(AC.Capability.ECO, False)
+        device._capabilities.set(AC.Capability.TURBO, True)
+        device._capabilities.set(AC.Capability.SELF_CLEAN, True)
+
+        # Assert the capabilities match
+        self.assertEqual(device.supports_custom_fan_speed, False)
+        self.assertEqual(device.supports_eco, False)
+        self.assertEqual(device.supports_freeze_protection, True)
+        self.assertEqual(device.supports_turbo, True)
+        self.assertEqual(device.supports_self_clean, True)
+
+        # Override capabilities
+        device.override_capabilities(TEST_OVERRIDE)
+
+        # Assert they match
+        self.assertEqual(device.supports_custom_fan_speed, True)
+        self.assertEqual(device.supports_eco, True)
+        self.assertEqual(device.supports_freeze_protection, True)
+        self.assertEqual(device.supports_turbo, False)
+        self.assertEqual(device.supports_self_clean, False)
+
+    def test_supported_properties(self) -> None:
+        """Test overriding capabilities updated supported properties as needed."""
+        TEST_OVERRIDE = {
+            "additional_capabilities": ["SWING_VERTICAL_ANGLE", "JET_COOL"]
+        }
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        # Process capability responses to add additional capabilities and supported properties
+        # https://github.com/mill1000/midea-msmart/issues/150#issuecomment-2276158338
+        CAPABILITIES_PAYLOAD_0 = bytes.fromhex(
+            "b50a12020101430001011402010115020101160201001a020101100201011f020103250207203c203c203c05400001000100")
+        CAPABILITIES_PAYLOAD_1 = bytes.fromhex(
+            "b5051e020101130201012202010019020100390001010000")
+
+        with memoryview(CAPABILITIES_PAYLOAD_0) as payload0, memoryview(CAPABILITIES_PAYLOAD_1) as payload1:
+            resp0 = CapabilitiesResponse(payload0)
+            resp1 = CapabilitiesResponse(payload1)
+
+            resp0.merge(resp1)
+            device._update_capabilities(resp0)
+
+        # Assert expected capabilities and supported properties
+        self.assertEqual(device.supports_breeze_away, True)
+        self.assertEqual(device.supports_breeze_mild, True)
+        self.assertEqual(device.supports_breezeless, True)
+
+        self.assertIn(PropertyId.BREEZE_CONTROL, device._supported_properties)
+
+        # Assert overrides aren't already supported
+        self.assertEqual(device.supports_vertical_swing_angle, False)
+        self.assertEqual(device.supports_flash_cool, False)
+
+        self.assertNotIn(PropertyId.SWING_UD_ANGLE,
+                         device._supported_properties)
+        self.assertNotIn(PropertyId.JET_COOL, device._supported_properties)
+
+        # Override capabilities
+        device.override_capabilities(TEST_OVERRIDE)
+
+        # Verify overrides are now supported and in supported properties
+        self.assertEqual(device.supports_vertical_swing_angle, True)
+        self.assertEqual(device.supports_flash_cool, True)
+
+        self.assertIn(PropertyId.SWING_UD_ANGLE, device._supported_properties)
+        self.assertIn(PropertyId.JET_COOL, device._supported_properties)
+
+        # Verify overrides removed the original capabilities
+        self.assertEqual(device.supports_breeze_away, False)
+        self.assertEqual(device.supports_breeze_mild, False)
+        self.assertEqual(device.supports_breezeless, False)
+
+        self.assertNotIn(PropertyId.BREEZE_CONTROL,
+                         device._supported_properties)
 
 
 if __name__ == "__main__":

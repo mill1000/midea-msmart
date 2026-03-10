@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING, Optional, Union
+from enum import Enum, Flag
+from typing import TYPE_CHECKING, Any, NoReturn, Optional, Union, cast
 
 from msmart.const import DeviceType
 from msmart.frame import Frame
 from msmart.lan import LAN, AuthenticationError, Key, ProtocolError, Token
+from msmart.utils import CapabilityManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -16,6 +18,8 @@ if TYPE_CHECKING:
 
 
 class Device():
+
+    _SUPPORTED_CAPABILITY_OVERRIDES: dict[str, tuple[str, type]] = {}
 
     def __init__(self, *, ip: str, port: int, device_id: int, device_type: DeviceType, **kwargs) -> None:
         self._ip = ip
@@ -59,10 +63,10 @@ class Device():
 
         return responses
 
-    async def refresh(self) -> None:
+    async def refresh(self) -> NoReturn:
         raise NotImplementedError()
 
-    async def apply(self) -> None:
+    async def apply(self) -> NoReturn:
         raise NotImplementedError()
 
     async def authenticate(self, token: Token, key: Key) -> None:
@@ -140,8 +144,88 @@ class Device():
             "token": self.token
         }
 
+    async def capabilities_dict(self) -> dict:
+        raise NotImplementedError()
+
     def __str__(self) -> str:
         return str(self.to_dict())
+
+    def serialize_capabilities(self) -> dict[str, Any]:
+        """Dump device capabilities as an easily serializable dict."""
+        def _serialize(value) -> Any:
+            """Recursively convert values into serializable primitives."""
+
+            if isinstance(value, Enum):
+                return value.name
+
+            if isinstance(value, dict):
+                return {k: _serialize(v) for k, v in value.items()}
+
+            if isinstance(value, (list, tuple)):
+                return [_serialize(v) for v in value]
+
+            if isinstance(value, set):
+                return [_serialize(v) for v in value]
+
+            return value
+
+        # Serialize capabilities into basic types
+        return _serialize(self.capabilities_dict())
+
+    def override_capabilities(self, overrides: dict[str, Any]) -> None:
+        """Override device capabilities via serialized dict."""
+
+        # Get supported overrides
+        supported_overrides = self._SUPPORTED_CAPABILITY_OVERRIDES
+
+        # Convert and apply each override
+        for key, value in overrides.items():
+            # Check if override is allowed
+            if key not in supported_overrides:
+                raise ValueError(f"Unsupported capabilities override '{key}'.")
+
+            # Get target attribute and value type
+            attr_name, value_type = supported_overrides[key]
+
+            # Handle numeric overrides
+            if value_type is float:
+                # Check if value is numeric
+                if not isinstance(value, (float, int)):
+                    raise ValueError(f"'{key}' must be a number.")
+
+                # Coerce to float and apply
+                setattr(self, attr_name, float(value))
+                continue
+
+            # Handle enum overrides
+            if issubclass(value_type, Enum):
+                # Value should be a list of enum names
+                if not isinstance(value, list):
+                    raise ValueError(f"'{key}' must be a list.")
+
+                # Attempt to convert from names
+                try:
+                    members = [value_type[v] for v in value]
+                except KeyError as e:
+                    raise ValueError(
+                        f"Invalid value '{e.args[0]!r}' for '{key}'.")
+
+                # Handle regular enums
+                if not issubclass(value_type, Flag):
+                    setattr(self, attr_name, list(members))
+                    continue
+
+                # Merge Flag enums into a single value
+                flags = value_type(0)
+                for m in members:
+                    flags |= cast(Flag, m)
+
+                # Handle special case for capability manager
+                attr = getattr(self, attr_name)
+                if isinstance(attr, CapabilityManager):
+                    attr.flags = flags
+                else:
+                    setattr(self, attr_name, flags)
 
     @classmethod
     def construct(cls, *, type: DeviceType, **kwargs) -> Union[AirConditioner, CommercialAirConditioner, Device]:
