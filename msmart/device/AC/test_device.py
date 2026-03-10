@@ -919,7 +919,7 @@ class TestDeprecation(unittest.TestCase):
 
 
 class TestCapabilityOverrides(unittest.TestCase):
-    """Test overriding device capabilities via JSON."""
+    """Test overriding device capabilities via YAML."""
     # pylint: disable=protected-access
 
     def test_target_temperatures(self) -> None:
@@ -928,16 +928,19 @@ class TestCapabilityOverrides(unittest.TestCase):
         # Create dummy device
         device = AC(0, 0, 0)
 
-        device.override_capabilities("""{"min_target_temperature": 22.5}""")
+        device.override_capabilities("min_target_temperature: 22.5")
         self.assertEqual(device.min_target_temperature, 22.5)
 
-        device.override_capabilities("""{"max_target_temperature": 40}""")
+        device.override_capabilities("max_target_temperature: 40")
         self.assertEqual(device.max_target_temperature, 40.0)
 
     def test_operational_modes(self) -> None:
         """Test overriding operational modes."""
         TEST_OVERRIDE = """
-        {"supported_modes": ["HEAT", "COOL", "AUTO"]}
+        supported_modes:
+        - HEAT
+        - COOL
+        - AUTO
         """
         EXPECTED_VALUE = [
             AC.OperationalMode.HEAT,
@@ -957,9 +960,9 @@ class TestCapabilityOverrides(unittest.TestCase):
     def test_swing_modes(self) -> None:
         """Test overriding swing modes."""
         TEST_OVERRIDE = """
-        {
-        "supported_swing_modes": [ "BOTH", "HORIZONTAL"]
-        }
+        supported_swing_modes:
+        - BOTH
+        - HORIZONTAL
         """
         EXPECTED_VALUE = [
             AC.SwingMode.BOTH,
@@ -978,7 +981,9 @@ class TestCapabilityOverrides(unittest.TestCase):
     def test_fan_speeds(self) -> None:
         """Test overriding fan speeds."""
         TEST_OVERRIDE = """
-        {"supported_fan_speeds": ["AUTO", "HIGH"]}
+        supported_fan_speeds:
+        - AUTO
+        - HIGH
         """
         EXPECTED_VALUE = [
             AC.FanSpeed.AUTO,
@@ -997,7 +1002,9 @@ class TestCapabilityOverrides(unittest.TestCase):
     def test_aux_modes(self) -> None:
         """Test overriding aux heat modes."""
         TEST_OVERRIDE = """
-        {"supported_aux_modes": ["OFF", "AUX_ONLY"]}
+        supported_aux_modes:
+        - 'OFF'
+        - AUX_ONLY
         """
         EXPECTED_VALUE = [
             AC.AuxHeatMode.OFF,
@@ -1016,7 +1023,9 @@ class TestCapabilityOverrides(unittest.TestCase):
     def test_rate_selects(self) -> None:
         """Test overriding rate selects."""
         TEST_OVERRIDE = """
-        {"supported_rate_selects": ["OFF", "LEVEL_5"]}
+        supported_rate_selects:
+        - 'OFF'
+        - LEVEL_5
         """
         EXPECTED_VALUE = [
             AC.RateSelect.OFF,
@@ -1038,7 +1047,10 @@ class TestCapabilityOverrides(unittest.TestCase):
     def test_additional_capabilities(self) -> None:
         """Test overriding additional capabilities."""
         TEST_OVERRIDE = """
-        {"additional_capabilities": ["CUSTOM_FAN_SPEED", "ECO", "FREEZE_PROTECTION"]}
+        additional_capabilities:
+        - CUSTOM_FAN_SPEED
+        - ECO
+        - FREEZE_PROTECTION
         """
 
         # Create dummy device
@@ -1070,7 +1082,9 @@ class TestCapabilityOverrides(unittest.TestCase):
     def test_supported_properties(self) -> None:
         """Test overriding capabilities updated supported properties as needed."""
         TEST_OVERRIDE = """
-        {"additional_capabilities": ["SWING_VERTICAL_ANGLE", "JET_COOL"]}
+        additional_capabilities:
+        - SWING_VERTICAL_ANGLE
+        - JET_COOL
         """
 
         # Create dummy device

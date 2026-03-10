@@ -1,8 +1,9 @@
-import json
 import logging
 import unittest
 from enum import Enum
 from unittest.mock import patch
+
+import yaml
 
 from msmart.base_device import Device
 from msmart.const import DeviceType, FrameType
@@ -63,10 +64,10 @@ class TestSendCommand(unittest.IsolatedAsyncioTestCase):
 
 
 class TestOverrideCapabilities(unittest.TestCase):
-    """Test overriding capabilities via JSON."""
+    """Test overriding capabilities via YAML."""
 
-    def test_invalid_json(self) -> None:
-        """Test invalid JSON throw an exception."""
+    def test_invalid_yaml(self) -> None:
+        """Test invalid YAML throw an exception."""
 
         # Create dummy device
         device = Device(
@@ -76,12 +77,12 @@ class TestOverrideCapabilities(unittest.TestCase):
             port=0
         )
 
-        # Override with invalid JSON
-        with self.assertRaises(json.decoder.JSONDecodeError):
+        # Override with invalid YAML
+        with self.assertRaises(yaml.scanner.ScannerError):
             device.override_capabilities("""
-            {
-            'some_key': BARE_STRING,
-            }""")
+            playlist
+                name: My Playlist
+                tracks: 5""")
 
     def test_unsupported_override(self) -> None:
         """Test an unsupported overrides throw a ValueError."""
@@ -95,7 +96,7 @@ class TestOverrideCapabilities(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(ValueError, "Unsupported capabilities override .*"):
-            device.override_capabilities("""{"supports_eco": true}""")
+            device.override_capabilities("supports_eco: True")
 
     def test_numeric_invalid(self) -> None:
         """Test invalid numeric values throw a ValueError."""
@@ -115,12 +116,11 @@ class TestOverrideCapabilities(unittest.TestCase):
         }
 
         with self.assertRaisesRegex(ValueError, "'min_target_temperature' must be a number"):
-            device.override_capabilities(
-                """{"min_target_temperature": "apple"}""")
+            device.override_capabilities("min_target_temperature: apple")
 
         with self.assertRaisesRegex(ValueError, "'max_target_temperature' must be a number"):
             device.override_capabilities(
-                """{"max_target_temperature": [20, 50]}""")
+                "max_target_temperature: [20 50]")
 
     def test_enums_invalid_name(self) -> None:
         """Test invalid enum names throw a ValueError."""
@@ -144,14 +144,13 @@ class TestOverrideCapabilities(unittest.TestCase):
 
         # Expect value errors for invalid enum name
         with self.assertRaisesRegex(ValueError, "Invalid value .*? for .*"):
-            device.override_capabilities(
-                """{"supported_modes": ["bad_enum_name"]}""")
+            device.override_capabilities("supported_modes: [bad_enum_name]")
 
     def test_enums_invalid_format(self) -> None:
         """Test invalid enum values throw a ValueError."""
         TEST_OVERRIDES = {
-            """{"supported_aux_modes": "HEAT"}""",
-            """{"supported_aux_modes": 1.0}""",
+            "supported_aux_modes: HEAT",
+            "supported_aux_modes: 1.0",
         }
 
         # Create dummy device

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import json
 import logging
 import time
 from enum import Enum, Flag
 from typing import TYPE_CHECKING, Any, NoReturn, Optional, Union, cast
+
+import yaml
 
 from msmart.const import DeviceType
 from msmart.frame import Frame
@@ -152,9 +153,9 @@ class Device():
         return str(self.to_dict())
 
     def dump_capabilities(self) -> str:
-        """Dump device capabilities as JSON."""
+        """Dump device capabilities as YAML."""
         def _serializable(value) -> Any:
-            """Recursively convert values into serializable primitives."""
+            """Recursively convert value into YAML-safe primitives."""
 
             if isinstance(value, Enum):
                 return value.name
@@ -173,14 +174,14 @@ class Device():
         # Convert capabilities into basic type
         caps = _serializable(self.capabilities_dict())
 
-        # Dump as JSON
-        return json.dumps(caps, sort_keys=False, indent=2)
+        # Dump as YAML
+        return yaml.safe_dump(caps, sort_keys=False)
 
-    def override_capabilities(self, override_json: str) -> None:
-        """Override device capabilities via JSON."""
+    def override_capabilities(self, override_yaml: str) -> None:
+        """Override device capabilities via YAML."""
 
-        # Load incoming JSON
-        overrides = json.loads(override_json)
+        # Load incoming YAML
+        overrides = yaml.safe_load(override_yaml)
 
         # Get supported overrides
         supported_overrides = self._SUPPORTED_CAPABILITY_OVERRIDES
