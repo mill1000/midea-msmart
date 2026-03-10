@@ -127,13 +127,11 @@ class CommercialAirConditioner(Device):
         super().__init__(ip=ip, port=port, device_id=device_id,
                          device_type=DeviceType.COMMERCIAL_AC, **kwargs)
 
+        # Basic controls
         self._power_state = False
         self._target_temperature = 17.0
-        self._indoor_temperature = None
-        self._outdoor_temperature = None
-        self._fahrenheit = False
         self._target_humidity = 40
-        self._indoor_humidity = None
+
         self._operational_mode = self.OperationalMode.DEFAULT
         self._fan_speed = self.FanSpeed.DEFAULT
         self._horizontal_swing_angle = self.SwingAngle.DEFAULT
@@ -145,11 +143,17 @@ class CommercialAirConditioner(Device):
         self._purifier = self.PurifierMode.DEFAULT
         self._aux_mode = self.AuxHeatMode.DEFAULT
 
+        self._fahrenheit = False
         # self._display_on = True # TODO
+
+        # Sensors
+        self._indoor_temperature = None
+        self._outdoor_temperature = None
+        self._indoor_humidity = None
 
         self._updated_controls: set[ControlId] = set()
 
-        # Setup default capabilities
+        # Capabilities
         self._min_target_temperature = 17
         self._max_target_temperature = 30
 
