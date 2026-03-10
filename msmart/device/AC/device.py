@@ -173,42 +173,48 @@ class AirConditioner(Device):
         super().__init__(ip=ip, port=port, device_id=device_id,
                          device_type=DeviceType.AIR_CONDITIONER, **kwargs)
 
+        # Basic controls
         self._beep_on = False
         self._power_state = False
         self._target_temperature = 17.0
+        self._target_humidity = 40
+
         self._operational_mode = AirConditioner.OperationalMode.AUTO
         self._fan_speed = AirConditioner.FanSpeed.AUTO
         self._swing_mode = AirConditioner.SwingMode.OFF
+
         self._eco = False
         self._turbo = False
         self._freeze_protection = False
         self._sleep = False
+
         self._fahrenheit_unit = False  # Display temperature in Fahrenheit
         self._display_on = False
-        self._filter_alert = False
+
+        # Advanced controls
         self._follow_me = False
         self._purifier = False
-        self._target_humidity = 40
+        self._ieco = False
+        self._flash_cool = False
 
-        # Support all known modes initially
-        self._supported_op_modes = cast(
-            list[AirConditioner.OperationalMode], AirConditioner.OperationalMode.list())
-        self._supported_swing_modes = cast(
-            list[AirConditioner.SwingMode], AirConditioner.SwingMode.list())
-        self._supported_fan_speeds = cast(
-            list[AirConditioner.FanSpeed], AirConditioner.FanSpeed.list())
+        self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
+        self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
+        self._cascade_mode = AirConditioner.CascadeMode.OFF
+        self._rate_select = AirConditioner.RateSelect.OFF
+        self._breeze_mode = AirConditioner.BreezeMode.OFF
+        self._aux_mode = AirConditioner.AuxHeatMode.OFF
 
-        self._capabilities: CapabilityManager = CapabilityManager(
-            AirConditioner.Capability.DEFAULT)
-
-        self._min_target_temperature = 16
-        self._max_target_temperature = 30
-
+        # Sensors
         self._indoor_temperature = None
         self._indoor_humidity = None
         self._outdoor_temperature = None
 
-        self._request_energy_usage = False
+        self._filter_alert = None
+        self._error_code = None
+        self._self_clean_active = None
+        self._defrost_active = None
+        self._outdoor_fan_speed = None
+
         self._total_energy_usage = {
             AirConditioner.EnergyDataFormat.BCD: None,
             AirConditioner.EnergyDataFormat.BINARY: None,
@@ -223,32 +229,29 @@ class AirConditioner(Device):
         }
         self._use_binary_energy = False  # Deprecated
 
+        # Capabilities
+        self._min_target_temperature = 16
+        self._max_target_temperature = 30
+
+        self._capabilities: CapabilityManager = CapabilityManager(
+            AirConditioner.Capability.DEFAULT)
+
+        self._supported_op_modes = cast(
+            list[AirConditioner.OperationalMode], AirConditioner.OperationalMode.list())
+        self._supported_swing_modes = cast(
+            list[AirConditioner.SwingMode], AirConditioner.SwingMode.list())
+        self._supported_fan_speeds = cast(
+            list[AirConditioner.FanSpeed], AirConditioner.FanSpeed.list())
+        self._supported_rate_selects = [AirConditioner.RateSelect.OFF]
+        self._supported_aux_modes = [AirConditioner.AuxHeatMode.OFF]
+
+        # Misc
+        self._request_energy_usage = False
+        self._request_group5_data = False
+
         # Default to assuming device can't handle any properties
         self._supported_properties = set()
         self._updated_properties = set()
-
-        self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
-        self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
-        self._cascade_mode = AirConditioner.CascadeMode.OFF
-
-        self._self_clean_active = False
-
-        self._rate_select = AirConditioner.RateSelect.OFF
-        self._supported_rate_selects = [AirConditioner.RateSelect.OFF]
-
-        self._breeze_mode = AirConditioner.BreezeMode.OFF
-
-        self._ieco = False
-        self._flash_cool = False
-
-        self._aux_mode = AirConditioner.AuxHeatMode.OFF
-        self._supported_aux_modes = [AirConditioner.AuxHeatMode.OFF]
-
-        self._error_code = None
-
-        self._request_group5_data = False
-        self._defrost_active = False
-        self._outdoor_fan_speed = None
 
     def _update_state(self, res: Response) -> None:
         """Update the local state from a device state response."""
