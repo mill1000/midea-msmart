@@ -230,9 +230,8 @@ class Device():
                 attr = getattr(self, attr_name)
                 if isinstance(attr, CapabilityManager):
                     if merge:
-                        attr.set(flags)
-                    else:
-                        attr.flags = flags
+                        flags = flags | attr.flags
+                    attr.flags = flags
                 else:
                     if merge:
                         flags = flags | attr
