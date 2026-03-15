@@ -224,7 +224,6 @@ class TestOverrideCapabilities(unittest.TestCase):
         self.assertCountEqual(device._dummy_attr, [
                               TestEnum.ONE, TestEnum.TWO, TestEnum.THREE])
 
-
     def test_merge_flags(self) -> None:
         """Test merging overrides with bare flags"""
         # Create dummy device
@@ -258,6 +257,7 @@ class TestOverrideCapabilities(unittest.TestCase):
             {"additional_capabilities": ["TWO", "THREE"]}, merge=True)
         self.assertEqual(device._dummy_attr,
                          TestEnum.ONE | TestEnum.TWO | TestEnum.THREE)
+
 
 if __name__ == "__main__":
     unittest.main()
