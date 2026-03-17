@@ -212,13 +212,11 @@ class Device():
 
                 # Handle regular enums
                 if not issubclass(value_type, Flag):
-                    members = list(members)
                     if merge:
                         existing = getattr(self, attr_name)
-                        merged_members = set(existing) | set(members)
-                        members = list(merged_members)
+                        members = set(members) | set(existing)
 
-                    setattr(self, attr_name, members)
+                    setattr(self, attr_name, list(members))
                     continue
 
                 # Merge Flag enums into a single value
