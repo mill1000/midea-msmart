@@ -172,7 +172,7 @@ class Device():
         # Serialize capabilities into basic types
         return _serialize(self.capabilities_dict())
 
-    def override_capabilities(self, overrides: dict[str, Any]) -> None:
+    def override_capabilities(self, overrides: dict[str, Any], *, merge=False) -> None:
         """Override device capabilities via serialized dict."""
 
         # Get supported overrides
@@ -212,6 +212,10 @@ class Device():
 
                 # Handle regular enums
                 if not issubclass(value_type, Flag):
+                    if merge:
+                        existing = getattr(self, attr_name)
+                        members = set(members) | set(existing)
+
                     setattr(self, attr_name, list(members))
                     continue
 
@@ -223,8 +227,12 @@ class Device():
                 # Handle special case for capability manager
                 attr = getattr(self, attr_name)
                 if isinstance(attr, CapabilityManager):
+                    if merge:
+                        flags = flags | attr.flags
                     attr.flags = flags
                 else:
+                    if merge:
+                        flags = flags | attr
                     setattr(self, attr_name, flags)
 
     @classmethod

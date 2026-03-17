@@ -23,8 +23,8 @@ class CapabilityManager(Generic[CapabilityFlag]):
         return self._flags.value
 
     @property
-    def flags(self) -> list[CapabilityFlag]:
-        return list(self._flags)
+    def flags(self) -> CapabilityFlag:
+        return self._flags
 
     @flags.setter
     def flags(self, flags: CapabilityFlag) -> None:

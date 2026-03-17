@@ -1,12 +1,13 @@
 import logging
 import unittest
-from enum import Enum
+from enum import Enum, Flag, auto
 from unittest.mock import patch
 
 from msmart.base_device import Device
 from msmart.const import DeviceType, FrameType
 from msmart.frame import Frame
 from msmart.lan import ProtocolError
+from msmart.utils import CapabilityManager
 
 
 class TestSendCommand(unittest.IsolatedAsyncioTestCase):
@@ -154,6 +155,123 @@ class TestOverrideCapabilities(unittest.TestCase):
         for override in TEST_OVERRIDES:
             with self.assertRaisesRegex(ValueError, ".* must be a list"):
                 device.override_capabilities(override)
+
+    def test_enum(self) -> None:
+        """Test overrides with basic enums"""
+        # Create dummy device
+        device = Device(
+            device_type=DeviceType.AIR_CONDITIONER,
+            device_id=0,
+            ip="0",
+            port=0
+        )
+
+        # Create dummy enum for test
+        class TestEnum(Enum):
+            ONE = 1
+            TWO = 2
+            THREE = 3
+
+        # Allow override for TestEnum
+        device._dummy_attr = [TestEnum.ONE]
+        device._SUPPORTED_CAPABILITY_OVERRIDES = {
+            "supported_modes": ("_dummy_attr", TestEnum),
+        }
+
+        # Test merging
+        device.override_capabilities(
+            {"supported_modes": ["THREE"]}, merge=True)
+        self.assertCountEqual(device._dummy_attr, [
+                              TestEnum.ONE, TestEnum.THREE])
+
+        # Test merging doesn't duplicate
+        device.override_capabilities(
+            {"supported_modes": ["TWO", "THREE"]}, merge=True)
+        self.assertCountEqual(device._dummy_attr, [
+                              TestEnum.ONE, TestEnum.TWO, TestEnum.THREE])
+
+        # Test override
+        device.override_capabilities(
+            {"supported_modes": ["TWO"]}, merge=False)
+        self.assertCountEqual(device._dummy_attr, [TestEnum.TWO])
+
+    def test_capability_manager(self) -> None:
+        """Test overrides with capability manager flags"""
+        # Create dummy device
+        device = Device(
+            device_type=DeviceType.AIR_CONDITIONER,
+            device_id=0,
+            ip="0",
+            port=0
+        )
+
+        # Create dummy enum for test
+        class TestEnum(Flag):
+            ONE = auto()
+            TWO = auto()
+            THREE = auto()
+
+        # Allow override for TestEnum
+        device._dummy_attr = CapabilityManager(TestEnum.ONE)
+        device._SUPPORTED_CAPABILITY_OVERRIDES = {
+            "additional_capabilities": ("_dummy_attr", TestEnum),
+        }
+
+        # Test merging
+        device.override_capabilities(
+            {"additional_capabilities": ["THREE"]}, merge=True)
+        self.assertEqual(device._dummy_attr.flags,
+                         TestEnum.ONE | TestEnum.THREE)
+
+        # Test merging doesn't duplicate
+        device.override_capabilities(
+            {"additional_capabilities": ["TWO", "THREE"]}, merge=True)
+        self.assertEqual(device._dummy_attr.flags,
+                         TestEnum.ONE | TestEnum.TWO | TestEnum.THREE)
+
+        # Test override
+        device.override_capabilities(
+            {"additional_capabilities": ["TWO"]}, merge=False)
+        self.assertEqual(device._dummy_attr.flags, TestEnum.TWO)
+
+    def test_flags(self) -> None:
+        """Test overrides with bare flags"""
+        # Create dummy device
+        device = Device(
+            device_type=DeviceType.AIR_CONDITIONER,
+            device_id=0,
+            ip="0",
+            port=0
+        )
+
+        # Create dummy enum for test
+        class TestEnum(Flag):
+            ONE = auto()
+            TWO = auto()
+            THREE = auto()
+
+        # Allow override for TestEnum
+        device._dummy_attr = TestEnum.ONE
+        device._SUPPORTED_CAPABILITY_OVERRIDES = {
+            "additional_capabilities": ("_dummy_attr", TestEnum),
+        }
+
+        # Test merging
+        device.override_capabilities(
+            {"additional_capabilities": ["THREE"]}, merge=True)
+        self.assertEqual(device._dummy_attr,
+                         TestEnum.ONE | TestEnum.THREE)
+
+        # Test merging doesn't duplicate
+        device.override_capabilities(
+            {"additional_capabilities": ["TWO", "THREE"]}, merge=True)
+        self.assertEqual(device._dummy_attr,
+                         TestEnum.ONE | TestEnum.TWO | TestEnum.THREE)
+
+        # Test override
+        device.override_capabilities(
+            {"additional_capabilities": ["TWO"]}, merge=False)
+        self.assertEqual(device._dummy_attr, TestEnum.TWO)
 
 
 if __name__ == "__main__":

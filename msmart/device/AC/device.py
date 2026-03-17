@@ -752,10 +752,10 @@ class AirConditioner(Device):
         # Reset updated properties set
         self._updated_properties.clear()
 
-    def override_capabilities(self, overrides: dict[str, Any]) -> None:
+    def override_capabilities(self, overrides: dict[str, Any], **kwargs) -> None:
         """Override device capabilities via serialized dict."""
         # Apply overrides
-        super().override_capabilities(overrides)
+        super().override_capabilities(overrides, **kwargs)
 
         # Update supported properties
         self._update_supported_properties()
@@ -1179,7 +1179,7 @@ class AirConditioner(Device):
             "supported_fan_speeds": self.supported_fan_speeds,
             "supported_aux_modes": self.supported_aux_modes,
             "supported_rate_selects": self.supported_rate_selects,
-            "additional_capabilities": self._capabilities.flags
+            "additional_capabilities": list(self._capabilities.flags)
         }
 
     # Deprecated methods and properties
