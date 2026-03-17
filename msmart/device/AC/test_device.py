@@ -1122,6 +1122,41 @@ class TestCapabilityOverrides(unittest.TestCase):
         self.assertNotIn(PropertyId.BREEZE_CONTROL,
                          device._supported_properties)
 
+    def test_merging(self) -> None:
+        """Test merging capabilities."""
+        TEST_OVERRIDE = {
+            "supported_modes": ["HEAT", "COOL", "AUTO"],
+            "supported_swing_modes": ["BOTH", "HORIZONTAL"]
+        }
+
+        EXPECTED_SWING_MODES = [
+            AC.SwingMode.BOTH,
+            AC.SwingMode.VERTICAL,
+            AC.SwingMode.HORIZONTAL,
+        ]
+
+        EXPECTED_OP_MODES = [
+            AC.OperationalMode.HEAT,
+            AC.OperationalMode.COOL,
+            AC.OperationalMode.AUTO,
+            AC.OperationalMode.DRY,
+        ]
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        # Force capabilities
+        device._supported_op_modes = [AC.OperationalMode.DRY]
+        device._supported_swing_modes = [AC.SwingMode.VERTICAL]
+
+        device.override_capabilities(TEST_OVERRIDE, merge=True)
+
+        # Assert merged capability match expected
+        self.assertCountEqual(
+            device.supported_swing_modes, EXPECTED_SWING_MODES)
+        self.assertCountEqual(
+            device.supported_operation_modes, EXPECTED_OP_MODES)
+
 
 if __name__ == "__main__":
     unittest.main()

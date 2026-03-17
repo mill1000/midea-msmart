@@ -752,10 +752,10 @@ class AirConditioner(Device):
         # Reset updated properties set
         self._updated_properties.clear()
 
-    def override_capabilities(self, overrides: dict[str, Any]) -> None:
+    def override_capabilities(self, overrides: dict[str, Any], **kwargs) -> None:
         """Override device capabilities via serialized dict."""
         # Apply overrides
-        super().override_capabilities(overrides)
+        super().override_capabilities(overrides, **kwargs)
 
         # Update supported properties
         self._update_supported_properties()
