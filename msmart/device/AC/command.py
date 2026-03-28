@@ -69,6 +69,7 @@ class CapabilityId(IntEnum):
     TWINS_MACHINE = 0x0232  # ??
     GUIDE_STRIP_TYPE = 0x0233  # ??
     BODY_CHECK = 0x0234  # ??
+    OUT_SILENT = 0x00CD
 
 
 class PropertyId(IntEnum):
@@ -86,6 +87,7 @@ class PropertyId(IntEnum):
     JET_COOL = 0x0067  # AKA "Flash Cool"
     IECO = 0x00E3
     ANION = 0x021E
+    OUT_SILENT = 0x00CD # PortaSplit OutSilentMode
 
     @property
     def _supported(self) -> bool:
@@ -102,6 +104,7 @@ class PropertyId(IntEnum):
             PropertyId.SELF_CLEAN,
             PropertyId.SWING_LR_ANGLE,
             PropertyId.SWING_UD_ANGLE,
+            PropertyId.OUT_SILENT,
         ]
 
     def decode(self, data: bytes) -> Any:
@@ -109,8 +112,10 @@ class PropertyId(IntEnum):
         if not self._supported:
             raise NotImplementedError(f"{repr(self)} decode is not supported.")
 
-        if self in [PropertyId.BREEZELESS, PropertyId.JET_COOL, PropertyId.SELF_CLEAN,]:
+        if self in [PropertyId.BREEZELESS, PropertyId.JET_COOL, PropertyId.SELF_CLEAN]:
             return bool(data[0])
+        elif self == PropertyId.OUT_SILENT:
+            return data[0] == 3
         elif self == PropertyId.BREEZE_AWAY:
             return data[0] == 2
         elif self == PropertyId.BUZZER:
@@ -131,6 +136,8 @@ class PropertyId(IntEnum):
 
         if self == PropertyId.BREEZE_AWAY:
             return bytes([2 if args[0] else 1])
+        elif self == PropertyId.OUT_SILENT:
+            return bytes([3 if args[0] else 0])
         elif self == PropertyId.IECO:
             # ieco_frame, ieco_number, ieco_switch, ...
             return bytes([0, 1, args[0]]) + bytes(10)
@@ -592,6 +599,7 @@ class CapabilitiesResponse(Response):
             # CapabilityId.TEMPERATURES too complex to be handled here
             CapabilityId.WIND_OFF_ME:  reader("wind_off_me", get_value(1)),
             CapabilityId.WIND_ON_ME:  reader("wind_on_me", get_value(1)),
+            CapabilityId.OUT_SILENT: reader("out_silent", get_value(1)),
             # CapabilityId._UNKNOWN is a special case
         }
 
@@ -692,6 +700,10 @@ class CapabilitiesResponse(Response):
     @property
     def anion(self) -> bool:
         return self._capabilities.get("anion", False)
+    
+    @property
+    def out_silent(self) -> bool:
+        return self._capabilities.get("out_silent", False)
 
     # TODO rethink these properties for fan speed, operation mode and swing mode
     # Surely there's a better way than define props for each possible cap

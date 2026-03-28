@@ -134,6 +134,7 @@ class AirConditioner(Device):
         JET_COOL = auto()
         PURIFIER = auto()
         SELF_CLEAN = auto()
+        OUT_SILENT = auto()
 
         DEFAULT = (
             CUSTOM_FAN_SPEED |
@@ -153,6 +154,7 @@ class AirConditioner(Device):
         PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
         PropertyId.SWING_UD_ANGLE: lambda s: s._vertical_swing_angle,
         PropertyId.CASCADE: lambda s: s._cascade_mode,
+        PropertyId.OUT_SILENT: lambda s: s._out_silent,
     }
 
     _SUPPORTED_CAPABILITY_OVERRIDES = {
@@ -196,6 +198,7 @@ class AirConditioner(Device):
         self._purifier = False
         self._ieco = False
         self._flash_cool = False
+        self._out_silent = False
 
         self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
@@ -355,6 +358,9 @@ class AirConditioner(Device):
             if (value := res.get_property(PropertyId.JET_COOL)) is not None:
                 self._flash_cool = value
 
+            if (value := res.get_property(PropertyId.OUT_SILENT)) is not None:
+                self._out_silent = value
+
         elif isinstance(res, EnergyUsageResponse):
             _LOGGER.debug("Energy response payload from device %s: %s",
                           self.id, res)
@@ -470,6 +476,9 @@ class AirConditioner(Device):
 
         self._capabilities.set(
             AirConditioner.Capability.SELF_CLEAN, res.self_clean)
+        
+        self._capabilities.set(
+            AirConditioner.Capability.OUT_SILENT, res.out_silent)
 
         # Add supported rate select levels
         if (rates := res.rate_select_levels) is not None:
@@ -531,6 +540,8 @@ class AirConditioner(Device):
         # Rate select is a special case. It's property based but not controlled by a capability flag
         if self._supported_rate_selects != [AirConditioner.RateSelect.OFF]:
             self._supported_properties.add(PropertyId.RATE_SELECT)
+
+        self._supported_properties.add(PropertyId.OUT_SILENT)
 
     async def _send_commands_get_responses(self, commands: Union[Command, list[Command]]) -> list[Response]:
         """Send a list of commands and return all valid responses."""
@@ -1135,6 +1146,19 @@ class AirConditioner(Device):
     @property
     def outdoor_fan_speed(self) -> Optional[int]:
         return self._outdoor_fan_speed
+    
+    @property
+    def supports_out_silent(self) -> bool:
+        return self._capabilities.has(AirConditioner.Capability.OUT_SILENT)
+
+    @property
+    def out_silent(self) -> Optional[bool]:
+        return self._out_silent
+
+    @out_silent.setter
+    def out_silent(self, enabled: bool) -> None:
+        self._out_silent = enabled
+        self._updated_properties.add(PropertyId.OUT_SILENT)
 
     def to_dict(self) -> dict:
         return {**super().to_dict(), **{
@@ -1161,6 +1185,7 @@ class AirConditioner(Device):
             "follow_me": self.follow_me,
             "purifier": self.purifier,
             "self_clean": self.self_clean_active,
+            "out_silent": self.out_silent,
             "total_energy_usage": self.get_total_energy_usage(),
             "current_energy_usage": self.get_current_energy_usage(),
             "real_time_power_usage": self.get_real_time_power_usage(),
