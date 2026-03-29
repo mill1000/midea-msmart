@@ -525,6 +525,7 @@ class AirConditioner(Device):
             AirConditioner.Capability.IECO: PropertyId.IECO,
             AirConditioner.Capability.JET_COOL: PropertyId.JET_COOL,
             AirConditioner.Capability.SELF_CLEAN: PropertyId.SELF_CLEAN,
+            AirConditioner.Capability.OUT_SILENT: PropertyId.OUT_SILENT,
             AirConditioner.Capability.SWING_HORIZONTAL_ANGLE: PropertyId.SWING_LR_ANGLE,
             AirConditioner.Capability.SWING_VERTICAL_ANGLE: PropertyId.SWING_UD_ANGLE,
         }
@@ -540,8 +541,6 @@ class AirConditioner(Device):
         # Rate select is a special case. It's property based but not controlled by a capability flag
         if self._supported_rate_selects != [AirConditioner.RateSelect.OFF]:
             self._supported_properties.add(PropertyId.RATE_SELECT)
-
-        self._supported_properties.add(PropertyId.OUT_SILENT)
 
     async def _send_commands_get_responses(self, commands: Union[Command, list[Command]]) -> list[Response]:
         """Send a list of commands and return all valid responses."""

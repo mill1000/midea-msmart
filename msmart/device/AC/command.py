@@ -599,7 +599,7 @@ class CapabilitiesResponse(Response):
             # CapabilityId.TEMPERATURES too complex to be handled here
             CapabilityId.WIND_OFF_ME:  reader("wind_off_me", get_value(1)),
             CapabilityId.WIND_ON_ME:  reader("wind_on_me", get_value(1)),
-            CapabilityId.OUT_SILENT: reader("out_silent", get_value(1)),
+            CapabilityId.OUT_SILENT: reader("out_silent", lambda v: v in [1, 3]),
             # CapabilityId._UNKNOWN is a special case
         }
 
@@ -679,7 +679,7 @@ class CapabilitiesResponse(Response):
         # Check if there are additional capabilities
         if len(caps) > 1:
             self._additional_capabilities = bool(caps[-2])
-
+    
     def _get_fan_speed(self, speed) -> bool:
         # If any fan_ capability was received, check against them
         if any(k.startswith("fan_") for k in self._capabilities):
