@@ -121,9 +121,6 @@ class CommercialAirConditioner(Device):
     }
 
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
-        # Remove possible duplicate device_type kwarg
-        kwargs.pop("device_type", None)
-
         super().__init__(ip=ip, port=port, device_id=device_id,
                          device_type=DeviceType.COMMERCIAL_AC, **kwargs)
 
