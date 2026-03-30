@@ -239,6 +239,9 @@ class Device():
     def construct(cls, *, type: DeviceType, **kwargs) -> Union[AirConditioner, CommercialAirConditioner, Device]:
         """Construct a device object based on the provided device type."""
 
+        # Remove possible duplicate device_type kwarg
+        kwargs.pop("device_type", None)
+
         if type == DeviceType.AIR_CONDITIONER:
             from msmart.device import AirConditioner
             return AirConditioner(**kwargs)

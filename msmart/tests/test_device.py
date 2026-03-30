@@ -5,6 +5,8 @@ from unittest.mock import patch
 
 from msmart.base_device import Device
 from msmart.const import DeviceType, FrameType
+from msmart.device import AirConditioner as AC
+from msmart.device import CommercialAirConditioner as CC
 from msmart.frame import Frame
 from msmart.lan import ProtocolError
 from msmart.utils import CapabilityManager
@@ -272,6 +274,72 @@ class TestOverrideCapabilities(unittest.TestCase):
         device.override_capabilities(
             {"additional_capabilities": ["TWO"]}, merge=False)
         self.assertEqual(device._dummy_attr, TestEnum.TWO)
+
+
+class TestConstruct(unittest.TestCase):
+    """Test construction of device instances."""
+
+    def test_construct_ac(self) -> None:
+        """Test construction of an AC device."""
+
+        DEVICE_INFO = {
+            "ip": "127.0.0.1",
+            "port": 6444,
+            "device_id": 147334558165565,
+            "device_type": DeviceType.AIR_CONDITIONER,
+            "name": "net_ac_63BA",
+            "sn": "000000P0000000Q1B88C29C963BA0000"
+        }
+        device = Device.construct(
+            type=DeviceType.AIR_CONDITIONER, **DEVICE_INFO)
+
+        self.assertIsNotNone(device)
+        self.assertIsInstance(device, AC)
+
+        self.assertEqual(device.ip, "127.0.0.1")
+        self.assertEqual(device.port, 6444)
+        self.assertEqual(device.id, 147334558165565)
+        self.assertEqual(device.sn, "000000P0000000Q1B88C29C963BA0000")
+
+    def test_construct_cc(self) -> None:
+        """Test construction of a CC device."""
+
+        DEVICE_INFO = {
+            "ip": "127.0.0.11",
+            "port": 6444,
+            "device_id": 123456,
+            "device_type": DeviceType.COMMERCIAL_AC,
+            "sn": "000000"
+        }
+        device = Device.construct(type=DeviceType.COMMERCIAL_AC, **DEVICE_INFO)
+
+        self.assertIsNotNone(device)
+        self.assertIsInstance(device, CC)
+
+        self.assertEqual(device.ip, "127.0.0.11")
+        self.assertEqual(device.port, 6444)
+        self.assertEqual(device.id, 123456)
+        self.assertEqual(device.sn, "000000")
+
+    def test_construct_unsupported(self) -> None:
+        """Test construction of an unsupported device."""
+
+        DEVICE_INFO = {
+            "ip": "127.0.0.22",
+            "port": 6666,
+            "device_id": 987654,
+            "device_type": 0xBD,
+            "sn": "12345"
+        }
+        device = Device.construct(type=0xBD, **DEVICE_INFO)
+
+        self.assertIsNotNone(device)
+        self.assertIsInstance(device, Device)
+
+        self.assertEqual(device.ip, "127.0.0.22")
+        self.assertEqual(device.port, 6666)
+        self.assertEqual(device.id, 987654)
+        self.assertEqual(device.sn, "12345")
 
 
 if __name__ == "__main__":
