@@ -1095,7 +1095,7 @@ class AirConditioner(Device):
         return self._capabilities.has(AirConditioner.Capability.SELF_CLEAN)
 
     @property
-    def self_clean_active(self) -> bool:
+    def self_clean_active(self) -> Optional[bool]:
         return self._self_clean_active
 
     @property

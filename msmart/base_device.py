@@ -63,10 +63,10 @@ class Device():
 
         return responses
 
-    async def refresh(self) -> NoReturn:
+    async def refresh(self) -> None:
         raise NotImplementedError()
 
-    async def apply(self) -> NoReturn:
+    async def apply(self) -> None:
         raise NotImplementedError()
 
     async def authenticate(self, token: Token, key: Key) -> None:
@@ -144,7 +144,7 @@ class Device():
             "token": self.token
         }
 
-    async def capabilities_dict(self) -> dict:
+    def capabilities_dict(self) -> dict:
         raise NotImplementedError()
 
     def __str__(self) -> str:
