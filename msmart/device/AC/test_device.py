@@ -590,6 +590,22 @@ class TestSetState(unittest.TestCase):
         # Assert correct property is being updated
         self.assertIn(PropertyId.CASCADE, device._updated_properties)
 
+    def test_properties_out_silent(self) -> None:
+        """Test setting out silent property."""
+
+        # Create dummy device with out silent
+        device = AC(0, 0, 0)
+        device._capabilities.set(AC.Capability.OUT_SILENT)
+
+        # Enable out silent
+        device.out_silent = True
+
+        # Assert state is expected
+        self.assertEqual(device.out_silent, True)
+
+        # Assert correct property is being updated
+        self.assertIn(PropertyId.OUT_SILENT, device._updated_properties)
+
 
 class TestRefresh(unittest.IsolatedAsyncioTestCase):
 
