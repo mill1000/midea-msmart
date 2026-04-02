@@ -486,6 +486,22 @@ class TestCapabilities(unittest.TestCase):
         self.assertEqual(device.supported_aux_modes, [
                          AC.AuxHeatMode.OFF, AC.AuxHeatMode.AUX_HEAT, AC.AuxHeatMode.AUX_ONLY])
 
+    def test_out_silent(self) -> None:
+        """Test out silent capability."""
+        CAPABILITIES_PAYLOAD_0 = bytes.fromhex(
+            "b5081f0201002c020101160201043900010151000101e300010113020101cd000103000236")
+
+        # Create a dummy device and process the response
+        device = AC(0, 0, 0)
+
+        # Parse capability payloads
+        with memoryview(CAPABILITIES_PAYLOAD_0) as payload0:
+            resp0 = CapabilitiesResponse(payload0)
+
+            device._update_capabilities(resp0)
+
+        self.assertEqual(device.supports_out_silent, True)
+
 
 class TestSetState(unittest.TestCase):
     """Test setting device state."""
@@ -589,6 +605,22 @@ class TestSetState(unittest.TestCase):
 
         # Assert correct property is being updated
         self.assertIn(PropertyId.CASCADE, device._updated_properties)
+
+    def test_properties_out_silent(self) -> None:
+        """Test setting out silent property."""
+
+        # Create dummy device with out silent
+        device = AC(0, 0, 0)
+        device._capabilities.set(AC.Capability.OUT_SILENT)
+
+        # Enable out silent
+        device.out_silent = True
+
+        # Assert state is expected
+        self.assertEqual(device.out_silent, True)
+
+        # Assert correct property is being updated
+        self.assertIn(PropertyId.OUT_SILENT, device._updated_properties)
 
 
 class TestRefresh(unittest.IsolatedAsyncioTestCase):

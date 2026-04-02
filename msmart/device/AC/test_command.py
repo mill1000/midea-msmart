@@ -260,7 +260,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
         "display_control", "filter_reminder",
         "min_temperature", "max_temperature",
         "energy_stats", "humidity", "target_humidity", "self_clean",
-        "rate_select_levels",
+        "rate_select_levels", "out_silent"
     ]
 
     def test_properties(self) -> None:
@@ -364,7 +364,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "min_temperature": 16.0, "max_temperature": 30.0,
             "energy_stats": False, "humidity": False,
             "target_humidity": False, "self_clean": False,
-            "rate_select_levels": None,
+            "rate_select_levels": None, "out_silent": False
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_ATTRS:
@@ -426,7 +426,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "min_temperature": 16.0, "max_temperature": 30.0,
             "energy_stats": False, "humidity": False,
             "target_humidity": False, "self_clean": False,
-            "rate_select_levels": None,
+            "rate_select_levels": None, "out_silent": False
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_ATTRS:
@@ -477,7 +477,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "min_temperature": 16.0, "max_temperature": 30.0,
             "energy_stats": False, "humidity": False,
             "target_humidity": False, "self_clean": False,
-            "rate_select_levels": None,
+            "rate_select_levels": None, "out_silent": False
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_ATTRS:
@@ -530,7 +530,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "min_temperature": 16.0, "max_temperature": 30.0,
             "energy_stats": False, "humidity": False,
             "target_humidity": False, "self_clean": False,
-            "rate_select_levels": None,
+            "rate_select_levels": None, "out_silent": False
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_ATTRS:
@@ -643,7 +643,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "min_temperature": 16.0, "max_temperature": 30.0,
             "energy_stats": False, "humidity": True,
             "target_humidity": True, "self_clean": True,
-            "rate_select_levels": None,
+            "rate_select_levels": None, "out_silent": False
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_ATTRS:
@@ -758,7 +758,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "min_temperature": 16.0, "max_temperature": 30.0,
             "energy_stats": False, "humidity": False,
             "target_humidity": False, "self_clean": False,
-            "rate_select_levels": None,
+            "rate_select_levels": None, "out_silent": False
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_ATTRS:
@@ -871,7 +871,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "min_temperature": 16.0, "max_temperature": 30.0,
             "energy_stats": True, "humidity": False,
             "target_humidity": False, "self_clean": False,
-            "rate_select_levels": None,
+            "rate_select_levels": None, "out_silent": False
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_ATTRS:
@@ -988,12 +988,25 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "min_temperature": 16.0, "max_temperature": 30.0,
             "energy_stats": False, "humidity": True,
             "target_humidity": True, "self_clean": True,
-            "rate_select_levels": None,
+            "rate_select_levels": None, "out_silent": False
         }
         # Check capabilities properties match
         for prop in self.EXPECTED_ATTRS:
             self.assertEqual(getattr(resp, prop),
                              EXPECTED_CAPABILITIES[prop], prop)
+
+    def test_capabilities_out_silent(self) -> None:
+        """Test that we decode the OUT_SILENT capability correctly from a real PortaSplit payload."""
+        # Real payload from a PortaSplit device containing ID 0x00CD with value 0x03
+        TEST_CAPABILITIES_RESPONSE = bytes.fromhex(
+            "aa2fac00000000000803b5081f0201002c020101160201043900010151000101e300010113020101cd0001030002365b"
+        )
+
+        resp = self._test_build_response(TEST_CAPABILITIES_RESPONSE)
+        resp = cast(CapabilitiesResponse, resp)
+
+        self.assertIn("out_silent", resp._capabilities)
+        self.assertEqual(resp.out_silent, True)
 
 
 class TestGetPropertiesCommand(unittest.TestCase):
@@ -1043,6 +1056,10 @@ class TestSetPropertiesCommand(unittest.TestCase):
             (PropertyId.CASCADE, 0): bytes([0, 0]),
             (PropertyId.CASCADE, 1): bytes([1, 1]),
             (PropertyId.CASCADE, 2): bytes([1, 2]),
+
+            # Out Silent: 0x03 - On, 0x00 - Off
+            (PropertyId.OUT_SILENT, True): bytes([0x03]),
+            (PropertyId.OUT_SILENT, False): bytes([0x00]),
         }
 
         for (prop, value), expected_data in TEST_ENCODES.items():
@@ -1107,6 +1124,10 @@ class TestPropertiesResponse(_TestResponseBase):
             (PropertyId.CASCADE, bytes([0x00, 0x00])): 0,
             (PropertyId.CASCADE, bytes([0x01, 0x01])): 1,
             (PropertyId.CASCADE, bytes([0x01, 0x02])): 2,
+
+            # Out Silent: 0x03 - On, 0x00 - Off
+            (PropertyId.OUT_SILENT, bytes([0x03])): True,
+            (PropertyId.OUT_SILENT, bytes([0x00])): False,
         }
 
         for (prop, data), expected_value in TEST_DECODES.items():
