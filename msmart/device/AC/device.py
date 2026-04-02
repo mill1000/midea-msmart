@@ -132,9 +132,9 @@ class AirConditioner(Device):
         # Misc
         CASCADE = auto()
         JET_COOL = auto()
+        OUT_SILENT = auto()
         PURIFIER = auto()
         SELF_CLEAN = auto()
-        OUT_SILENT = auto()
 
         DEFAULT = (
             CUSTOM_FAN_SPEED |
@@ -148,13 +148,13 @@ class AirConditioner(Device):
         PropertyId.BREEZE_AWAY: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZE_AWAY,
         PropertyId.BREEZE_CONTROL: lambda s: s._breeze_mode,
         PropertyId.BREEZELESS: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZELESS,
+        PropertyId.CASCADE: lambda s: s._cascade_mode,
         PropertyId.IECO: lambda s: s._ieco,
         PropertyId.JET_COOL: lambda s: s._flash_cool,
+        PropertyId.OUT_SILENT: lambda s: s._out_silent,
         PropertyId.RATE_SELECT: lambda s: s._rate_select,
         PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
         PropertyId.SWING_UD_ANGLE: lambda s: s._vertical_swing_angle,
-        PropertyId.CASCADE: lambda s: s._cascade_mode,
-        PropertyId.OUT_SILENT: lambda s: s._out_silent,
     }
 
     _SUPPORTED_CAPABILITY_OVERRIDES = {
@@ -473,9 +473,6 @@ class AirConditioner(Device):
 
         self._capabilities.set(
             AirConditioner.Capability.SELF_CLEAN, res.self_clean)
-        
-        self._capabilities.set(
-            AirConditioner.Capability.OUT_SILENT, res.out_silent)
 
         # Add supported rate select levels
         if (rates := res.rate_select_levels) is not None:
@@ -508,6 +505,9 @@ class AirConditioner(Device):
         self._capabilities.set(
             AirConditioner.Capability.JET_COOL, res.jet_cool)
 
+        self._capabilities.set(
+            AirConditioner.Capability.OUT_SILENT, res.out_silent)
+
         # Update supported properties from capabilities
         self._update_supported_properties()
 
@@ -521,8 +521,8 @@ class AirConditioner(Device):
             AirConditioner.Capability.CASCADE: PropertyId.CASCADE,
             AirConditioner.Capability.IECO: PropertyId.IECO,
             AirConditioner.Capability.JET_COOL: PropertyId.JET_COOL,
-            AirConditioner.Capability.SELF_CLEAN: PropertyId.SELF_CLEAN,
             AirConditioner.Capability.OUT_SILENT: PropertyId.OUT_SILENT,
+            AirConditioner.Capability.SELF_CLEAN: PropertyId.SELF_CLEAN,
             AirConditioner.Capability.SWING_HORIZONTAL_ANGLE: PropertyId.SWING_LR_ANGLE,
             AirConditioner.Capability.SWING_VERTICAL_ANGLE: PropertyId.SWING_UD_ANGLE,
         }
@@ -1142,7 +1142,7 @@ class AirConditioner(Device):
     @property
     def outdoor_fan_speed(self) -> Optional[int]:
         return self._outdoor_fan_speed
-    
+
     @property
     def supports_out_silent(self) -> bool:
         return self._capabilities.has(AirConditioner.Capability.OUT_SILENT)
@@ -1181,7 +1181,6 @@ class AirConditioner(Device):
             "follow_me": self.follow_me,
             "purifier": self.purifier,
             "self_clean": self.self_clean_active,
-            "out_silent": self.out_silent,
             "total_energy_usage": self.get_total_energy_usage(),
             "current_energy_usage": self.get_current_energy_usage(),
             "real_time_power_usage": self.get_real_time_power_usage(),
@@ -1189,6 +1188,7 @@ class AirConditioner(Device):
             "aux_mode": self.aux_mode,
             "error_code": self.error_code,
             "defrost": self.defrost_active,
+            "out_silent": self.out_silent,
         }}
 
     def capabilities_dict(self) -> dict:

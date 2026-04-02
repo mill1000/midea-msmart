@@ -1005,9 +1005,8 @@ class TestCapabilitiesResponse(_TestResponseBase):
         resp = self._test_build_response(TEST_CAPABILITIES_RESPONSE)
         resp = cast(CapabilitiesResponse, resp)
 
-        # Ensure OUT_SILENT is decoded as True from the specific value 3
-        self.assertTrue(resp._capabilities.get("out_silent"))
-        self.assertTrue(getattr(resp, "out_silent"))
+        self.assertIn("out_silent", resp._capabilities)
+        self.assertEqual(resp.out_silent, True)
 
 
 class TestGetPropertiesCommand(unittest.TestCase):

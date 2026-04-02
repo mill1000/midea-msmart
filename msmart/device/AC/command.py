@@ -43,11 +43,12 @@ class CapabilityId(IntEnum):
     PREVENT_STRAIGHT_WIND_SELECT = 0x0058  # ??
     CASCADE = 0x0059  # AKA "Wind Around"
     JET_COOL = 0x0067  # ??
-    PRESET_IECO = 0x00E3
     ICHECK = 0x0091  # ??
     EMERGENT_HEAT_WIND = 0x0093  # ??
     HEAT_PTC_WIND = 0x0094  # ??
     CVP = 0x0098  # ??
+    OUT_SILENT = 0x00CD  # Portasplit outdoor silent mode
+    PRESET_IECO = 0x00E3
     FAN_SPEED_CONTROL = 0x0210
     PRESET_ECO = 0x0212
     PRESET_FREEZE_PROTECTION = 0x0213
@@ -69,7 +70,6 @@ class CapabilityId(IntEnum):
     TWINS_MACHINE = 0x0232  # ??
     GUIDE_STRIP_TYPE = 0x0233  # ??
     BODY_CHECK = 0x0234  # ??
-    OUT_SILENT = 0x00CD
 
 
 class PropertyId(IntEnum):
@@ -85,9 +85,9 @@ class PropertyId(IntEnum):
     FRESH_AIR = 0x004B
     CASCADE = 0x0059  # AKA "Wind Around"
     JET_COOL = 0x0067  # AKA "Flash Cool"
+    OUT_SILENT = 0x00CD  # Portasplit outdoor silent mode
     IECO = 0x00E3
     ANION = 0x021E
-    OUT_SILENT = 0x00CD # PortaSplit OutSilentMode
 
     @property
     def _supported(self) -> bool:
@@ -100,11 +100,11 @@ class PropertyId(IntEnum):
             PropertyId.CASCADE,
             PropertyId.IECO,
             PropertyId.JET_COOL,
+            PropertyId.OUT_SILENT,
             PropertyId.RATE_SELECT,
             PropertyId.SELF_CLEAN,
             PropertyId.SWING_LR_ANGLE,
             PropertyId.SWING_UD_ANGLE,
-            PropertyId.OUT_SILENT,
         ]
 
     def decode(self, data: bytes) -> Any:
@@ -114,18 +114,18 @@ class PropertyId(IntEnum):
 
         if self in [PropertyId.BREEZELESS, PropertyId.JET_COOL, PropertyId.SELF_CLEAN]:
             return bool(data[0])
-        elif self == PropertyId.OUT_SILENT:
-            return data[0] == 3
         elif self == PropertyId.BREEZE_AWAY:
             return data[0] == 2
         elif self == PropertyId.BUZZER:
             return None  # Don't decode buzzer
-        elif self == PropertyId.IECO:
-            # data[0] - ieco_number, data[1] - ieco_switch
-            return bool(data[1])
         elif self == PropertyId.CASCADE:
             # data[0] - wind_around, data[1] - wind_around_ud
             return data[1] if data[0] else 0
+        elif self == PropertyId.IECO:
+            # data[0] - ieco_number, data[1] - ieco_switch
+            return bool(data[1])
+        elif self == PropertyId.OUT_SILENT:
+            return data[0] == 3
         else:
             return data[0]
 
@@ -136,14 +136,14 @@ class PropertyId(IntEnum):
 
         if self == PropertyId.BREEZE_AWAY:
             return bytes([2 if args[0] else 1])
-        elif self == PropertyId.OUT_SILENT:
-            return bytes([3 if args[0] else 0])
-        elif self == PropertyId.IECO:
-            # ieco_frame, ieco_number, ieco_switch, ...
-            return bytes([0, 1, args[0]]) + bytes(10)
         elif self == PropertyId.CASCADE:
             # data[0] - wind_around, data[1] - wind_around_ud
             return bytes([1 if args[0] else 0, args[0]])
+        elif self == PropertyId.IECO:
+            # ieco_frame, ieco_number, ieco_switch, ...
+            return bytes([0, 1, args[0]]) + bytes(10)
+        elif self == PropertyId.OUT_SILENT:
+            return bytes([3 if args[0] else 0])
         else:
             return bytes(args[0:1])
 
@@ -576,6 +576,7 @@ class CapabilitiesResponse(Response):
                 reader("aux_heat_mode", lambda v: v == 9),  # Heat & Aux
                 reader("aux_mode", lambda v: v in [9, 10, 11, 13]),  # Aux only
             ],
+            CapabilityId.OUT_SILENT: reader("out_silent", lambda v: v in [1, 3]),
             CapabilityId.PRESET_ECO: reader("eco", lambda v: v in [1, 2]),
             CapabilityId.PRESET_FREEZE_PROTECTION: reader("freeze_protection", get_value(1)),
             CapabilityId.PRESET_IECO: reader("ieco", get_value(1)),
@@ -599,7 +600,6 @@ class CapabilitiesResponse(Response):
             # CapabilityId.TEMPERATURES too complex to be handled here
             CapabilityId.WIND_OFF_ME:  reader("wind_off_me", get_value(1)),
             CapabilityId.WIND_ON_ME:  reader("wind_on_me", get_value(1)),
-            CapabilityId.OUT_SILENT: reader("out_silent", lambda v: v in [1, 3]),
             # CapabilityId._UNKNOWN is a special case
         }
 
@@ -679,7 +679,7 @@ class CapabilitiesResponse(Response):
         # Check if there are additional capabilities
         if len(caps) > 1:
             self._additional_capabilities = bool(caps[-2])
-    
+
     def _get_fan_speed(self, speed) -> bool:
         # If any fan_ capability was received, check against them
         if any(k.startswith("fan_") for k in self._capabilities):
@@ -700,10 +700,6 @@ class CapabilitiesResponse(Response):
     @property
     def anion(self) -> bool:
         return self._capabilities.get("anion", False)
-    
-    @property
-    def out_silent(self) -> bool:
-        return self._capabilities.get("out_silent", False)
 
     # TODO rethink these properties for fan speed, operation mode and swing mode
     # Surely there's a better way than define props for each possible cap
@@ -862,6 +858,10 @@ class CapabilitiesResponse(Response):
             return 2
 
         return None
+
+    @property
+    def out_silent(self) -> bool:
+        return self._capabilities.get("out_silent", False)
 
 
 class StateResponse(Response):
