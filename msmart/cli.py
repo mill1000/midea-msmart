@@ -6,7 +6,7 @@ from typing import NoReturn
 from msmart import __version__
 from msmart.cloud import Cloud, CloudError
 from msmart.const import OPEN_MIDEA_APP_ACCOUNT, OPEN_MIDEA_APP_PASSWORD
-from msmart.device import AirConditioner as AC
+from msmart.device import AirConditioner as AC, HeatPump
 from msmart.discover import Discover
 from msmart.lan import AuthenticationError
 
@@ -65,11 +65,11 @@ async def _query(args) -> None:
                 _LOGGER.error("Authentication failed. Error: %s", e)
                 exit(1)
 
-    if not isinstance(device, AC):
-        _LOGGER.error("Device is not supported.")
-        exit(1)
-
     if args.capabilities:
+        if not isinstance(device, AC):
+            _LOGGER.error("Capabilities query is only supported for AC devices.")
+            exit(1)
+
         _LOGGER.info("Querying device capabilities.")
         await device.get_capabilities()
 
@@ -77,7 +77,6 @@ async def _query(args) -> None:
             _LOGGER.error("Device is not online.")
             exit(1)
 
-        # TODO method to get caps in string format
         _LOGGER.info("%s", str({
             "supported_modes": device.supported_operation_modes,
             "supported_swing_modes": device.supported_swing_modes,
@@ -143,6 +142,34 @@ async def _download(args) -> None:
     _LOGGER.info("Writing plugin to '%s'.", plugin_name)
     with open(plugin_name, "wb") as f:
         f.write(plugin_file)
+
+
+async def _control(args) -> None:
+    """Control a heat pump device."""
+
+    _LOGGER.info("Connecting to %s.", args.host)
+    device = await Discover.discover_single(args.host, account=args.account, password=args.password)
+
+    if device is None:
+        _LOGGER.error("Device not found.")
+        exit(1)
+
+    if not isinstance(device, HeatPump):
+        _LOGGER.error("Device at %s is not a heat pump (type=%s).", args.host, hex(device.type))
+        exit(1)
+
+    # Apply requested changes
+    if args.zone1_power is not None:
+        device.zone1.power_state = args.zone1_power
+    if args.temp is not None:
+        device.zone1.target_temperature = args.temp
+    if args.mode is not None:
+        device.run_mode = HeatPump.RunMode[args.mode.upper()]
+
+    _LOGGER.info("Applying: zone1_power=%s, zone1_temp=%s, mode=%s",
+                 device.zone1.power_state, device.zone1.target_temperature, device.run_mode.name)
+    await device.apply()
+    _LOGGER.info("Done.\n%s", device)
 
 
 def _run(args) -> NoReturn:
@@ -234,6 +261,21 @@ def main() -> NoReturn:
                               help="Authentication key for V3 devices.",
                               type=bytes.fromhex)
     query_parser.set_defaults(func=_query)
+
+    # Setup control parser (heat pump)
+    control_parser = subparsers.add_parser("control",
+                                           description="Control a heat pump device.",
+                                           parents=[common_parser])
+    control_parser.add_argument("host", help="Hostname or IP address of device.")
+    control_parser.add_argument("--on", dest="zone1_power", action="store_true",
+                                default=None, help="Turn zone 1 on.")
+    control_parser.add_argument("--off", dest="zone1_power", action="store_false",
+                                help="Turn zone 1 off.")
+    control_parser.add_argument("--temp", type=float, metavar="TEMP",
+                                help="Set zone 1 target temperature (°C).")
+    control_parser.add_argument("--mode", choices=["auto", "heat", "cool", "dhw"],
+                                help="Set run mode.")
+    control_parser.set_defaults(func=_control, zone1_power=None)
 
     # Setup download parser
     download = subparsers.add_parser("download",
