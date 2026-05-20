@@ -5,6 +5,7 @@ import json
 import logging
 import os
 from asyncio import Lock
+from binascii import hexlify, unhexlify
 from datetime import datetime
 from secrets import token_hex, token_urlsafe
 from typing import Any, Dict, Optional, Tuple
@@ -212,6 +213,12 @@ class Cloud:
         self._access_token = response["mdata"]["accessToken"]
         _LOGGER.debug("Received accessToken: %s", self._access_token)
 
+        # Derive relay encryption keys from root-level session fields
+        self._security.set_relay_keys(
+            str(response.get("accessToken", "")),
+            str(response.get("randomData", "")),
+        )
+
     async def get_token(self, udpid: str) -> Tuple[str, str]:
         """Get token and key for the provided udpid."""
 
@@ -261,6 +268,78 @@ class Cloud:
         file_data = self._security.decrypt_aes_app_key(
             encrypted_data).decode("UTF-8")
         return (file_name, file_data)
+
+    def _build_relay_packet(self, device_id: int, cmd_bytes: bytes) -> bytes:
+        """Wrap a device command in the 0x5A5A LAN packet format for cloud relay.
+
+        Cloud relay uses the same packet format as direct LAN communication, but
+        without the local AES encryption layer.
+        """
+        id_bytes = device_id.to_bytes(8, "little")
+        now = datetime.now()
+        pkt = bytearray([
+            0x5A, 0x5A,
+            0x01, 0x11,
+            0x00, 0x00,          # length, filled below
+            0x20, 0x00,
+            0x00, 0x00, 0x00, 0x00,  # message id
+            int(now.microsecond / 10000), now.second, now.minute, now.hour,
+            now.day, now.month, now.year % 100, int(now.year / 100),
+            id_bytes[0], id_bytes[1], id_bytes[2], id_bytes[3],
+            id_bytes[4], id_bytes[5], id_bytes[6], id_bytes[7],
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+        ])
+        pkt.extend(cmd_bytes)
+        pkt[4:6] = (len(pkt) + 16).to_bytes(2, "little")
+        pkt.extend(self._security.md5_fingerprint(bytes(pkt)))
+        return bytes(pkt)
+
+    async def appliance_transparent_send(self, device_id: int, cmd_bytes: bytes) -> Optional[bytes]:
+        """Send a device command via the cloud relay.
+
+        This bypasses LAN authentication entirely — the cloud server forwards
+        the command over its own authenticated connection to the device.
+
+        Args:
+            device_id: Numeric appliance ID.
+            cmd_bytes: Raw device command frame (0xAA … format).
+
+        Returns:
+            Device response frame (0xAA … format) or None on failure.
+        """
+        if not self._security.has_relay_keys:
+            _LOGGER.error("Cloud relay keys not available; call login() first.")
+            return None
+
+        packet = self._build_relay_packet(device_id, cmd_bytes)
+        order = self._security.encrypt_relay(_Security.encode_as_csv(packet))
+
+        body = self._build_request_body({
+            "order": order,
+            "funId": "0000",
+            "applianceCode": str(device_id),
+        })
+
+        try:
+            response = await self._api_request("/v1/appliance/transparent/send", body)
+        except CloudError as e:
+            _LOGGER.error("Cloud relay request failed: %s", e)
+            return None
+
+        if not response or "reply" not in response:
+            _LOGGER.error("Cloud relay response missing 'reply' field: %s", response)
+            return None
+
+        csv_reply = self._security.decrypt_relay(response["reply"])
+        reply_bytes = _Security.decode_from_csv(csv_reply)
+
+        # Response is a full 0x5A5A packet; strip the 40-byte header
+        if len(reply_bytes) < 40:
+            _LOGGER.error("Cloud relay reply too short (%d bytes).", len(reply_bytes))
+            return None
+
+        return reply_bytes[40:]
 
     async def get_plugin(self, device_type: DeviceType, sn: str) -> Tuple[str, bytes]:
         """Request and download the device plugin."""
@@ -313,8 +392,13 @@ class _Security:
     # MSmartHome
     APP_KEY = "ac21b9f9cbfe4ca5a88562ef25e2b768"
 
+    # Key used to compute MD5 fingerprint on LAN / relay packets
+    RELAY_SIGN_KEY = "xhdiwjnchekd4d512chdjx5d8e4c394D2D7S"
+
     def __init__(self, use_china_server=False):
         self._use_china_server = use_china_server
+        self._relay_data_key: Optional[str] = None
+        self._relay_data_iv: Optional[str] = None
 
     @property
     def _iot_key(self) -> str:
@@ -375,3 +459,53 @@ class _Security:
         key, iv = self._get_app_key_and_iv()
         cipher = AES.new(key, AES.MODE_CBC, iv=iv)
         return Padding.unpad(cipher.decrypt(data), 16)
+
+    def set_relay_keys(self, access_token: str, random_data: str) -> None:
+        """Derive relay encryption keys from the session's root-level accessToken and randomData."""
+        if not access_token or not random_data:
+            return
+        key, iv = self._get_app_key_and_iv()
+        try:
+            cipher1 = AES.new(key, AES.MODE_CBC, iv=iv)
+            self._relay_data_key = Padding.unpad(
+                cipher1.decrypt(unhexlify(access_token)), 16).decode("utf-8")
+            cipher2 = AES.new(key, AES.MODE_CBC, iv=iv)
+            self._relay_data_iv = Padding.unpad(
+                cipher2.decrypt(unhexlify(random_data)), 16).decode("utf-8")
+        except Exception as e:
+            _LOGGER.error("Failed to derive relay keys: %s", e)
+
+    @property
+    def has_relay_keys(self) -> bool:
+        """Return True if relay encryption keys have been derived."""
+        return self._relay_data_key is not None and self._relay_data_iv is not None
+
+    def encrypt_relay(self, data: str) -> str:
+        """AES-CBC encrypt a string with the relay data key, return hex."""
+        assert self._relay_data_key and self._relay_data_iv
+        key = self._relay_data_key.encode("utf-8")
+        iv = self._relay_data_iv.encode("utf-8")
+        cipher = AES.new(key, AES.MODE_CBC, iv=iv)
+        return hexlify(cipher.encrypt(Padding.pad(data.encode("utf-8"), 16))).decode()
+
+    def decrypt_relay(self, hex_data: str) -> str:
+        """AES-CBC decrypt a hex string with the relay data key, return UTF-8 string."""
+        assert self._relay_data_key and self._relay_data_iv
+        key = self._relay_data_key.encode("utf-8")
+        iv = self._relay_data_iv.encode("utf-8")
+        cipher = AES.new(key, AES.MODE_CBC, iv=iv)
+        return Padding.unpad(cipher.decrypt(unhexlify(hex_data)), 16).decode("utf-8")
+
+    def md5_fingerprint(self, data: bytes) -> bytes:
+        """Compute the MD5 packet fingerprint appended to LAN/relay packets."""
+        return hashlib.md5(data + self.RELAY_SIGN_KEY.encode()).digest()
+
+    @staticmethod
+    def encode_as_csv(data: bytes) -> str:
+        """Encode bytes as comma-separated signed integers (relay wire format)."""
+        return ",".join(str(b if b < 128 else b - 256) for b in data)
+
+    @staticmethod
+    def decode_from_csv(data: str) -> bytes:
+        """Decode comma-separated signed integers to bytes."""
+        return bytes(int(x) & 0xFF for x in data.split(","))

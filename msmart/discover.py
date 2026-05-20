@@ -10,7 +10,7 @@ from msmart.cloud import Cloud, CloudError
 from msmart.const import (DEVICE_INFO_MSG, DISCOVERY_MSG,
                           OPEN_MIDEA_APP_ACCOUNT, OPEN_MIDEA_APP_PASSWORD,
                           DeviceType)
-from msmart.device import AirConditioner, Device
+from msmart.device import AirConditioner, Device, HeatPump
 from msmart.lan import AuthenticationError, Security
 
 _LOGGER = logging.getLogger(__name__)
@@ -355,12 +355,20 @@ class Discover:
         if device_type == DeviceType.AIR_CONDITIONER:
             return AirConditioner
 
+        if device_type == DeviceType.HEAT_PUMP:
+            return HeatPump
+
         # Unknown type return generic device
         return Device
 
     @classmethod
     async def _authenticate_device(cls, dev: Device) -> bool:
-        """Attempt to authenticate a V3 device."""
+        """Attempt to authenticate a V3 device.
+
+        First tries LAN authentication using a token fetched from the cloud.
+        If that fails (e.g. getToken returns an error for this device), falls
+        back to cloud relay so the device can still be used.
+        """
 
         # Get cloud connection
         cloud = await Discover._get_cloud()
@@ -378,7 +386,7 @@ class Discover:
             try:
                 token, key = await cloud.get_token(udpid)
             except CloudError as e:
-                _LOGGER.error(e)
+                _LOGGER.debug("Could not get token for udpid '%s': %s", udpid, e)
                 continue
 
             try:
@@ -387,7 +395,11 @@ class Discover:
             except AuthenticationError:
                 continue
 
-        return False
+        # LAN token unavailable — fall back to cloud relay
+        _LOGGER.warning(
+            "LAN authentication failed for device %d; falling back to cloud relay.", dev.id)
+        dev.set_cloud(cloud)
+        return True
 
     @classmethod
     async def _get_device(cls, ip: str, version: int, data: bytes) -> Optional[Device]:

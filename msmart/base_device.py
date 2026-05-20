@@ -1,10 +1,13 @@
 import logging
 import time
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from msmart.const import DeviceType
 from msmart.frame import Frame
 from msmart.lan import LAN, AuthenticationError, Key, ProtocolError, Token
+
+if TYPE_CHECKING:
+    from msmart.cloud import Cloud
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,6 +25,7 @@ class Device():
         self._version = kwargs.get("version", None)
 
         self._lan = LAN(ip, port, device_id)
+        self._cloud: Optional["Cloud"] = None
         self._supported = False
         self._online = False
 
@@ -31,6 +35,15 @@ class Device():
         data = command.tobytes()
         _LOGGER.debug("Sending command to %s:%d: %s",
                       self.ip, self.port, data.hex())
+
+        # Use cloud relay when configured (e.g. LAN token unavailable)
+        if self._cloud is not None:
+            response = await self._cloud.appliance_transparent_send(self._id, data)
+            if response is None:
+                _LOGGER.warning("No response via cloud relay for %s:%d.", self.ip, self.port)
+                return None
+            _LOGGER.debug("Response via cloud relay from %s:%d.", self.ip, self.port)
+            return [response]
 
         start = time.time()
         responses = None
@@ -66,6 +79,15 @@ class Device():
             await self._lan.authenticate(token, key)
         except (ProtocolError, TimeoutError) as e:
             raise AuthenticationError(e) from e
+
+    def set_cloud(self, cloud: "Cloud") -> None:
+        """Configure cloud relay for all commands.
+
+        When set, commands are relayed through the Midea cloud API instead of
+        being sent directly over LAN. This is a fallback for devices whose LAN
+        token cannot be retrieved via getToken.
+        """
+        self._cloud = cloud
 
     def set_max_connection_lifetime(self, seconds: Optional[int]) -> None:
         """Set the maximum connection lifetime of the LAN protocol."""
