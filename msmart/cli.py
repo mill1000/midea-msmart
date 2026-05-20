@@ -147,12 +147,21 @@ async def _download(args) -> None:
 async def _control(args) -> None:
     """Control a heat pump device."""
 
-    _LOGGER.info("Connecting to %s.", args.host)
-    device = await Discover.discover_single(args.host, account=args.account, password=args.password)
+    if args.device_id:
+        # Construct device directly when ID is known (skips UDP discovery)
+        device = HeatPump(ip=args.host, port=6444, device_id=args.device_id, version=3)
+        Discover._lock = asyncio.Lock()
+        Discover._set_cloud_credentials(args.account, args.password)
+        if not await Discover.connect(device):
+            _LOGGER.error("Could not connect to device.")
+            exit(1)
+    else:
+        _LOGGER.info("Discovering %s on local network.", args.host)
+        device = await Discover.discover_single(args.host, account=args.account, password=args.password)
 
-    if device is None:
-        _LOGGER.error("Device not found.")
-        exit(1)
+        if device is None:
+            _LOGGER.error("Device not found.")
+            exit(1)
 
     if not isinstance(device, HeatPump):
         _LOGGER.error("Device at %s is not a heat pump (type=%s).", args.host, hex(device.type))
@@ -162,7 +171,7 @@ async def _control(args) -> None:
     if args.zone1_power is not None:
         device.zone1.power_state = args.zone1_power
     if args.temp is not None:
-        device.zone1.target_temperature = args.temp
+        device.zone1.target_temperature = int(args.temp)
     if args.mode is not None:
         device.run_mode = HeatPump.RunMode[args.mode.upper()]
 
@@ -267,6 +276,8 @@ def main() -> NoReturn:
                                            description="Control a heat pump device.",
                                            parents=[common_parser])
     control_parser.add_argument("host", help="Hostname or IP address of device.")
+    control_parser.add_argument("--id", dest="device_id", type=int, default=0,
+                                help="Device ID (skips UDP discovery, useful when broadcast doesn't work).")
     control_parser.add_argument("--on", dest="zone1_power", action="store_true",
                                 default=None, help="Turn zone 1 on.")
     control_parser.add_argument("--off", dest="zone1_power", action="store_false",
