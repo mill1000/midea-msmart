@@ -399,11 +399,17 @@ class SmartHomeCloud(BaseCloud):
     async def appliance_transparent_send(self, device_id: int, cmd_bytes: bytes) -> Optional[bytes]:
         """Send a command to a device via cloud relay and return the response payload."""
 
-        if not self._random_data:
-            _LOGGER.error("Cloud relay not available: no session randomData.")
+        # Root-level session tokens are hex relay tokens, distinct from mdata Bearer token
+        relay_access_token = self._session.get("accessToken", "")
+        relay_random_data = self._session.get("randomData", "")
+        if not relay_access_token or not relay_random_data:
+            _LOGGER.error("Cloud relay not available: missing session relay tokens.")
             return None
 
-        self._security.set_relay_keys(self._access_token, self._random_data)
+        self._security.set_relay_keys(relay_access_token, relay_random_data)
+        if self._security._relay_data_key is None:
+            _LOGGER.error("Failed to derive relay encryption keys from session tokens.")
+            return None
 
         packet = self._build_relay_packet(device_id, cmd_bytes)
         csv_data = SmartHomeCloud._Security.encode_as_csv(packet)
