@@ -292,7 +292,7 @@ class SmartHomeCloud(BaseCloud):
                 "loginAccount": self._account,
                 "iampwd": self._security.encrypt_iam_password(self._login_id, self._password),
                 "password": self._security.encrypt_password(self._login_id, self._password),
-                "pushToken": token_urlsafe(120),
+                "pushToken": hashlib.sha256(self._account.encode()).hexdigest(),
                 "stamp": self._timestamp(),
                 "reqId": token_hex(16),
             },
