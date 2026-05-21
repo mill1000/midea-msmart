@@ -220,6 +220,55 @@ class Discover:
         return None
 
     @classmethod
+    async def probe_device_info(cls, host: str, timeout: float = 5.0) -> Optional[dict]:
+        """Send a discovery probe to a specific host and return raw device info without authenticating.
+
+        Returns a dict with device_id, device_type, ip, port, version, name, sn, or None on failure.
+        """
+
+        info_task: Optional[asyncio.Task] = None
+
+        class _ProbeProtocol(asyncio.DatagramProtocol):
+            def connection_made(self, transport):
+                self._transport = transport
+                for port in [6445, 20086]:
+                    transport.sendto(DISCOVERY_MSG, (host, port))
+
+            def datagram_received(self, data, addr):
+                nonlocal info_task
+                if info_task is not None:
+                    return
+                try:
+                    version = Discover._get_device_version(data)
+                except DiscoverError:
+                    return
+                info_task = asyncio.ensure_future(
+                    Discover._get_device_info(addr[0], version, data))
+
+            def error_received(self, exc):
+                pass
+
+            def connection_lost(self, exc):
+                pass
+
+        loop = asyncio.get_event_loop()
+        transport, _ = await loop.create_datagram_endpoint(
+            _ProbeProtocol, local_addr=("0.0.0.0", 0))
+        try:
+            await asyncio.sleep(timeout)
+        finally:
+            transport.close()
+
+        if info_task is None:
+            return None
+
+        try:
+            return await asyncio.wait_for(info_task, timeout=5.0)
+        except Exception as e:
+            _LOGGER.debug("Probe failed for %s: %s", host, e)
+            return None
+
+    @classmethod
     async def _get_cloud(cls) -> Optional[NetHomePlusCloud]:
         """Return a cloud connection, creating it if necessary."""
 
