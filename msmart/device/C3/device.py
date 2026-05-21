@@ -11,7 +11,9 @@ from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum
 
 from .command import (ControlBasicCommand, QueryBasicCommand,
-                      QueryBasicResponse, ReportPower4Response, Response)
+                      QueryBasicResponse, QueryUnitParametersCommand,
+                      QueryUnitParametersResponse, ReportPower4Response,
+                      Response)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -135,7 +137,7 @@ class HeatPump(Device):
         self._thermal_power = None
         self._voltage = None
 
-    def _update_state(self, res: Union[QueryBasicResponse, ReportPower4Response]) -> None:
+    def _update_state(self, res: Union[QueryBasicResponse, QueryUnitParametersResponse, ReportPower4Response]) -> None:
         """Update local device state from device responses."""
 
         if isinstance(res, QueryBasicResponse):
@@ -196,15 +198,18 @@ class HeatPump(Device):
 
             self._tank_temperature = res.tank_temperature
 
+        elif isinstance(res, QueryUnitParametersResponse):
+
+            self._outdoor_temperature = res.outdoor_temperature
+            if res.water_temperature_2 is not None:
+                self._tank_temperature = res.water_temperature_2
+
         elif isinstance(res, ReportPower4Response):
 
             self._electric_power = res.electric_power
             self._thermal_power = res.thermal_power
             self._outdoor_temperature = res.outdoor_air_temperature
             self._voltage = res.voltage
-
-            # TODO Duplicate water tank temperature reading
-            # self._water_temperature_2 = res.water_tank_temperature
 
     async def _send_command_parse_responses(self, command) -> None:
         """Send a command and parse any responses."""
@@ -231,7 +236,7 @@ class HeatPump(Device):
             self._supported = True
 
             # Parse responses as needed
-            if isinstance(response, (QueryBasicResponse, ReportPower4Response)):
+            if isinstance(response, (QueryBasicResponse, QueryUnitParametersResponse, ReportPower4Response)):
                 self._update_state(response)
             else:
                 _LOGGER.debug("Ignored unknown response from %s:%d: %s",
@@ -240,9 +245,14 @@ class HeatPump(Device):
     async def refresh(self) -> None:
         """Refresh the local copy of the device state."""
 
-        # Query basic state
-        cmd = QueryBasicCommand()
-        await self._send_command_parse_responses(cmd)
+        # Query basic state (always supported)
+        await self._send_command_parse_responses(QueryBasicCommand())
+
+        # Query unit parameters for outdoor temperature; not supported on all relay paths
+        try:
+            await self._send_command_parse_responses(QueryUnitParametersCommand())
+        except Exception:
+            _LOGGER.debug("Unit parameters query not available for %s:%d.", self.ip, self.port)
 
     async def apply(self) -> None:
         """Apply the local state to the device."""

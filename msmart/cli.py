@@ -264,13 +264,13 @@ async def _heatpump(args) -> None:
     if args.device_id:
         # Construct device directly when ID is known (skips UDP discovery)
         device = HeatPump(ip=args.host, port=6444, device_id=args.device_id, version=3)
-        Discover._lock = asyncio.Lock()
-        Discover._region = args.region
-        Discover._account = args.account
-        Discover._password = args.password
-        if not await Discover.connect(device):
-            _LOGGER.error("Could not connect to device.")
+        cloud = SmartHomeCloud(account=args.account, password=args.password)
+        try:
+            await cloud.login()
+        except CloudError as e:
+            _LOGGER.error("Cloud login failed: %s", e)
             exit(1)
+        device.set_cloud(cloud)
     else:
         _LOGGER.info("Discovering %s on local network.", args.host)
         device = await Discover.discover_single(args.host, region=args.region, account=args.account, password=args.password)

@@ -172,8 +172,7 @@ class Response():
     @classmethod
     def validate(cls, frame: memoryview) -> None:
         """Validate the response."""
-        # Responses only have frame checksum
-        Frame.validate(frame)
+        Frame.validate(frame, DeviceType.HEAT_PUMP)
 
     @classmethod
     def construct(cls, frame: bytes) -> Union[QueryBasicResponse, QueryUnitParametersResponse, ReportPower4Response, Response]:
@@ -267,7 +266,8 @@ class QueryBasicResponse(Response):
 
         # Actual tank temperature in ℃
         # Ref: tank_actual_temp
-        self.tank_temperature = payload[22] if payload[22] != 0xFF else None
+        # Values >= 0xF0 are error/sensor-not-connected codes
+        self.tank_temperature = payload[22] if payload[22] < 0xF0 else None
 
         self.error_code = payload[23]
 
