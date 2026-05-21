@@ -396,8 +396,22 @@ class SmartHomeCloud(BaseCloud):
         fingerprint = self._security.md5_fingerprint(result)
         return result + fingerprint
 
+    # Error codes that indicate the session/token has expired and require re-login
+    _AUTH_EXPIRED_CODES = {3105, 3106, 3301, 3001}
+
     async def appliance_transparent_send(self, device_id: int, cmd_bytes: bytes) -> Optional[bytes]:
         """Send a command to a device via cloud relay and return the response payload."""
+        try:
+            return await self._do_relay_send(device_id, cmd_bytes)
+        except ApiError as e:
+            if e.code in SmartHomeCloud._AUTH_EXPIRED_CODES:
+                _LOGGER.info("Cloud session expired (code %d), re-authenticating silently.", e.code)
+                await self.login(force=True)
+                return await self._do_relay_send(device_id, cmd_bytes)
+            raise
+
+    async def _do_relay_send(self, device_id: int, cmd_bytes: bytes) -> Optional[bytes]:
+        """Internal: build, encrypt, send and decrypt a single relay command."""
 
         # Root-level session tokens are hex relay tokens, distinct from mdata Bearer token
         relay_access_token = self._session.get("accessToken", "")
