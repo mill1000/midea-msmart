@@ -374,8 +374,8 @@ class Discover:
             try:
                 token, key = await cloud.get_token(udpid)
             except CloudError as e:
-                _LOGGER.error("Failed to get token from cloud. Error: %s", e)
-                raise CloudError(f"Failed to get token from cloud. {e}")
+                _LOGGER.debug("Could not get token for udpid '%s': %s", udpid, e)
+                continue
 
             try:
                 await dev.authenticate(token, key)
@@ -383,7 +383,11 @@ class Discover:
             except AuthenticationError:
                 continue
 
-        return False
+        # LAN token unavailable — fall back to cloud relay
+        _LOGGER.warning(
+            "LAN authentication failed for device %d; falling back to cloud relay.", dev.id)
+        dev.set_cloud(cloud)
+        return True
 
     @classmethod
     async def _get_device(cls, ip: str, version: int, data: bytes) -> Optional[Device]:

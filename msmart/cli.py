@@ -10,6 +10,7 @@ from msmart.cloud import CloudError, NetHomePlusCloud, SmartHomeCloud
 from msmart.const import DEFAULT_CLOUD_REGION, DeviceType
 from msmart.device import AirConditioner as AC
 from msmart.device import CommercialAirConditioner as CC
+from msmart.device import HeatPump
 from msmart.discover import Discover
 from msmart.lan import AuthenticationError
 from msmart.utils import MideaIntEnum
@@ -257,6 +258,45 @@ async def _control(args) -> None:
     await device.apply()
 
 
+async def _heatpump(args) -> None:
+    """Control a heat pump device."""
+
+    if args.device_id:
+        # Construct device directly when ID is known (skips UDP discovery)
+        device = HeatPump(ip=args.host, port=6444, device_id=args.device_id, version=3)
+        Discover._lock = asyncio.Lock()
+        Discover._region = args.region
+        Discover._account = args.account
+        Discover._password = args.password
+        if not await Discover.connect(device):
+            _LOGGER.error("Could not connect to device.")
+            exit(1)
+    else:
+        _LOGGER.info("Discovering %s on local network.", args.host)
+        device = await Discover.discover_single(args.host, region=args.region, account=args.account, password=args.password)
+
+        if device is None:
+            _LOGGER.error("Device not found.")
+            exit(1)
+
+    if not isinstance(device, HeatPump):
+        _LOGGER.error("Device at %s is not a heat pump (type=%s).", args.host, hex(device.type))
+        exit(1)
+
+    # Apply requested changes
+    if args.zone1_power is not None:
+        device.zone1.power_state = args.zone1_power
+    if args.temp is not None:
+        device.zone1.target_temperature = int(args.temp)
+    if args.mode is not None:
+        device.run_mode = HeatPump.RunMode[args.mode.upper()]
+
+    _LOGGER.info("Applying: zone1_power=%s, zone1_temp=%s, mode=%s",
+                 device.zone1.power_state, device.zone1.target_temperature, device.run_mode.name)
+    await device.apply()
+    _LOGGER.info("Done.\n%s", device)
+
+
 async def _download(args) -> None:
     """Download a device's protocol implementation from the cloud."""
 
@@ -428,6 +468,23 @@ def main() -> NoReturn:
                                 metavar="setting=value",
                                 help="Space separated key-value pairs of settings to control.")
     control_parser.set_defaults(func=_control)
+
+    # Setup heatpump control parser
+    heatpump_parser = subparsers.add_parser("heatpump",
+                                            description="Control a heat pump device.",
+                                            parents=[common_parser])
+    heatpump_parser.add_argument("host", help="Hostname or IP address of device.")
+    heatpump_parser.add_argument("--id", dest="device_id", type=int, default=0,
+                                 help="Device ID (skips UDP discovery, useful when broadcast doesn't work).")
+    heatpump_parser.add_argument("--on", dest="zone1_power", action="store_true",
+                                 default=None, help="Turn zone 1 on.")
+    heatpump_parser.add_argument("--off", dest="zone1_power", action="store_false",
+                                 help="Turn zone 1 off.")
+    heatpump_parser.add_argument("--temp", type=float, metavar="TEMP",
+                                 help="Set zone 1 target temperature (°C).")
+    heatpump_parser.add_argument("--mode", choices=["auto", "heat", "cool", "dhw"],
+                                 help="Set run mode.")
+    heatpump_parser.set_defaults(func=_heatpump, zone1_power=None)
 
     # Setup download parser
     download = subparsers.add_parser("download",

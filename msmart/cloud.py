@@ -5,6 +5,7 @@ import json
 import logging
 import os
 from asyncio import Lock
+from binascii import unhexlify
 from datetime import datetime, timezone
 from secrets import token_hex, token_urlsafe
 from typing import Any, Callable, Optional
@@ -215,6 +216,7 @@ class SmartHomeCloud(BaseCloud):
         super().__init__(base_url, region, account, password, **kwargs)
 
         self._access_token = ""
+        self._random_data = ""
         self._security = SmartHomeCloud._Security(use_china_server)
 
     def _parse_response(self, response) -> Any:
@@ -303,7 +305,9 @@ class SmartHomeCloud(BaseCloud):
         assert response is not None
 
         self._session = response
-        self._access_token = response["mdata"]["accessToken"]
+        mdata = response.get("mdata", {})
+        self._access_token = mdata.get("accessToken", response.get("accessToken", ""))
+        self._random_data = mdata.get("randomData", response.get("randomData", ""))
         _LOGGER.debug("Received accessToken: %s", self._access_token)
 
     async def get_protocol_lua(self, device_type: DeviceType, sn: str) -> tuple[str, str]:
@@ -373,6 +377,63 @@ class SmartHomeCloud(BaseCloud):
 
         file_data = r.content
         return (file_name, file_data)
+
+    def _build_relay_packet(self, device_id: int, cmd_bytes: bytes) -> bytes:
+        """Build a 0x5A5A relay packet wrapping the command bytes."""
+        packet = bytearray(40)
+        packet[0] = 0x5A
+        packet[1] = 0x5A
+        packet[2] = 0x01
+        packet[3] = 0x11
+        # Length field (little-endian): header (40) + payload + fingerprint (16)
+        length = 40 + len(cmd_bytes) + 16
+        packet[4] = length & 0xFF
+        packet[5] = (length >> 8) & 0xFF
+        # Device ID (6 bytes little-endian)
+        for i in range(6):
+            packet[20 + i] = (device_id >> (8 * i)) & 0xFF
+        result = bytes(packet) + cmd_bytes
+        fingerprint = self._security.md5_fingerprint(result)
+        return result + fingerprint
+
+    async def appliance_transparent_send(self, device_id: int, cmd_bytes: bytes) -> Optional[bytes]:
+        """Send a command to a device via cloud relay and return the response payload."""
+
+        if not self._random_data:
+            _LOGGER.error("Cloud relay not available: no session randomData.")
+            return None
+
+        self._security.set_relay_keys(self._access_token, self._random_data)
+
+        packet = self._build_relay_packet(device_id, cmd_bytes)
+        csv_data = SmartHomeCloud._Security.encode_as_csv(packet)
+        encrypted = self._security.encrypt_relay(csv_data)
+
+        response = await self._api_request(
+            "/v1/appliance/transparent/send",
+            self._build_request_body({
+                "applianceCode": str(device_id),
+                "order": encrypted,
+            })
+        )
+
+        if response is None:
+            return None
+
+        reply_hex = response.get("reply", "")
+        if not reply_hex:
+            _LOGGER.error("Empty reply from cloud relay.")
+            return None
+
+        decrypted_csv = self._security.decrypt_relay(reply_hex)
+        decrypted = SmartHomeCloud._Security.decode_from_csv(decrypted_csv)
+
+        # Strip 40-byte header and 16-byte fingerprint
+        if len(decrypted) <= 56:
+            _LOGGER.error("Cloud relay response too short: %d bytes", len(decrypted))
+            return None
+
+        return bytes(decrypted[40:-16])
 
     class _Security:
         """"Class for SmartHome cloud specific security."""
@@ -450,6 +511,47 @@ class SmartHomeCloud(BaseCloud):
             key, iv = self._get_app_key_and_iv()
             cipher = AES.new(key, AES.MODE_CBC, iv=iv)
             return Padding.unpad(cipher.decrypt(data), 16)
+
+        RELAY_SIGN_KEY = "xhdiwjnchekd4d512chdjx5d8e4c394D2D7S"
+
+        def set_relay_keys(self, access_token: str, random_data: str) -> None:
+            """Derive relay data_key and data_iv from session tokens."""
+            key, iv = self._get_app_key_and_iv()
+            try:
+                self._relay_data_key = AES.new(key, AES.MODE_CBC, iv=iv).decrypt(
+                    unhexlify(access_token))[:16]
+                self._relay_data_iv = AES.new(key, AES.MODE_CBC, iv=iv).decrypt(
+                    unhexlify(random_data))[:16]
+            except Exception as e:
+                _LOGGER.error("Failed to derive relay keys: %s", e)
+                self._relay_data_key = None
+                self._relay_data_iv = None
+
+        def encrypt_relay(self, data: str) -> str:
+            """Encrypt relay payload with derived data key/iv."""
+            cipher = AES.new(self._relay_data_key, AES.MODE_CBC, iv=self._relay_data_iv)
+            return cipher.encrypt(Padding.pad(data.encode(), 16)).hex()
+
+        def decrypt_relay(self, hex_data: str) -> str:
+            """Decrypt relay response with derived data key/iv."""
+            cipher = AES.new(self._relay_data_key, AES.MODE_CBC, iv=self._relay_data_iv)
+            return Padding.unpad(cipher.decrypt(bytes.fromhex(hex_data)), 16).decode()
+
+        def md5_fingerprint(self, data: bytes) -> bytes:
+            """Compute MD5 fingerprint for relay packet."""
+            m = hashlib.md5()
+            m.update(data + self.RELAY_SIGN_KEY.encode())
+            return m.digest()
+
+        @staticmethod
+        def encode_as_csv(data: bytes) -> str:
+            """Encode bytes as comma-separated decimal values."""
+            return ",".join(str(b) for b in data)
+
+        @staticmethod
+        def decode_from_csv(data: str) -> bytes:
+            """Decode comma-separated decimal values back to bytes."""
+            return bytes(int(x) for x in data.split(","))
 
 
 class NetHomePlusCloud(BaseCloud):
@@ -582,3 +684,7 @@ class NetHomePlusCloud(BaseCloud):
             m2 = hashlib.sha256(login_hash.encode("ASCII"))
 
             return m2.hexdigest()
+
+
+# Alias for backwards compatibility
+Cloud = SmartHomeCloud
