@@ -173,7 +173,7 @@ class Response():
     def validate(cls, frame: memoryview) -> None:
         """Validate the response."""
         # Responses only have frame checksum
-        Frame.validate(frame)
+        Frame.validate(frame, DeviceType.HEAT_PUMP)
 
     @classmethod
     def construct(cls, frame: bytes) -> Union[QueryBasicResponse, QueryUnitParametersResponse, ReportPower4Response, Response]:
