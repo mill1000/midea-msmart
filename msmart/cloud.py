@@ -432,6 +432,7 @@ class SmartHomeCloud(BaseCloud):
             return None
 
         decrypted_csv = self._security.decrypt_relay(reply_hex)
+        _LOGGER.debug("Cloud relay decrypted CSV (first 100 chars): %s", decrypted_csv[:100])
         decrypted = SmartHomeCloud._Security.decode_from_csv(decrypted_csv)
 
         # Strip 40-byte header and 16-byte fingerprint
@@ -556,8 +557,9 @@ class SmartHomeCloud(BaseCloud):
 
         @staticmethod
         def decode_from_csv(data: str) -> bytes:
-            """Decode comma-separated decimal values back to bytes."""
-            return bytes(int(x) for x in data.split(","))
+            """Decode comma-separated decimal values back to bytes.
+            Values may be Java-style signed bytes (-128..127); mask with 0xFF."""
+            return bytes(int(x) & 0xFF for x in data.split(","))
 
 
 class NetHomePlusCloud(BaseCloud):
