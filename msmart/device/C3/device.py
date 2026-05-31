@@ -1,4 +1,3 @@
-"""Module for Midea 0xC3 devices."""
 from __future__ import annotations
 
 import logging
@@ -10,8 +9,10 @@ from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 from msmart.utils import MideaIntEnum
 
-from .command import (ControlBasicCommand, QueryBasicCommand,
-                      QueryBasicResponse, ReportPower4Response, Response)
+from .command import (Command, ControlBasicCommand, QueryBasicCommand,
+                      QueryBasicResponse, QueryUnitParametersCommand,
+                      QueryUnitParametersResponse, ReportPower4Response,
+                      Response)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -95,9 +96,6 @@ class HeatPump(Device):
             return self._terminal_type
 
     def __init__(self, ip: str, device_id: int,  port: int, **kwargs) -> None:
-        # Remove possible duplicate device_type kwarg
-        kwargs.pop("device_type", None)
-
         super().__init__(ip=ip, port=port, device_id=device_id,
                          device_type=DeviceType.HEAT_PUMP, **kwargs)
 
@@ -135,10 +133,12 @@ class HeatPump(Device):
         self._thermal_power = None
         self._voltage = None
 
-    def _update_state(self, res: Union[QueryBasicResponse, ReportPower4Response]) -> None:
-        """Update local device state from device responses."""
-
+    def _update_state(self, res: Response) -> None:
+        """Update the local state from a device response."""
         if isinstance(res, QueryBasicResponse):
+            _LOGGER.debug("Query basic response payload from device %s: %s",
+                          self.id, res)
+
             self._run_mode = cast(
                 HeatPump.RunMode, HeatPump.RunMode.get_from_value(res.run_mode))
             # TODO Run mode in auto?
@@ -196,7 +196,17 @@ class HeatPump(Device):
 
             self._tank_temperature = res.tank_temperature
 
+        elif isinstance(res, QueryUnitParametersResponse):
+            _LOGGER.debug("Query unit parameter response payload from device %s: %s",
+                          self.id, res)
+
+            self._outdoor_temperature = res.outdoor_temperature
+            if res.water_temperature_2 is not None:
+                self._tank_temperature = res.water_temperature_2
+
         elif isinstance(res, ReportPower4Response):
+            _LOGGER.debug("Report power 4 response payload from device %s: %s",
+                          self.id, res)
 
             self._electric_power = res.electric_power
             self._thermal_power = res.thermal_power
@@ -205,20 +215,20 @@ class HeatPump(Device):
 
             # TODO Duplicate water tank temperature reading
             # self._water_temperature_2 = res.water_tank_temperature
+        else:
+            _LOGGER.debug("Ignored unknown response from device %s: %s",
+                          self.id, res)
 
-    async def _send_command_parse_responses(self, command) -> None:
-        """Send a command and parse any responses."""
+    async def _send_commands_get_responses(self, commands: Union[Command, list[Command]]) -> list[Response]:
+        """Send a list of commands and return all valid responses."""
+        responses: list[bytes] = []
+        for cmd in commands if isinstance(commands, list) else [commands]:
+            responses.extend(await super()._send_command(cmd))
 
-        responses = await super()._send_command(command)
+        # Device is online if any response received
+        self._online = len(responses) > 0
 
-        # No response from device
-        if responses is None:
-            self._online = False
-            return
-
-        # Device is online if we received any response
-        self._online = True
-
+        valid_responses = []
         for data in responses:
             try:
                 # Construct response from data
@@ -227,22 +237,27 @@ class HeatPump(Device):
                 _LOGGER.error(e)
                 continue
 
-            # Device is supported if we can process a response
-            self._supported = True
+            valid_responses.append(response)
 
-            # Parse responses as needed
-            if isinstance(response, (QueryBasicResponse, ReportPower4Response)):
-                self._update_state(response)
-            else:
-                _LOGGER.debug("Ignored unknown response from %s:%d: %s",
-                              self.ip, self.port, response.payload.hex())
+        # Device is supported if online and any supported response is received
+        self._supported |= self._online and len(valid_responses) > 0
+
+        return valid_responses
 
     async def refresh(self) -> None:
         """Refresh the local copy of the device state."""
+        commands = []
 
         # Query basic state
-        cmd = QueryBasicCommand()
-        await self._send_command_parse_responses(cmd)
+        commands.append(QueryBasicCommand())
+        commands.append(QueryUnitParametersCommand())
+
+        # Send all commands and collect responses
+        responses = await self._send_commands_get_responses(commands)
+
+        # Update state from responses
+        for response in responses:
+            self._update_state(response)
 
     async def apply(self) -> None:
         """Apply the local state to the device."""
@@ -267,7 +282,9 @@ class HeatPump(Device):
 
         cmd.tbh_state = self._tbh_power_state
 
-        await self._send_command_parse_responses(cmd)
+        # Process any state responses from the device
+        for response in await self._send_commands_get_responses(cmd):
+            self._update_state(response)
 
     @property
     def run_mode(self) -> HeatPump.RunMode:

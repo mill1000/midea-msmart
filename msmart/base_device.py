@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from enum import Enum, Flag
-from typing import TYPE_CHECKING, Any, NoReturn, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 from msmart.const import DeviceType
 from msmart.frame import Frame
@@ -14,7 +14,8 @@ _LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # Conditionally import device classes for type hints
-    from msmart.device import AirConditioner, CommercialAirConditioner
+    from msmart.device import (AirConditioner, CommercialAirConditioner,
+                               HeatPump)
 
 
 class Device():
@@ -236,7 +237,7 @@ class Device():
                     setattr(self, attr_name, flags)
 
     @classmethod
-    def construct(cls, *, type: DeviceType, **kwargs) -> Union[AirConditioner, CommercialAirConditioner, Device]:
+    def construct(cls, *, type: DeviceType, **kwargs) -> Union[AirConditioner, CommercialAirConditioner, Device, HeatPump]:
         """Construct a device object based on the provided device type."""
 
         # Remove possible duplicate device_type kwarg
@@ -249,6 +250,10 @@ class Device():
         if type == DeviceType.COMMERCIAL_AC:
             from msmart.device import CommercialAirConditioner
             return CommercialAirConditioner(**kwargs)
+
+        if type == DeviceType.HEAT_PUMP:
+            from msmart.device import HeatPump
+            return HeatPump(**kwargs)
 
         # Unknown type return generic device
         return Device(device_type=type, **kwargs)

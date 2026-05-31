@@ -10,6 +10,7 @@ from msmart.cloud import CloudError, NetHomePlusCloud, SmartHomeCloud
 from msmart.const import DEFAULT_CLOUD_REGION, DeviceType
 from msmart.device import AirConditioner as AC
 from msmart.device import CommercialAirConditioner as CC
+from msmart.device import HeatPump as HP
 from msmart.discover import Discover
 from msmart.lan import AuthenticationError
 from msmart.utils import MideaIntEnum
@@ -24,6 +25,7 @@ DEFAULT_CLOUD_ACCOUNT, DEFAULT_CLOUD_PASSWORD = CLOUD_CREDENTIALS[DEFAULT_CLOUD_
 DEVICE_TYPES = {
     "AC": DeviceType.AIR_CONDITIONER,
     "CC": DeviceType.COMMERCIAL_AC,
+    "HP": DeviceType.HEAT_PUMP,
 }
 
 
@@ -52,11 +54,13 @@ async def _discover(args) -> None:
             device = super(AC, device)
         elif isinstance(device, CC):
             device = super(CC, device)
+        elif isinstance(device, HP):
+            device = super(HP, device)
 
         _LOGGER.info("Found device:\n%s", device.to_dict())
 
 
-async def _connect(args) -> Union[AC, CC]:
+async def _connect(args) -> Union[AC, CC, HP]:
     """Connect to a device directly or via discovery."""
 
     if args.auto and (args.token or args.key or args.device_id or args.device_type):
@@ -87,7 +91,7 @@ async def _connect(args) -> Union[AC, CC]:
                 _LOGGER.error("Authentication failed. Error: %s", e)
                 exit(1)
 
-    if not isinstance(device, (AC, CC)):
+    if not isinstance(device, (AC, CC, HP)):
         _LOGGER.error("Device is not supported.")
         exit(1)
 
@@ -272,6 +276,8 @@ async def _download(args) -> None:
         device = super(AC, device)
     elif isinstance(device, CC):
         device = super(CC, device)
+    elif isinstance(device, HP):
+        device = super(HP, device)
 
     _LOGGER.info("Found device:\n%s", device.to_dict())
 

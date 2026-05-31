@@ -1,4 +1,4 @@
-"""Command and repsonse messages for 0xC3 devices."""
+"""Command and response messages for 0xC3 devices."""
 from __future__ import annotations
 
 import logging
@@ -53,11 +53,18 @@ class ReportType(IntEnum):  # Ref: MSG_TYPE_UP
     REPORT_UNIT_PARAMETERS = 0x5
 
 
-class QueryCommand(Frame):
+class Command(Frame):
+    """Base class for C3 commands."""
+
+    def __init__(self, frame_type: FrameType) -> None:
+        super().__init__(DeviceType.HEAT_PUMP, frame_type)
+
+
+class QueryCommand(Command):
     """Base class for query commands."""
 
     def __init__(self, type: QueryType) -> None:
-        super().__init__(DeviceType.HEAT_PUMP, frame_type=FrameType.QUERY)
+        super().__init__(frame_type=FrameType.QUERY)
 
         self._type = type
 
@@ -88,11 +95,11 @@ class QueryUnitParametersCommand(QueryCommand):
         super().__init__(QueryType.QUERY_UNIT_PARAMETERS)
 
 
-class ControlCommand(Frame):
+class ControlCommand(Command):
     """Base class for control commands."""
 
     def __init__(self, type: ControlType) -> None:
-        super().__init__(DeviceType.HEAT_PUMP, frame_type=FrameType.CONTROL)
+        super().__init__(frame_type=FrameType.CONTROL)
 
         self._type = type
 
@@ -152,62 +159,65 @@ class ControlBasicCommand(ControlCommand):
 
 
 class Response():
-    """Base class for responses."""
+    """Base class for C3 responses."""
 
-    def __init__(self, frame: memoryview) -> None:
+    def __init__(self, payload: memoryview) -> None:
+        self._type = payload[0]
+        self._payload = bytes(payload)
 
-        self._type = frame[10]
-        self._payload = bytes(frame[10:-1])
+    def __str__(self) -> str:
+        return self.payload.hex()
 
     @property
     def type(self) -> int:
-        """Type of the response."""
         return self._type
 
     @property
     def payload(self) -> bytes:
-        """Payload portion of the response."""
         return self._payload
 
     @classmethod
-    def validate(cls, frame: memoryview) -> None:
+    def validate(cls, payload: memoryview) -> None:
         """Validate the response."""
-        # Responses only have frame checksum
-        Frame.validate(frame, DeviceType.HEAT_PUMP)
+        pass
 
     @classmethod
     def construct(cls, frame: bytes) -> Union[QueryBasicResponse, QueryUnitParametersResponse, ReportPower4Response, Response]:
-        """Build a response object from the frame and response type."""
+        """Construct a response object from raw data."""
 
         # Build a memoryview of the frame for zero-copy slicing
         with memoryview(frame) as frame_mv:
-            # Ensure frame is valid before parsing
-            Response.validate(frame_mv)
+            # Validate the frame
+            Frame.validate(frame_mv, DeviceType.HEAT_PUMP)
 
-            # Parse frame depending on id
+            # Default to base class
+            response_class = Response
+
+            # Fetch the appropriate response class from the frame and response type
             frame_type = frame_mv[9]
-            type = frame_mv[10]
-            if ((frame_type == FrameType.QUERY and type == QueryType.QUERY_BASIC) or
-                    (frame_type == FrameType.CONTROL and type == ControlType.CONTROL_BASIC)):
-                return QueryBasicResponse(frame_mv)
-            elif frame_type == FrameType.QUERY and type == QueryType.QUERY_UNIT_PARAMETERS:
-                return QueryUnitParametersResponse(frame_mv)
-            elif frame_type == FrameType.REPORT and type == ReportType.REPORT_POWER4:
-                return ReportPower4Response(frame_mv)
-            else:
-                return Response(frame_mv)
+            response_type = frame_mv[10]
+            if ((frame_type == FrameType.QUERY and response_type == QueryType.QUERY_BASIC) or
+                    (frame_type == FrameType.CONTROL and response_type == ControlType.CONTROL_BASIC)):
+                response_class = QueryBasicResponse
+            elif frame_type == FrameType.QUERY and response_type == QueryType.QUERY_UNIT_PARAMETERS:
+                response_class = QueryUnitParametersResponse
+            elif frame_type == FrameType.REPORT and response_type == ReportType.REPORT_POWER4:
+                response_class = ReportPower4Response
+
+            # Validate the payload
+            Response.validate(frame_mv[10:-1])
+
+            # Build the response
+            return response_class(frame_mv[10:-1])
 
 
 class QueryBasicResponse(Response):
     """Response to basic query."""
 
-    def __init__(self, frame: memoryview) -> None:
-        super().__init__(frame)
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
 
-        _LOGGER.debug("Query basic response payload: %s", self.payload.hex())
-
-        with memoryview(self.payload) as payload:
-            self._parse(payload)
+        self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
 
@@ -267,7 +277,8 @@ class QueryBasicResponse(Response):
 
         # Actual tank temperature in ℃
         # Ref: tank_actual_temp
-        self.tank_temperature = payload[22] if payload[22] != 0xFF else None
+        # Values >= 0xF0 are error/sensor-not-connected codes
+        self.tank_temperature = payload[22] if payload[22] < 0xF0 else None
 
         self.error_code = payload[23]
 
@@ -283,13 +294,10 @@ class QueryBasicResponse(Response):
 class ReportPower4Response(Response):
     """Unsolicited report of POWER4."""
 
-    def __init__(self, frame: memoryview) -> None:
-        super().__init__(frame)
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
 
-        _LOGGER.debug("Power4 report payload: %s", self.payload.hex())
-
-        with memoryview(self.payload) as payload:
-            self._parse(payload)
+        self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
 
@@ -338,14 +346,10 @@ class ReportPower4Response(Response):
 class QueryUnitParametersResponse(Response):
     """Response to unit parameters query."""
 
-    def __init__(self, frame: memoryview) -> None:
-        super().__init__(frame)
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
 
-        _LOGGER.debug("Query unit parameters response payload: %s",
-                      self.payload.hex())
-
-        with memoryview(self.payload) as payload:
-            self._parse(payload)
+        self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
 
