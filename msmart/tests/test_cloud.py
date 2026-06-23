@@ -6,6 +6,8 @@ from msmart.cloud import (ApiError, BaseCloud, CloudError, NetHomePlusCloud,
                           SmartHomeCloud)
 from msmart.const import DEFAULT_CLOUD_REGION
 
+_TEST_REGIONS = ["DE", "KR", "US"]
+
 
 class TestCloud(unittest.IsolatedAsyncioTestCase):
     # pylint: disable=protected-access
@@ -37,6 +39,15 @@ class TestNetHomePlusCloud(TestCloud):
 
         self.assertIsNotNone(client._session)
         self.assertIsNotNone(client._session_id)
+
+    async def test_login_all_regions(self) -> None:
+        """Test that we can login to the cloud with all regions."""
+
+        for region in _TEST_REGIONS:
+            client = await self._login(region=region)
+
+            self.assertIsNotNone(client._session)
+            self.assertIsNotNone(client._session_id)
 
     async def test_login_exception(self) -> None:
         """Test that bad credentials raise an exception."""
@@ -70,6 +81,18 @@ class TestNetHomePlusCloud(TestCloud):
 
         self.assertIsNotNone(token)
         self.assertIsNotNone(key)
+
+    async def test_get_token_all_regions(self) -> None:
+        """Test that a token and key can be obtained from the cloud."""
+
+        DUMMY_UDPID = "4fbe0d4139de99dd88a0285e14657045"
+
+        for region in _TEST_REGIONS:
+            client = await self._login(region=region)
+            token, key = await client.get_token(DUMMY_UDPID)
+
+            self.assertIsNotNone(token)
+            self.assertIsNotNone(key)
 
     async def test_get_token_exception(self) -> None:
         """Test that an exception is thrown when a token and key 
