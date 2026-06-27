@@ -230,6 +230,30 @@ class TestUpdateStateFromResponse(unittest.TestCase):
             self.assertEqual(device.breeze_mild, breeze_mild)
             self.assertEqual(device.breezeless, breezeless)
 
+    def test_properties_fresh_air(self) -> None:
+        """Test parsing of fresh air properties."""
+        TEST_RESPONSES = {
+            # Real captures from a Midea Gaia (12HRFN8-I), property 0x004B.
+            # On, payload 01 50 52 -> power on, fan speed 0x50 (80 = High)
+            bytes.fromhex("aa15ac00000000000303b1014b000003015052001680"):
+                AC.FreshAirFanSpeed.HIGH,
+            # Off, payload 00 28 4f -> power off. Note the device still reports a
+            # non-zero speed byte (0x28) when off, so OFF is gated on the power byte.
+            bytes.fromhex("aa15ac00000000000303b1014b00000300284f00368c"):
+                AC.FreshAirFanSpeed.OFF,
+        }
+
+        for response, expected in TEST_RESPONSES.items():
+            resp = Response.construct(response)
+            self.assertIsNotNone(resp)
+            self.assertEqual(type(resp), PropertiesResponse)
+
+            # Create a dummy device and process the response
+            device = AC(0, 0, 0)
+            device._update_state(resp)
+
+            self.assertEqual(device.fresh_air_fan_speed, expected)
+
     def test_energy_usage_response(self) -> None:
         """Test parsing of EnergyUsageResponses into device state."""
         TEST_RESPONSES = {
@@ -462,6 +486,29 @@ class TestCapabilities(unittest.TestCase):
         self.assertEqual(device.supports_breeze_away, False)
         self.assertEqual(device.supports_breeze_mild, False)
         self.assertEqual(device.supports_breezeless, True)
+
+    def test_fresh_air(self) -> None:
+        """Test fresh air capability detection."""
+        # Device that advertises fresh air support (capability 0x004B == 1).
+        # Captured from a Midea Gaia (12HRFN8-I) which reports it on the 2nd page.
+        device = AC(0, 0, 0)
+        with memoryview(bytes.fromhex("b5014b000101")) as payload:
+            device._update_capabilities(CapabilitiesResponse(payload))
+
+        self.assertEqual(device.supports_fresh_air, True)
+        self.assertCountEqual(device.supported_fresh_air_fan_speeds, [
+            AC.FreshAirFanSpeed.OFF,
+            AC.FreshAirFanSpeed.LOW,
+            AC.FreshAirFanSpeed.MEDIUM,
+            AC.FreshAirFanSpeed.HIGH,
+            AC.FreshAirFanSpeed.BOOST,
+        ])
+
+        # Device that does not support fresh air (capability 0x004B == 0)
+        device = AC(0, 0, 0)
+        with memoryview(bytes.fromhex("b5014b000100")) as payload:
+            device._update_capabilities(CapabilitiesResponse(payload))
+        self.assertEqual(device.supports_fresh_air, False)
 
     def test_aux_heat(self) -> None:
         """Test aux heat mode capabilities."""

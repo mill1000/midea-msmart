@@ -251,7 +251,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
     EXPECTED_ATTRS = [
         "anion",
         "fan_silent", "fan_low", "fan_medium", "fan_high", "fan_auto", "fan_custom",
-        "breeze_away", "breeze_control", "breezeless", "cascade",
+        "breeze_away", "breeze_control", "breezeless", "cascade", "fresh_air",
         "swing_horizontal_angle", "swing_vertical_angle",
         "swing_horizontal", "swing_vertical", "swing_both",
         "dry_mode", "cool_mode", "heat_mode", "auto_mode",
@@ -292,6 +292,14 @@ class TestCapabilitiesResponse(_TestResponseBase):
             CapabilityId.BREEZELESS, 1)._capabilities["breezeless"], True)
         self.assertEqual(_build_capability_response(
             CapabilityId.BREEZELESS, 100)._capabilities["breezeless"], False)
+
+        # Test FRESH_AIR capability which uses a get_value parser. e.g. X == 1
+        self.assertEqual(_build_capability_response(
+            CapabilityId.FRESH_AIR, 0)._capabilities["fresh_air"], False)
+        self.assertEqual(_build_capability_response(
+            CapabilityId.FRESH_AIR, 1)._capabilities["fresh_air"], True)
+        self.assertEqual(_build_capability_response(
+            CapabilityId.FRESH_AIR, 100)._capabilities["fresh_air"], False)
 
         # Test PRESET_ECO capability which uses an array parser
         resp = _build_capability_response(CapabilityId.PRESET_ECO, 0)
@@ -350,7 +358,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": False, "breeze_away": False,
-            "breeze_control": False, "breezeless": False, "cascade": False,
+            "breeze_control": False, "breezeless": False, "cascade": False, "fresh_air": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": True, "swing_vertical": True,
             "swing_both": True,
@@ -412,7 +420,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": True, "breeze_away": False,
-            "breeze_control": False, "breezeless": False, "cascade": False,
+            "breeze_control": False, "breezeless": False, "cascade": False, "fresh_air": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": True, "swing_vertical": True,
             "swing_both": True,
@@ -463,7 +471,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": False, "breeze_away": False,
-            "breeze_control": False, "breezeless": False, "cascade": False,
+            "breeze_control": False, "breezeless": False, "cascade": False, "fresh_air": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": False, "swing_vertical": False,
             "swing_both": False,
@@ -516,7 +524,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": True, "breeze_away": False,
-            "breeze_control": False, "breezeless": False, "cascade": False,
+            "breeze_control": False, "breezeless": False, "cascade": False, "fresh_air": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": False, "swing_vertical": True,
             "swing_both": False,
@@ -629,7 +637,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": True, "breeze_away": False,
-            "breeze_control": True, "breezeless": False, "cascade": False,
+            "breeze_control": True, "breezeless": False, "cascade": False, "fresh_air": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": True, "swing_vertical": True,
             "swing_both": True,
@@ -744,7 +752,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": False, "breeze_away": False,
-            "breeze_control": False, "breezeless": False, "cascade": False,
+            "breeze_control": False, "breezeless": False, "cascade": False, "fresh_air": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": False, "swing_vertical": False,
             "swing_both": False,
@@ -856,7 +864,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": True, "breeze_away": False,
-            "breeze_control": False, "breezeless": False, "cascade": False,
+            "breeze_control": False, "breezeless": False, "cascade": False, "fresh_air": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": False, "swing_vertical": True,
             "swing_both": False,
@@ -973,7 +981,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
             "fan_custom": True, "breeze_away": True,
-            "breeze_control": False, "breezeless": False, "cascade": True,
+            "breeze_control": False, "breezeless": False, "cascade": True, "fresh_air": False,
             "swing_horizontal_angle": True, "swing_vertical_angle": True,
             "swing_horizontal": True, "swing_vertical": True,
             "swing_both": True,
@@ -1056,6 +1064,13 @@ class TestSetPropertiesCommand(unittest.TestCase):
             (PropertyId.CASCADE, 0): bytes([0, 0]),
             (PropertyId.CASCADE, 1): bytes([1, 1]),
             (PropertyId.CASCADE, 2): bytes([1, 2]),
+
+            # Fresh air: 3 bytes power, fan speed, 0xFF no-change sentinel.
+            # The single speed value is the state (0 = off; 40/60/80/100 on).
+            # Speed values captured from a Midea Gaia app: 40/60/80/100.
+            (PropertyId.FRESH_AIR, 60): bytes([0x01, 0x3C, 0xFF]),
+            (PropertyId.FRESH_AIR, 100): bytes([0x01, 0x64, 0xFF]),
+            (PropertyId.FRESH_AIR, 0): bytes([0x00, 0x00, 0xFF]),
 
             # Out Silent: 0x03 - On, 0x00 - Off
             (PropertyId.OUT_SILENT, True): bytes([0x03]),

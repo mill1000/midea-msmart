@@ -91,6 +91,15 @@ class AirConditioner(Device):
 
         DEFAULT = OFF
 
+    class FreshAirFanSpeed(MideaIntEnum):
+        OFF = 0
+        LOW = 40
+        MEDIUM = 60
+        HIGH = 80
+        BOOST = 100
+
+        DEFAULT = OFF
+
     class AuxHeatMode(MideaIntEnum):
         OFF = 0
         AUX_HEAT = 1
@@ -129,6 +138,9 @@ class AirConditioner(Device):
         BREEZE_CONTROL = auto()
         BREEZELESS = auto()
 
+        # Fresh air / ventilation
+        FRESH_AIR = auto()
+
         # Misc
         CASCADE = auto()
         JET_COOL = auto()
@@ -149,6 +161,7 @@ class AirConditioner(Device):
         PropertyId.BREEZE_CONTROL: lambda s: s._breeze_mode,
         PropertyId.BREEZELESS: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZELESS,
         PropertyId.CASCADE: lambda s: s._cascade_mode,
+        PropertyId.FRESH_AIR: lambda s: s._fresh_air_fan_speed,
         PropertyId.IECO: lambda s: s._ieco,
         PropertyId.JET_COOL: lambda s: s._flash_cool,
         PropertyId.OUT_SILENT: lambda s: s._out_silent,
@@ -202,6 +215,7 @@ class AirConditioner(Device):
         self._cascade_mode = AirConditioner.CascadeMode.OFF
         self._rate_select = AirConditioner.RateSelect.OFF
         self._breeze_mode = AirConditioner.BreezeMode.OFF
+        self._fresh_air_fan_speed = AirConditioner.FreshAirFanSpeed.DEFAULT
         self._aux_mode = AirConditioner.AuxHeatMode.OFF
 
         # Sensors
@@ -327,6 +341,14 @@ class AirConditioner(Device):
                 self._cascade_mode = cast(
                     AirConditioner.CascadeMode,
                     AirConditioner.CascadeMode.get_from_value(cascade))
+
+            if (fresh_air := res.get_property(PropertyId.FRESH_AIR)) is not None:
+                # data[0] - power; data[1] - speed. When off the device still
+                # reports a non-zero speed, so use the power byte to gate OFF.
+                power, speed = fresh_air
+                self._fresh_air_fan_speed = (
+                    AirConditioner.FreshAirFanSpeed.get_from_value(speed)
+                    if power else AirConditioner.FreshAirFanSpeed.OFF)
 
             if (value := res.get_property(PropertyId.SELF_CLEAN)) is not None:
                 self._self_clean_active = value
@@ -472,6 +494,9 @@ class AirConditioner(Device):
         self._capabilities.set(AirConditioner.Capability.CASCADE, res.cascade)
 
         self._capabilities.set(
+            AirConditioner.Capability.FRESH_AIR, res.fresh_air)
+
+        self._capabilities.set(
             AirConditioner.Capability.SELF_CLEAN, res.self_clean)
 
         # Add supported rate select levels
@@ -519,6 +544,7 @@ class AirConditioner(Device):
             AirConditioner.Capability.BREEZE_CONTROL: PropertyId.BREEZE_CONTROL,
             AirConditioner.Capability.BREEZELESS: PropertyId.BREEZELESS,
             AirConditioner.Capability.CASCADE: PropertyId.CASCADE,
+            AirConditioner.Capability.FRESH_AIR: PropertyId.FRESH_AIR,
             AirConditioner.Capability.IECO: PropertyId.IECO,
             AirConditioner.Capability.JET_COOL: PropertyId.JET_COOL,
             AirConditioner.Capability.OUT_SILENT: PropertyId.OUT_SILENT,
@@ -948,6 +974,23 @@ class AirConditioner(Device):
         self._updated_properties.add(PropertyId.CASCADE)
 
     @property
+    def supports_fresh_air(self) -> bool:
+        return self._capabilities.has(AirConditioner.Capability.FRESH_AIR)
+
+    @property
+    def supported_fresh_air_fan_speeds(self) -> list[FreshAirFanSpeed]:
+        return AirConditioner.FreshAirFanSpeed.list()
+
+    @property
+    def fresh_air_fan_speed(self) -> FreshAirFanSpeed:
+        return self._fresh_air_fan_speed
+
+    @fresh_air_fan_speed.setter
+    def fresh_air_fan_speed(self, speed: FreshAirFanSpeed) -> None:
+        self._fresh_air_fan_speed = speed
+        self._updated_properties.add(PropertyId.FRESH_AIR)
+
+    @property
     def supports_eco(self) -> bool:
         return self._capabilities.has(AirConditioner.Capability.ECO)
 
@@ -1165,6 +1208,7 @@ class AirConditioner(Device):
             "horizontal_swing_angle": self.horizontal_swing_angle,
             "vertical_swing_angle": self.vertical_swing_angle,
             "cascade_mode": self.cascade_mode,
+            "fresh_air_fan_speed": self.fresh_air_fan_speed,
             "target_temperature": self.target_temperature,
             "indoor_temperature": self.indoor_temperature,
             "outdoor_temperature": self.outdoor_temperature,
