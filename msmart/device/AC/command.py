@@ -623,7 +623,7 @@ class CapabilitiesResponse(Response):
             ],
             CapabilityId.PRESET_TURBO:  [
                 reader("turbo_heat", lambda v: v[0] in [1, 3]),
-                reader("turbo_cool", lambda v: v[0] < 2),
+                reader("turbo_cool", lambda v: v[0] in [0, 1]),
             ],
             CapabilityId.RATE_SELECT:  [
                 reader("rate_select_2_level", get_value(1)),  # Gear
