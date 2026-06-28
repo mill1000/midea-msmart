@@ -1065,11 +1065,9 @@ class TestSetPropertiesCommand(unittest.TestCase):
             (PropertyId.CASCADE, 1): bytes([1, 1]),
             (PropertyId.CASCADE, 2): bytes([1, 2]),
 
-            # Fresh air: 3 bytes power, fan speed, 0xFF no-change sentinel.
-            # The single speed value is the state (0 = off; 40/60/80/100 on).
-            # Speed values captured from a Midea Gaia app: 40/60/80/100.
-            (PropertyId.FRESH_AIR, 60): bytes([0x01, 0x3C, 0xFF]),
+            # Fresh air: 3 bytes power, fan speed, fixed 0xFF
             (PropertyId.FRESH_AIR, 100): bytes([0x01, 0x64, 0xFF]),
+            (PropertyId.FRESH_AIR, 60): bytes([0x01, 0x3C, 0xFF]),
             (PropertyId.FRESH_AIR, 0): bytes([0x00, 0x00, 0xFF]),
 
             # Out Silent: 0x03 - On, 0x00 - Off
@@ -1139,6 +1137,11 @@ class TestPropertiesResponse(_TestResponseBase):
             (PropertyId.CASCADE, bytes([0x00, 0x00])): 0,
             (PropertyId.CASCADE, bytes([0x01, 0x01])): 1,
             (PropertyId.CASCADE, bytes([0x01, 0x02])): 2,
+
+            # Fresh air: 3 bytes power, fan speed, fixed 0xFF
+            (PropertyId.FRESH_AIR, bytes([0x01, 0x64, 0xFF])): 100,
+            (PropertyId.FRESH_AIR, bytes([0x01, 0x3C, 0xFF])): 60,
+            (PropertyId.FRESH_AIR, bytes([0x00, 0x28, 0xFF])): 0,
 
             # Out Silent: 0x03 - On, 0x00 - Off
             (PropertyId.OUT_SILENT, bytes([0x03])): True,
