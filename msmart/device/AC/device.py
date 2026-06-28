@@ -138,11 +138,9 @@ class AirConditioner(Device):
         BREEZE_CONTROL = auto()
         BREEZELESS = auto()
 
-        # Fresh air / ventilation
-        FRESH_AIR = auto()
-
         # Misc
         CASCADE = auto()
+        FRESH_AIR = auto()
         JET_COOL = auto()
         OUT_SILENT = auto()
         PURIFIER = auto()
@@ -213,9 +211,9 @@ class AirConditioner(Device):
         self._horizontal_swing_angle = AirConditioner.SwingAngle.OFF
         self._vertical_swing_angle = AirConditioner.SwingAngle.OFF
         self._cascade_mode = AirConditioner.CascadeMode.OFF
+        self._fresh_air_fan_speed = AirConditioner.FreshAirFanSpeed.OFF
         self._rate_select = AirConditioner.RateSelect.OFF
         self._breeze_mode = AirConditioner.BreezeMode.OFF
-        self._fresh_air_fan_speed = AirConditioner.FreshAirFanSpeed.DEFAULT
         self._aux_mode = AirConditioner.AuxHeatMode.OFF
 
         # Sensors
