@@ -550,11 +550,11 @@ class CapabilitiesResponse(Response):
             ],
             CapabilityId.FAHRENHEIT: reader("fahrenheit", get_value(0)),
             CapabilityId.FAN_SPEED_CONTROL: [
-                reader("fan_silent", get_value(6)),
-                reader("fan_low", lambda v: v in [3, 4, 5, 6, 7]),
+                reader("fan_silent", lambda v: v in [6, 9]),
+                reader("fan_low", lambda v: v in [3, 4, 5, 6, 7, 9]),
                 reader("fan_medium", lambda v: v in [5, 6, 7]),
-                reader("fan_high", lambda v: v in [3, 4, 5, 6, 7]),
-                reader("fan_auto", lambda v: v in [4, 5, 6]),
+                reader("fan_high", lambda v: v in [3, 4, 5, 6, 7, 9]),
+                reader("fan_auto", lambda v: v in [4, 5, 6, 9]),
                 reader("fan_custom", get_value(1)),
             ],
             CapabilityId.FILTER_REMIND: [
