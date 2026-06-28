@@ -690,24 +690,16 @@ class TestCapabilitiesResponse(_TestResponseBase):
         TEST_ADDITIONAL_CAPABILITIES_RESPONSE = bytes.fromhex(
             "aa2fac00000000000303b508100201051f020100300001001302010019020101390001009300010194000101000095ca")
 
-        # Test case includes an unknown capability 0x40 that generates a log
-        with self.assertLogs("msmart", logging.DEBUG) as log:
-            additional_resp = self._test_build_response(
-                TEST_ADDITIONAL_CAPABILITIES_RESPONSE)
-            additional_resp = cast(CapabilitiesResponse, additional_resp)
-
-            # Check debug message is generated for some unsupported capabilities
-            self.assertRegex("\n".join(log.output),
-                             "Unsupported capability <CapabilityId.EMERGENT_HEAT_WIND: 147>, Size: 1.")
-
-            self.assertRegex("\n".join(log.output),
-                             "Unsupported capability <CapabilityId.HEAT_PTC_WIND: 148>, Size: 1.")
+        additional_resp = self._test_build_response(
+            TEST_ADDITIONAL_CAPABILITIES_RESPONSE)
+        additional_resp = cast(CapabilitiesResponse, additional_resp)
 
         EXPECTED_ADDITIONAL_RAW_CAPABILITIES = {
             'fan_silent': False, 'fan_low': True, 'fan_medium': True, 'fan_high': True, 'fan_auto': True, 'fan_custom': False,
             'humidity_auto_set': False, 'humidity_manual_set': False,
             'smart_eye': False, 'freeze_protection': False,
-            'aux_electric_heat': True, 'self_clean': False
+            'aux_electric_heat': True, 'self_clean': False,
+            'aux_fan_speed': True, 'aux_heat_fan_speed': True,
         }
         # Ensure raw decoded capabilities match
         self.assertEqual(additional_resp._capabilities,
@@ -734,7 +726,8 @@ class TestCapabilitiesResponse(_TestResponseBase):
             'fan_silent': False, 'fan_low': True, 'fan_medium': True, 'fan_high': True, 'fan_auto': True, 'fan_custom': False,
             'humidity_auto_set': False, 'humidity_manual_set': False,
             'smart_eye': False, 'freeze_protection': False,
-            'aux_electric_heat': True, 'self_clean': False
+            'aux_electric_heat': True, 'self_clean': False,
+            'aux_fan_speed': True, 'aux_heat_fan_speed': True,
         }
         # Ensure raw decoded capabilities match
         self.assertEqual(resp._capabilities, EXPECTED_MERGED_RAW_CAPABILITIES)
