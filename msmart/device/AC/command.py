@@ -758,6 +758,10 @@ class CapabilitiesResponse(Response):
         return self._capabilities.get("cascade", False)
 
     @property
+    def flash(self) -> bool:
+        return self._capabilities.get("flash", False)
+
+    @property
     def fresh_air(self) -> bool:
         return self._capabilities.get("fresh_air", False)
 
@@ -817,10 +821,6 @@ class CapabilitiesResponse(Response):
     @property
     def ieco(self) -> bool:
         return self._capabilities.get("ieco", False)
-
-    @property
-    def flash(self) -> bool:
-        return self._capabilities.get("flash", False)
 
     @property
     def turbo(self) -> bool:
