@@ -395,7 +395,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
 
             # Check debug message is generated for ID 0x0040
             self.assertRegex("\n".join(log.output),
-                             "Ignored unknown capability ID: 0x0040")
+                             "Ignored unknown capability <CapabilityId._UNKNOWN: 64>.")
 
         EXPECTED_RAW_CAPABILITIES = {
             "eco": True, "breezeless": False,
@@ -562,7 +562,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
 
             # Check debug message is generated for ID 0x0040
             self.assertRegex("\n".join(log.output),
-                             "Ignored unknown capability ID: 0x0040")
+                             "Ignored unknown capability <CapabilityId._UNKNOWN: 64>.")
 
         EXPECTED_RAW_CAPABILITIES = {
             "eco": True,
@@ -673,7 +673,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
 
             # Check debug message is generated for some unsupported capabilities
             self.assertRegex("\n".join(log.output),
-                             "Unsupported capability <CapabilityId.BODY_CHECK: 564>, Size: 1.")
+                             "Unsupported capability <CapabilityId.BODY_CHECK: 564>.")
 
         self.assertIn("aux_mode", resp._capabilities)
         self.assertIn("aux_heat_mode", resp._capabilities)
