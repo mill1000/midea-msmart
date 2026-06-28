@@ -98,9 +98,9 @@ class PropertyId(IntEnum):
             PropertyId.BREEZELESS,
             PropertyId.BUZZER,
             PropertyId.CASCADE,
+            PropertyId.FLASH,
             PropertyId.FRESH_AIR,
             PropertyId.IECO,
-            PropertyId.FLASH,
             PropertyId.OUT_SILENT,
             PropertyId.RATE_SELECT,
             PropertyId.SELF_CLEAN,
@@ -570,13 +570,13 @@ class CapabilitiesResponse(Response):
                 reader("filter_notice", lambda v: v in [1, 2, 4]),
                 reader("filter_clean", lambda v: v in [3, 4]),
             ],
+            CapabilityId.FLASH: reader("flash", lambda v: v in [1, 2, 3, 4]),
             CapabilityId.FRESH_AIR: reader("fresh_air", get_value(1)),
             CapabilityId.HUMIDITY:
             [
                 reader("humidity_auto_set", lambda v: v in [1, 2]),
                 reader("humidity_manual_set", lambda v: v in [2, 3]),
             ],
-            CapabilityId.FLASH: reader("flash", lambda v: v in [1, 2, 3, 4]),
             CapabilityId.MODES: [
                 reader("heat_mode", lambda v:
                        v in [1, 2, 4, 6, 7, 9, 10, 11, 12, 13]),

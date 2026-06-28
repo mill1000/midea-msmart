@@ -140,8 +140,8 @@ class AirConditioner(Device):
 
         # Misc
         CASCADE = auto()
-        FRESH_AIR = auto()
         FLASH = auto()
+        FRESH_AIR = auto()
         OUT_SILENT = auto()
         PURIFIER = auto()
         SELF_CLEAN = auto()
@@ -159,9 +159,9 @@ class AirConditioner(Device):
         PropertyId.BREEZE_CONTROL: lambda s: s._breeze_mode,
         PropertyId.BREEZELESS: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZELESS,
         PropertyId.CASCADE: lambda s: s._cascade_mode,
+        PropertyId.FLASH: lambda s: s._flash,
         PropertyId.FRESH_AIR: lambda s: s._fresh_air_fan_speed,
         PropertyId.IECO: lambda s: s._ieco,
-        PropertyId.FLASH: lambda s: s._flash,
         PropertyId.OUT_SILENT: lambda s: s._out_silent,
         PropertyId.RATE_SELECT: lambda s: s._rate_select,
         PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
@@ -340,6 +340,9 @@ class AirConditioner(Device):
                     AirConditioner.CascadeMode,
                     AirConditioner.CascadeMode.get_from_value(cascade))
 
+            if (value := res.get_property(PropertyId.FLASH)) is not None:
+                self._flash = value
+
             if (fresh_air := res.get_property(PropertyId.FRESH_AIR)) is not None:
                 self._fresh_air_fan_speed = cast(
                     AirConditioner.FreshAirFanSpeed,
@@ -368,9 +371,6 @@ class AirConditioner(Device):
 
             if (value := res.get_property(PropertyId.IECO)) is not None:
                 self._ieco = value
-
-            if (value := res.get_property(PropertyId.FLASH)) is not None:
-                self._flash = value
 
             if (value := res.get_property(PropertyId.OUT_SILENT)) is not None:
                 self._out_silent = value
@@ -488,6 +488,8 @@ class AirConditioner(Device):
 
         self._capabilities.set(AirConditioner.Capability.CASCADE, res.cascade)
 
+        self._capabilities.set(AirConditioner.Capability.FLASH, res.flash)
+
         self._capabilities.set(
             AirConditioner.Capability.FRESH_AIR, res.fresh_air)
 
@@ -522,7 +524,6 @@ class AirConditioner(Device):
                 AirConditioner.Capability.BREEZELESS, res.breezeless)
 
         self._capabilities.set(AirConditioner.Capability.IECO, res.ieco)
-        self._capabilities.set(AirConditioner.Capability.FLASH, res.flash)
 
         self._capabilities.set(
             AirConditioner.Capability.OUT_SILENT, res.out_silent)
@@ -538,9 +539,9 @@ class AirConditioner(Device):
             AirConditioner.Capability.BREEZE_CONTROL: PropertyId.BREEZE_CONTROL,
             AirConditioner.Capability.BREEZELESS: PropertyId.BREEZELESS,
             AirConditioner.Capability.CASCADE: PropertyId.CASCADE,
+            AirConditioner.Capability.FLASH: PropertyId.FLASH,
             AirConditioner.Capability.FRESH_AIR: PropertyId.FRESH_AIR,
             AirConditioner.Capability.IECO: PropertyId.IECO,
-            AirConditioner.Capability.FLASH: PropertyId.FLASH,
             AirConditioner.Capability.OUT_SILENT: PropertyId.OUT_SILENT,
             AirConditioner.Capability.SELF_CLEAN: PropertyId.SELF_CLEAN,
             AirConditioner.Capability.SWING_HORIZONTAL_ANGLE: PropertyId.SWING_LR_ANGLE,
