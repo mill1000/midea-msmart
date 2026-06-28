@@ -568,13 +568,17 @@ class CapabilitiesResponse(Response):
             ],
             CapabilityId.JET_COOL: reader("jet_cool", get_value(1)),
             CapabilityId.MODES: [
-                reader("heat_mode", lambda v: v in [
-                       1, 2, 4, 6, 7, 9, 10, 11, 12, 13]),
-                reader("cool_mode", lambda v: v not in [2, 10, 12]),
-                reader("dry_mode", lambda v: v in [0, 1, 5, 6, 9, 11, 13]),
-                reader("auto_mode", lambda v: v in [0, 1, 2, 7, 8, 9, 13]),
+                reader("heat_mode", lambda v:
+                       v in [1, 2, 4, 6, 7, 9, 10, 11, 12, 13]),
+                reader("cool_mode", lambda v:
+                       v in [0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 13, 14, 15]),
+                reader("dry_mode", lambda v:
+                       v in [0, 1, 5, 6, 9, 11, 13, 14, 15]),
+                reader("auto_mode", lambda v:
+                       v in [0, 1, 2, 7, 8, 9, 13, 14]),
                 reader("aux_heat_mode", lambda v: v == 9),  # Heat & Aux
-                reader("aux_mode", lambda v: v in [9, 10, 11, 13]),  # Aux only
+                reader("aux_mode", lambda v:
+                       v in [9, 10, 11, 13, 14, 15]),  # Aux only
             ],
             CapabilityId.OUT_SILENT: reader("out_silent", lambda v: v in [1, 3]),
             CapabilityId.PRESET_ECO: reader("eco", lambda v: v in [1, 2]),
