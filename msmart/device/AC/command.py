@@ -44,8 +44,8 @@ class CapabilityId(IntEnum):
     CASCADE = 0x0059  # AKA "Wind Around"
     JET_COOL = 0x0067  # ??
     ICHECK = 0x0091  # ??
-    EMERGENT_HEAT_WIND = 0x0093  # ??
-    HEAT_PTC_WIND = 0x0094  # ??
+    AUX_FAN_SPEED_CONTROL = 0x0093  # AKA "Emergent Heat Wind"
+    AUX_HEAT_FAN_SPEED_CONTROL = 0x0094  # AKA "Heat Ptc Wind"
     CVP = 0x0098  # ??
     OUT_SILENT = 0x00CD  # Portasplit outdoor silent mode
     PRESET_IECO = 0x00E3
@@ -544,6 +544,8 @@ class CapabilitiesResponse(Response):
         capability_readers = {
             CapabilityId.ANION: reader("anion", get_value(1)),
             CapabilityId.AUX_ELECTRIC_HEAT: reader("aux_electric_heat", get_value(1)),
+            CapabilityId.AUX_FAN_SPEED_CONTROL: reader("aux_fan_speed", get_value(1)),
+            CapabilityId.AUX_HEAT_FAN_SPEED_CONTROL: reader("aux_heat_fan_speed", get_value(1)),
             CapabilityId.BREEZE_AWAY: reader("breeze_away", get_value(1)),
             CapabilityId.BREEZE_CONTROL: reader("breeze_control", get_value(1)),
             CapabilityId.BREEZELESS: reader("breezeless", get_value(1)),
