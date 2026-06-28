@@ -98,6 +98,7 @@ class PropertyId(IntEnum):
             PropertyId.BREEZELESS,
             PropertyId.BUZZER,
             PropertyId.CASCADE,
+            PropertyId.FRESH_AIR,
             PropertyId.IECO,
             PropertyId.JET_COOL,
             PropertyId.OUT_SILENT,
@@ -121,6 +122,9 @@ class PropertyId(IntEnum):
         elif self == PropertyId.CASCADE:
             # data[0] - wind_around, data[1] - wind_around_ud
             return data[1] if data[0] else 0
+        elif self == PropertyId.FRESH_AIR:
+            # data[0] - power, data[1] - fan speed (0-100), data[2] - temperature
+            return data[1] if data[0] else 0
         elif self == PropertyId.IECO:
             # data[0] - ieco_number, data[1] - ieco_switch
             return bool(data[1])
@@ -139,6 +143,9 @@ class PropertyId(IntEnum):
         elif self == PropertyId.CASCADE:
             # data[0] - wind_around, data[1] - wind_around_ud
             return bytes([1 if args[0] else 0, args[0]])
+        elif self == PropertyId.FRESH_AIR:
+            # data[0] - power, data[1] - fan speed (0-100), data[2] - fixed
+            return bytes([1 if args[0] else 0, args[0], 0xFF])
         elif self == PropertyId.IECO:
             # ieco_frame, ieco_number, ieco_switch, ...
             return bytes([0, 1, args[0]]) + bytes(10)
@@ -561,6 +568,7 @@ class CapabilitiesResponse(Response):
                 reader("filter_notice", lambda v: v in [1, 2, 4]),
                 reader("filter_clean", lambda v: v in [3, 4]),
             ],
+            CapabilityId.FRESH_AIR: reader("fresh_air", get_value(1)),
             CapabilityId.HUMIDITY:
             [
                 reader("humidity_auto_set", lambda v: v in [1, 2]),
@@ -746,6 +754,10 @@ class CapabilitiesResponse(Response):
     @property
     def cascade(self) -> bool:
         return self._capabilities.get("cascade", False)
+
+    @property
+    def fresh_air(self) -> bool:
+        return self._capabilities.get("fresh_air", False)
 
     @property
     def swing_horizontal_angle(self) -> bool:
