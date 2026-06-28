@@ -975,10 +975,6 @@ class AirConditioner(Device):
         return self._capabilities.has(AirConditioner.Capability.FRESH_AIR)
 
     @property
-    def supported_fresh_air_fan_speeds(self) -> list[FreshAirFanSpeed]:
-        return AirConditioner.FreshAirFanSpeed.list()
-
-    @property
     def fresh_air_fan_speed(self) -> FreshAirFanSpeed:
         return self._fresh_air_fan_speed
 

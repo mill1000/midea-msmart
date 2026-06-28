@@ -491,24 +491,18 @@ class TestCapabilities(unittest.TestCase):
         """Test fresh air capability detection."""
         # Device that advertises fresh air support (capability 0x004B == 1).
         # Captured from a Midea Gaia (12HRFN8-I) which reports it on the 2nd page.
-        device = AC(0, 0, 0)
-        with memoryview(bytes.fromhex("b5014b000101")) as payload:
-            device._update_capabilities(CapabilitiesResponse(payload))
+        TEST_PAYLOADS = {
+            bytes.fromhex("b5014b000101"): True,
+            bytes.fromhex("b5014b000100"): False
+        }
 
-        self.assertEqual(device.supports_fresh_air, True)
-        self.assertCountEqual(device.supported_fresh_air_fan_speeds, [
-            AC.FreshAirFanSpeed.OFF,
-            AC.FreshAirFanSpeed.LOW,
-            AC.FreshAirFanSpeed.MEDIUM,
-            AC.FreshAirFanSpeed.HIGH,
-            AC.FreshAirFanSpeed.BOOST,
-        ])
-
-        # Device that does not support fresh air (capability 0x004B == 0)
         device = AC(0, 0, 0)
-        with memoryview(bytes.fromhex("b5014b000100")) as payload:
-            device._update_capabilities(CapabilitiesResponse(payload))
-        self.assertEqual(device.supports_fresh_air, False)
+
+        for payload, expected in TEST_PAYLOADS.items():
+            with memoryview(payload) as payload_mv:
+                device._update_capabilities(CapabilitiesResponse(payload_mv))
+
+            self.assertEqual(device.supports_fresh_air, expected)
 
     def test_aux_heat(self) -> None:
         """Test aux heat mode capabilities."""
