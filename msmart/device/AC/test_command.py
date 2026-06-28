@@ -803,8 +803,8 @@ class TestSetPropertiesCommand(unittest.TestCase):
             (PropertyId.BREEZE_CONTROL, 0x00): bytes([0x00]),
 
             # IECO: 13 bytes ieco_frame, ieco_number, ieco_switch, ...
-            (PropertyId.IECO, True): bytes([0, 1, 1]) + bytes(10),
-            (PropertyId.IECO, False): bytes([0, 1, 0]) + bytes(10),
+            (PropertyId.IECO, (1, True)): bytes([0, 1, 1]) + bytes(10),
+            (PropertyId.IECO, (1, False)): bytes([0, 1, 0]) + bytes(10),
 
             # Cascade: 2 bytes wind_around, wind_around_ud
             (PropertyId.CASCADE, 0): bytes([0, 0]),

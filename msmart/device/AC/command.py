@@ -169,7 +169,7 @@ class PropertyId(IntEnum):
             return bytes([1 if args[0] else 0, args[0], 0xFF])
         elif self == PropertyId.IECO:
             # ieco_frame, ieco_number, ieco_switch, ...
-            return bytes([0, 1, args[0]]) + bytes(10)
+            return bytes([0, *args[0]]) + bytes(10)
         elif self == PropertyId.OUT_SILENT:
             return bytes([3 if args[0] else 0])
         else:
