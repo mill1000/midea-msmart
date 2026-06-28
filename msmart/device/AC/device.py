@@ -343,12 +343,9 @@ class AirConditioner(Device):
                     AirConditioner.CascadeMode.get_from_value(cascade))
 
             if (fresh_air := res.get_property(PropertyId.FRESH_AIR)) is not None:
-                # data[0] - power; data[1] - speed. When off the device still
-                # reports a non-zero speed, so use the power byte to gate OFF.
-                power, speed = fresh_air
-                self._fresh_air_fan_speed = (
-                    AirConditioner.FreshAirFanSpeed.get_from_value(speed)
-                    if power else AirConditioner.FreshAirFanSpeed.OFF)
+                self._fresh_air_fan_speed = cast(
+                    AirConditioner.FreshAirFanSpeed,
+                    AirConditioner.FreshAirFanSpeed.get_from_value(fresh_air))
 
             if (value := res.get_property(PropertyId.SELF_CLEAN)) is not None:
                 self._self_clean_active = value

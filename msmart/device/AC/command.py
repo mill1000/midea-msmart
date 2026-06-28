@@ -123,8 +123,8 @@ class PropertyId(IntEnum):
             # data[0] - wind_around, data[1] - wind_around_ud
             return data[1] if data[0] else 0
         elif self == PropertyId.FRESH_AIR:
-            # data[0] - power, data[1] - fan speed (0-100), data[2] - unused/actual
-            return (data[0] > 0, data[1])
+            # data[0] - power, data[1] - fan speed (0-100), data[2] - temperature
+            return data[1] if data[0] else 0
         elif self == PropertyId.IECO:
             # data[0] - ieco_number, data[1] - ieco_switch
             return bool(data[1])
@@ -144,9 +144,8 @@ class PropertyId(IntEnum):
             # data[0] - wind_around, data[1] - wind_around_ud
             return bytes([1 if args[0] else 0, args[0]])
         elif self == PropertyId.FRESH_AIR:
-            # args[0] - fan speed (0 = off). data[2] is a no-change sentinel
-            speed = int(args[0])
-            return bytes([1 if speed else 0, speed, 0xFF])
+            # data[0] - power, data[1] - fan speed (0-100), data[2] - fixed
+            return bytes([1 if args[0] else 0, args[0], 0xFF])
         elif self == PropertyId.IECO:
             # ieco_frame, ieco_number, ieco_switch, ...
             return bytes([0, 1, args[0]]) + bytes(10)
