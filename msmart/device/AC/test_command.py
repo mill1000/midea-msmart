@@ -695,19 +695,28 @@ class TestCapabilitiesResponse(_TestResponseBase):
         self.assertEqual(resp.aux_heat_mode, True)
         self.assertEqual(resp.aux_electric_heat, True)
 
-    def test_capabilities_jet_cool(self) -> None:
-        """Test that we decode capabilities that include jet cool support."""
+    def test_capabilities_flash(self) -> None:
+        """Test that we decode capabilities that include flash support."""
         self.maxDiff = None
 
-        # https://github.com/mill1000/midea-ac-py/issues/343#issuecomment-2864149742
-        TEST_CAPABILITIES_RESPONSE = bytes.fromhex(
-            "aa27ac00000000000303b5051f0201002c020101670001011602010451000101e30001010004f564")
+        TEST_RESPONSES = [
+            # https://github.com/mill1000/midea-ac-py/issues/343#issuecomment-2864149742
+            bytes.fromhex(
+                "aa27ac00000000000303b5051f0201002c020101670001011602010451000101e30001010004f564"),
+            # https://github.com/mill1000/midea-ac-py/issues/425#issuecomment-4744546069
+            bytes.fromhex("aa56ac00000000000803b51012020100180001001402010115020101160201041a020101100201011f020103250207203c203c203c0551000101e30002080867000102c200010098000101950001019d00010101008b43"),
+            #   https://github.com/mill1000/midea-ac-py/issues/426#issue-4693037160
+            bytes.fromhex("aa52ac00000000000803b50f120201001402010015020101160201041a02010110020101250207203c203c203c002402010151000101e3000208086700010495000101980001017c000100cd0001000100bd47"),
+        ]
 
-        resp = self._test_build_response(TEST_CAPABILITIES_RESPONSE)
-        resp = cast(CapabilitiesResponse, resp)
+        # Test cases include some unsupported capabilities
+        with self.assertLogs("msmart", logging.DEBUG) as log:
+            for response in TEST_RESPONSES:
+                resp = self._test_build_response(response)
+                resp = cast(CapabilitiesResponse, resp)
 
-        self.assertIn("jet_cool", resp._capabilities)
-        self.assertEqual(resp.jet_cool, True)
+            self.assertIn("flash", resp._capabilities)
+            self.assertEqual(resp.flash, True)
 
     def test_capabilities_cascade(self) -> None:
         """Test that we decode capabilities that include cascade support."""
