@@ -854,19 +854,21 @@ class CapabilitiesResponse(Response):
 
     @property
     def ieco(self) -> bool:
-        return self.ieco_heat or self.ieco_cool
-
-    @property
-    def ieco_heat(self) -> bool:
+        # TODO iECO can be cool, heat or both
         ieco = self._capabilities.get("ieco", 0)
         ieco_end = self._capabilities.get("ieco_end", 0)
-        return ieco in [3, 4, 8] or ieco_end in [2, 3, 8]
+        return ieco in [1, 3, 4, 8] or ieco_end in [1, 2, 3, 8]
 
     @property
-    def ieco_cool(self) -> bool:
-        ieco = self._capabilities.get("ieco", 0)
+    def ieco_number(self) -> int:
+        # iECO "number" is based on iECO end capability
         ieco_end = self._capabilities.get("ieco_end", 0)
-        return ieco in [1, 3, 8] or ieco_end in [1, 2, 8]
+        if ieco_end == 8:
+            return 8  # ECOMaster
+        if ieco_end in [1, 2, 3]:
+            return 3
+
+        return 1
 
     @property
     def ecomaster(self) -> bool:

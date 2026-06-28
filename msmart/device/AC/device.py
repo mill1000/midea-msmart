@@ -525,6 +525,7 @@ class AirConditioner(Device):
                 AirConditioner.Capability.BREEZELESS, res.breezeless)
 
         self._capabilities.set(AirConditioner.Capability.IECO, res.ieco)
+        self._ieco_number = res.ieco_number
 
         self._capabilities.set(
             AirConditioner.Capability.OUT_SILENT, res.out_silent)
