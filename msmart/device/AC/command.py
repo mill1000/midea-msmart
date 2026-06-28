@@ -615,7 +615,12 @@ class CapabilitiesResponse(Response):
             CapabilityId.OUT_SILENT: reader("out_silent", lambda v: v[0] in [1, 3]),
             CapabilityId.PRESET_ECO: reader("eco", lambda v: v[0] in [1, 2]),
             CapabilityId.PRESET_FREEZE_PROTECTION: reader("freeze_protection", get_value(1)),
-            CapabilityId.PRESET_IECO: reader("ieco", get_value(1)),
+            CapabilityId.PRESET_IECO: [
+                # 1,3,8 - Cool, 3,4,8 - Heat, 8 = ECOMaster
+                reader("ieco", lambda v: v[0]),
+                # 1,2,8 - Cool, 2,3,8 - Heat, 8 = ECOMaster
+                reader("ieco_end", lambda v: v[1] if len(v) > 1 else None)
+            ],
             CapabilityId.PRESET_TURBO:  [
                 reader("turbo_heat", lambda v: v[0] in [1, 3]),
                 reader("turbo_cool", lambda v: v[0] < 2),
@@ -849,7 +854,25 @@ class CapabilitiesResponse(Response):
 
     @property
     def ieco(self) -> bool:
-        return self._capabilities.get("ieco", False)
+        return self.ieco_heat or self.ieco_cool
+
+    @property
+    def ieco_heat(self) -> bool:
+        ieco = self._capabilities.get("ieco", 0)
+        ieco_end = self._capabilities.get("ieco_end", 0)
+        return ieco in [3, 4, 8] or ieco_end in [2, 3, 8]
+
+    @property
+    def ieco_cool(self) -> bool:
+        ieco = self._capabilities.get("ieco", 0)
+        ieco_end = self._capabilities.get("ieco_end", 0)
+        return ieco in [1, 3, 8] or ieco_end in [1, 2, 8]
+
+    @property
+    def ecomaster(self) -> bool:
+        ieco = self._capabilities.get("ieco", 0)
+        ieco_end = self._capabilities.get("ieco_end", 0)
+        return ieco == 8 or ieco_end == 8
 
     @property
     def turbo(self) -> bool:

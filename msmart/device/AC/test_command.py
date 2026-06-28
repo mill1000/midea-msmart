@@ -745,6 +745,23 @@ class TestCapabilitiesResponse(_TestResponseBase):
         self.assertIn("out_silent", resp._capabilities)
         self.assertEqual(resp.out_silent, True)
 
+    def test_capabilities_ieco_ecomaster(self) -> None:
+        """Test that we decode the IECO capability with ECOMaster support correctly."""
+        # https://github.com/mill1000/midea-ac-py/issues/426#issue-4693037160
+        TEST_CAPABILITIES_RESPONSE = bytes.fromhex(
+            "aa52ac00000000000803b50f120201001402010015020101160201041a02010110020101250207203c203c203c002402010151000101e3000208086700010495000101980001017c000100cd0001000100bd47"
+        )
+
+        resp = self._test_build_response(TEST_CAPABILITIES_RESPONSE)
+        resp = cast(CapabilitiesResponse, resp)
+
+        self.assertIn("ieco", resp._capabilities)
+        self.assertIn("ieco_end", resp._capabilities)
+
+        self.assertEqual(resp.ieco_cool, True)
+        self.assertEqual(resp.ieco_heat, True)
+        self.assertEqual(resp.ecomaster, True)
+
 
 class TestGetPropertiesCommand(unittest.TestCase):
 
