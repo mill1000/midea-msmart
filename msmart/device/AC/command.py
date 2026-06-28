@@ -42,7 +42,7 @@ class CapabilityId(IntEnum):
     PARENT_CONTROL = 0x0051  # ??
     PREVENT_STRAIGHT_WIND_SELECT = 0x0058  # ??
     CASCADE = 0x0059  # AKA "Wind Around"
-    JET_COOL = 0x0067  # ??
+    FLASH = 0x0067  # AKA "Jet Cool"
     ICHECK = 0x0091  # ??
     AUX_FAN_SPEED_CONTROL = 0x0093  # AKA "Emergent Heat Wind"
     AUX_HEAT_FAN_SPEED_CONTROL = 0x0094  # AKA "Heat Ptc Wind"
@@ -84,7 +84,7 @@ class PropertyId(IntEnum):
     RATE_SELECT = 0x0048
     FRESH_AIR = 0x004B
     CASCADE = 0x0059  # AKA "Wind Around"
-    JET_COOL = 0x0067  # AKA "Flash Cool"
+    FLASH = 0x0067  # AKA "Jet Cool"
     OUT_SILENT = 0x00CD  # Portasplit outdoor silent mode
     IECO = 0x00E3
     ANION = 0x021E
@@ -100,7 +100,7 @@ class PropertyId(IntEnum):
             PropertyId.CASCADE,
             PropertyId.FRESH_AIR,
             PropertyId.IECO,
-            PropertyId.JET_COOL,
+            PropertyId.FLASH,
             PropertyId.OUT_SILENT,
             PropertyId.RATE_SELECT,
             PropertyId.SELF_CLEAN,
@@ -113,7 +113,7 @@ class PropertyId(IntEnum):
         if not self._supported:
             raise NotImplementedError(f"{repr(self)} decode is not supported.")
 
-        if self in [PropertyId.BREEZELESS, PropertyId.JET_COOL, PropertyId.SELF_CLEAN]:
+        if self in [PropertyId.BREEZELESS, PropertyId.FLASH, PropertyId.SELF_CLEAN]:
             return bool(data[0])
         elif self == PropertyId.BREEZE_AWAY:
             return data[0] == 2
@@ -576,7 +576,7 @@ class CapabilitiesResponse(Response):
                 reader("humidity_auto_set", lambda v: v in [1, 2]),
                 reader("humidity_manual_set", lambda v: v in [2, 3]),
             ],
-            CapabilityId.JET_COOL: reader("jet_cool", get_value(1)),
+            CapabilityId.FLASH: reader("flash", lambda v: v in [1, 2, 3, 4]),
             CapabilityId.MODES: [
                 reader("heat_mode", lambda v:
                        v in [1, 2, 4, 6, 7, 9, 10, 11, 12, 13]),
@@ -819,8 +819,8 @@ class CapabilitiesResponse(Response):
         return self._capabilities.get("ieco", False)
 
     @property
-    def jet_cool(self) -> bool:
-        return self._capabilities.get("jet_cool", False)
+    def flash(self) -> bool:
+        return self._capabilities.get("flash", False)
 
     @property
     def turbo(self) -> bool:
