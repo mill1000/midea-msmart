@@ -760,7 +760,6 @@ class TestCapabilitiesResponse(_TestResponseBase):
 
         self.assertEqual(resp.ieco, True)
         self.assertEqual(resp.ieco_number, 1)
-        self.assertEqual(resp.ecomaster, False)
 
     def test_capabilities_ieco_ecomaster(self) -> None:
         """Test that we decode the IECO capability with ECOMaster support correctly."""
@@ -777,7 +776,6 @@ class TestCapabilitiesResponse(_TestResponseBase):
 
         self.assertEqual(resp.ieco, True)
         self.assertEqual(resp.ieco_number, 8)
-        self.assertEqual(resp.ecomaster, True)
 
 
 class TestGetPropertiesCommand(unittest.TestCase):

@@ -871,12 +871,6 @@ class CapabilitiesResponse(Response):
         return 1
 
     @property
-    def ecomaster(self) -> bool:
-        ieco = self._capabilities.get("ieco", 0)
-        ieco_end = self._capabilities.get("ieco_end", 0)
-        return ieco == 8 or ieco_end == 8
-
-    @property
     def turbo(self) -> bool:
         return (self._capabilities.get("turbo_heat", False)
                 or self._capabilities.get("turbo_cool", False))
