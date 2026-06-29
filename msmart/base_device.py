@@ -14,6 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # Conditionally import device classes for type hints
+    from msmart.cloud import SmartHomeCloud
     from msmart.device import AirConditioner, CommercialAirConditioner
 
 
@@ -34,6 +35,7 @@ class Device():
         self._lan = LAN(ip, port, device_id)
         self._supported = False
         self._online = False
+        self._cloud: Optional["SmartHomeCloud"] = None
 
     async def _send_command(self, command: Frame) -> list[bytes]:
         """Send a command to the device and return any responses."""
@@ -41,6 +43,13 @@ class Device():
         data = command.tobytes()
         _LOGGER.debug("Sending command to %s:%d: %s",
                       self.ip, self.port, data.hex())
+
+        # Use cloud relay if configured
+        if self._cloud is not None:
+            response = await self._cloud.appliance_transparent_send(self._id, data)
+            if response is not None:
+                return [response]
+            return []
 
         start = time.time()
         responses = []
@@ -62,6 +71,10 @@ class Device():
                           self.ip, self.port, response_time)
 
         return responses
+
+    def set_cloud(self, cloud: "SmartHomeCloud") -> None:
+        """Set a cloud relay for this device instead of direct LAN communication."""
+        self._cloud = cloud
 
     async def refresh(self) -> None:
         raise NotImplementedError()
@@ -249,6 +262,10 @@ class Device():
         if type == DeviceType.COMMERCIAL_AC:
             from msmart.device import CommercialAirConditioner
             return CommercialAirConditioner(**kwargs)
+
+        if type == DeviceType.HEAT_PUMP:
+            from msmart.device import HeatPump
+            return HeatPump(**kwargs)
 
         # Unknown type return generic device
         return Device(device_type=type, **kwargs)
