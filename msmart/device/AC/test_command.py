@@ -395,7 +395,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
 
             # Check debug message is generated for ID 0x0040
             self.assertRegex("\n".join(log.output),
-                             "Ignored unknown capability ID: 0x0040")
+                             "Ignored unknown capability <CapabilityId._UNKNOWN: 64>.")
 
         EXPECTED_RAW_CAPABILITIES = {
             "eco": True, "breezeless": False,
@@ -562,7 +562,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
 
             # Check debug message is generated for ID 0x0040
             self.assertRegex("\n".join(log.output),
-                             "Ignored unknown capability ID: 0x0040")
+                             "Ignored unknown capability <CapabilityId._UNKNOWN: 64>.")
 
         EXPECTED_RAW_CAPABILITIES = {
             "eco": True,
@@ -673,7 +673,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
 
             # Check debug message is generated for some unsupported capabilities
             self.assertRegex("\n".join(log.output),
-                             "Unsupported capability <CapabilityId.BODY_CHECK: 564>, Size: 1.")
+                             "Unsupported capability <CapabilityId.BODY_CHECK: 564>.")
 
         self.assertIn("aux_mode", resp._capabilities)
         self.assertIn("aux_heat_mode", resp._capabilities)
@@ -745,6 +745,38 @@ class TestCapabilitiesResponse(_TestResponseBase):
         self.assertIn("out_silent", resp._capabilities)
         self.assertEqual(resp.out_silent, True)
 
+    def test_capabilities_ieco(self) -> None:
+        """Test that we decode the basic IECO capability correctly."""
+        # https://github.com/mill1000/midea-msmart/issues/148#issuecomment-2271734098
+        TEST_CAPABILITIES_RESPONSE = bytes.fromhex(
+            "aa2bac00000000000803b5071f0201002c020101160201043900010151000101e3000101130201010002fa6d"
+        )
+
+        resp = self._test_build_response(TEST_CAPABILITIES_RESPONSE)
+        resp = cast(CapabilitiesResponse, resp)
+
+        self.assertIn("ieco", resp._capabilities)
+        self.assertNotIn("ieco_end", resp._capabilities)
+
+        self.assertEqual(resp.ieco, True)
+        self.assertEqual(resp.ieco_number, 1)
+
+    def test_capabilities_ieco_ecomaster(self) -> None:
+        """Test that we decode the IECO capability with ECOMaster support correctly."""
+        # https://github.com/mill1000/midea-ac-py/issues/426#issue-4693037160
+        TEST_CAPABILITIES_RESPONSE = bytes.fromhex(
+            "aa52ac00000000000803b50f120201001402010015020101160201041a02010110020101250207203c203c203c002402010151000101e3000208086700010495000101980001017c000100cd0001000100bd47"
+        )
+
+        resp = self._test_build_response(TEST_CAPABILITIES_RESPONSE)
+        resp = cast(CapabilitiesResponse, resp)
+
+        self.assertIn("ieco", resp._capabilities)
+        self.assertIn("ieco_end", resp._capabilities)
+
+        self.assertEqual(resp.ieco, True)
+        self.assertEqual(resp.ieco_number, 8)
+
 
 class TestGetPropertiesCommand(unittest.TestCase):
 
@@ -786,8 +818,8 @@ class TestSetPropertiesCommand(unittest.TestCase):
             (PropertyId.BREEZE_CONTROL, 0x00): bytes([0x00]),
 
             # IECO: 13 bytes ieco_frame, ieco_number, ieco_switch, ...
-            (PropertyId.IECO, True): bytes([0, 1, 1]) + bytes(10),
-            (PropertyId.IECO, False): bytes([0, 1, 0]) + bytes(10),
+            (PropertyId.IECO, (1, True)): bytes([0, 1, 1]) + bytes(10),
+            (PropertyId.IECO, (1, False)): bytes([0, 1, 0]) + bytes(10),
 
             # Cascade: 2 bytes wind_around, wind_around_ud
             (PropertyId.CASCADE, 0): bytes([0, 0]),

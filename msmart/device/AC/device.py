@@ -161,7 +161,7 @@ class AirConditioner(Device):
         PropertyId.CASCADE: lambda s: s._cascade_mode,
         PropertyId.FLASH: lambda s: s._flash,
         PropertyId.FRESH_AIR: lambda s: s._fresh_air_fan_speed,
-        PropertyId.IECO: lambda s: s._ieco,
+        PropertyId.IECO: lambda s: (s._ieco_number, s._ieco),
         PropertyId.OUT_SILENT: lambda s: s._out_silent,
         PropertyId.RATE_SELECT: lambda s: s._rate_select,
         PropertyId.SWING_LR_ANGLE: lambda s: s._horizontal_swing_angle,
@@ -205,6 +205,7 @@ class AirConditioner(Device):
         self._follow_me = False
         self._purifier = False
         self._ieco = False
+        self._ieco_number = 1
         self._flash = False
         self._out_silent = False
 
@@ -524,6 +525,7 @@ class AirConditioner(Device):
                 AirConditioner.Capability.BREEZELESS, res.breezeless)
 
         self._capabilities.set(AirConditioner.Capability.IECO, res.ieco)
+        self._ieco_number = res.ieco_number
 
         self._capabilities.set(
             AirConditioner.Capability.OUT_SILENT, res.out_silent)
@@ -1209,6 +1211,7 @@ class AirConditioner(Device):
             "target_humidity": self.target_humidity,
             "indoor_humidity": self.indoor_humidity,
             "eco": self.eco,
+            "ieco": self.ieco,
             "turbo": self.turbo,
             "freeze_protection": self.freeze_protection,
             "sleep": self.sleep,

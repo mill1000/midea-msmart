@@ -29,26 +29,47 @@ class ResponseId(IntEnum):
 class CapabilityId(IntEnum):
     SWING_UD_ANGLE = 0x0009
     SWING_LR_ANGLE = 0x000A
+    SLEEP_CURVE_3D = 0x0011  # AKA "3D Power Saving"
     BREEZELESS = 0x0018  # AKA "No Wind Sense"
     SMART_EYE = 0x0030
-    WIND_ON_ME = 0x0032
-    WIND_OFF_ME = 0x0033
+    WIND_ON_ME = 0x0032  # AKA "Wind Straight"
+    WIND_OFF_ME = 0x0033  # AKA "Wind Avoid"
     SELF_CLEAN = 0x0039  # AKA Active Clean
     _UNKNOWN = 0x0040  # Unknown ID from various logs
     BREEZE_AWAY = 0x0042  # AKA "Prevent Straight Wind"
     BREEZE_CONTROL = 0x0043  # AKA "FA No Wind Sense"
     RATE_SELECT = 0x0048
+    FSU_SMART_COOL = 0x0049  # Floor-standing Unit, "Prevent Super Cool"
     FRESH_AIR = 0x004B
     PARENT_CONTROL = 0x0051  # ??
     PREVENT_STRAIGHT_WIND_SELECT = 0x0058  # ??
     CASCADE = 0x0059  # AKA "Wind Around"
+    FSU_STERILIZE = 0x005A  # Floor-standing Unit
+    FSU_AMBIENT_LIGHT = 0x005A  # Floor-standing Unit
     FLASH = 0x0067  # AKA "Jet Cool"
-    ICHECK = 0x0091  # ??
+    CONTROL_HUMIDITY = 0x007C  # TODO differs from humidity how?
+    GENTLE_WIND_SENSE = 0x0086
+    FSU_COOL_POWER_SAVING = 0x0089  # Floor-standing Unit
+    CONTINUOUS_WIND = 0x008C
+    ICHECK = 0x0091  # Deprecated?
     AUX_FAN_SPEED_CONTROL = 0x0093  # AKA "Emergent Heat Wind"
     AUX_HEAT_FAN_SPEED_CONTROL = 0x0094  # AKA "Heat Ptc Wind"
     CVP = 0x0098  # ??
-    OUT_SILENT = 0x00CD  # Portasplit outdoor silent mode
+    NEW_WIND_SENSE = 0x00AA  # AKA "Argentina 35CB1 Breeze Away"
+    PWHP_COMFORT = 0x00AD  # AKA "Packaged Window Heat Pump Comfort" ??
+    TURBO_PLUS = 0x00B3  # AKAK "Quick Cool Heat"
+    SLEEP_CURVE_3D_OSD = 0x00C0  # AKA "Power Saving Screen"
+    MEETING_MODE = 0x00C1  # ??
+    BREEZE_AWAY_SPEED = 0x00CB  # AKA "Prevent Straight Wind Speed"
+    # Portasplit outdoor silent mode AKA "Mute" TODO 3 possible levels: 1 Indoor, 2 Outdoor, 3 Both
+    OUT_SILENT = 0x00CD
+    # TODO indicates if fan speed is adjustable in fan mode
+    FAN_MODE_SPEED_CONTROL = 0x00CE
+    SMART_COOL_2 = 0x00D2  # AKK "Prevent Super Cool 2"
+    IMAX_WIND = 0x00D3  # AKA "All Air"
     PRESET_IECO = 0x00E3
+    EZ_INSTA_COOL = 0x00F6  # AKA "India EZ Project Insta Cool"
+    EZ_REAL_TIME_POWER_DISPLAY = 0x00F7  # AKA "India EZ Project KW"
     FAN_SPEED_CONTROL = 0x0210
     PRESET_ECO = 0x0212
     PRESET_FREEZE_PROTECTION = 0x0213
@@ -148,7 +169,7 @@ class PropertyId(IntEnum):
             return bytes([1 if args[0] else 0, args[0], 0xFF])
         elif self == PropertyId.IECO:
             # ieco_frame, ieco_number, ieco_switch, ...
-            return bytes([0, 1, args[0]]) + bytes(10)
+            return bytes([0, *args[0]]) + bytes(10)
         elif self == PropertyId.OUT_SILENT:
             return bytes([3 if args[0] else 0])
         else:
@@ -535,7 +556,8 @@ class CapabilitiesResponse(Response):
         self._capabilities.clear()
 
         # Define some local functions to parse capability values
-        def get_value(w) -> Callable[[int], bool]: return lambda v: v == w
+        def get_value(w) -> Callable[[memoryview], bool]:
+            return lambda v: v[0] == w
 
         # Define a named tuple that represents a decoder
         reader = namedtuple("decoder", "name read")
@@ -551,56 +573,61 @@ class CapabilitiesResponse(Response):
             CapabilityId.BREEZELESS: reader("breezeless", get_value(1)),
             CapabilityId.BUZZER:  reader("buzzer", get_value(1)),
             CapabilityId.CASCADE:  reader("cascade", get_value(1)),
-            CapabilityId.DISPLAY_CONTROL: reader("display_control", lambda v: v in [1, 2, 100]),
+            CapabilityId.DISPLAY_CONTROL: reader("display_control", lambda v: v[0] in [1, 2, 100]),
             CapabilityId.ENERGY: [
-                reader("energy_stats", lambda v: v in [2, 3, 4, 5]),
-                reader("energy_setting", lambda v: v in [3, 5]),
-                reader("energy_bcd", lambda v: v in [2, 3]),
+                reader("energy_stats", lambda v: v[0] in [2, 3, 4, 5]),
+                reader("energy_setting", lambda v: v[0] in [3, 5]),
+                reader("energy_bcd", lambda v: v[0] in [2, 3]),
             ],
             CapabilityId.FAHRENHEIT: reader("fahrenheit", get_value(0)),
             CapabilityId.FAN_SPEED_CONTROL: [
-                reader("fan_silent", lambda v: v in [6, 9]),
-                reader("fan_low", lambda v: v in [3, 4, 5, 6, 7, 9]),
-                reader("fan_medium", lambda v: v in [5, 6, 7]),
-                reader("fan_high", lambda v: v in [3, 4, 5, 6, 7, 9]),
-                reader("fan_auto", lambda v: v in [4, 5, 6, 9]),
+                reader("fan_silent", lambda v: v[0] in [6, 9]),
+                reader("fan_low", lambda v: v[0] in [3, 4, 5, 6, 7, 9]),
+                reader("fan_medium", lambda v: v[0] in [5, 6, 7]),
+                reader("fan_high", lambda v: v[0] in [3, 4, 5, 6, 7, 9]),
+                reader("fan_auto", lambda v: v[0] in [4, 5, 6, 9]),
                 reader("fan_custom", get_value(1)),
             ],
             CapabilityId.FILTER_REMIND: [
-                reader("filter_notice", lambda v: v in [1, 2, 4]),
-                reader("filter_clean", lambda v: v in [3, 4]),
+                reader("filter_notice", lambda v: v[0] in [1, 2, 4]),
+                reader("filter_clean", lambda v: v[0] in [3, 4]),
             ],
-            CapabilityId.FLASH: reader("flash", lambda v: v in [1, 2, 3, 4]),
+            CapabilityId.FLASH: reader("flash", lambda v: v[0] in [1, 2, 3, 4]),
             CapabilityId.FRESH_AIR: reader("fresh_air", get_value(1)),
             CapabilityId.HUMIDITY:
             [
-                reader("humidity_auto_set", lambda v: v in [1, 2]),
-                reader("humidity_manual_set", lambda v: v in [2, 3]),
+                reader("humidity_auto_set", lambda v: [0] in [1, 2]),
+                reader("humidity_manual_set", lambda v: v[0] in [2, 3]),
             ],
             CapabilityId.MODES: [
                 reader("heat_mode", lambda v:
-                       v in [1, 2, 4, 6, 7, 9, 10, 11, 12, 13]),
+                       v[0] in [1, 2, 4, 6, 7, 9, 10, 11, 12, 13]),
                 reader("cool_mode", lambda v:
-                       v in [0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 13, 14, 15]),
+                       v[0] in [0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 13, 14, 15]),
                 reader("dry_mode", lambda v:
-                       v in [0, 1, 5, 6, 9, 11, 13, 14, 15]),
+                       v[0] in [0, 1, 5, 6, 9, 11, 13, 14, 15]),
                 reader("auto_mode", lambda v:
-                       v in [0, 1, 2, 7, 8, 9, 13, 14]),
-                reader("aux_heat_mode", lambda v: v == 9),  # Heat & Aux
+                       v[0] in [0, 1, 2, 7, 8, 9, 13, 14]),
+                reader("aux_heat_mode", lambda v: v[0] == 9),  # Heat & Aux
                 reader("aux_mode", lambda v:
-                       v in [9, 10, 11, 13, 14, 15]),  # Aux only
+                       v[0] in [9, 10, 11, 13, 14, 15]),  # Aux only
             ],
-            CapabilityId.OUT_SILENT: reader("out_silent", lambda v: v in [1, 3]),
-            CapabilityId.PRESET_ECO: reader("eco", lambda v: v in [1, 2]),
+            CapabilityId.OUT_SILENT: reader("out_silent", lambda v: v[0] in [1, 3]),
+            CapabilityId.PRESET_ECO: reader("eco", lambda v: v[0] in [1, 2]),
             CapabilityId.PRESET_FREEZE_PROTECTION: reader("freeze_protection", get_value(1)),
-            CapabilityId.PRESET_IECO: reader("ieco", get_value(1)),
+            CapabilityId.PRESET_IECO: [
+                # 1,3,8 - Cool, 3,4,8 - Heat, 8 = ECOMaster
+                reader("ieco", lambda v: v[0]),
+                # 1,2,8 - Cool, 2,3,8 - Heat, 8 = ECOMaster
+                reader("ieco_end", lambda v: v[1] if len(v) > 1 else None)
+            ],
             CapabilityId.PRESET_TURBO:  [
-                reader("turbo_heat", lambda v: v in [1, 3]),
-                reader("turbo_cool", lambda v: v < 2),
+                reader("turbo_heat", lambda v: v[0] in [1, 3]),
+                reader("turbo_cool", lambda v: v[0] in [0, 1]),
             ],
             CapabilityId.RATE_SELECT:  [
                 reader("rate_select_2_level", get_value(1)),  # Gear
-                reader("rate_select_5_level", lambda v: v in [
+                reader("rate_select_5_level", lambda v: v[0] in [
                        2, 3]),  # Genmode and Gear5
             ],
             CapabilityId.SELF_CLEAN:  reader("self_clean", get_value(1)),
@@ -608,8 +635,8 @@ class CapabilitiesResponse(Response):
             CapabilityId.SWING_LR_ANGLE: reader("swing_horizontal_angle", get_value(1)),
             CapabilityId.SWING_UD_ANGLE: reader("swing_vertical_angle", get_value(1)),
             CapabilityId.SWING_MODES: [
-                reader("swing_horizontal", lambda v: v in [1, 3]),
-                reader("swing_vertical", lambda v: v < 2),
+                reader("swing_horizontal", lambda v: v[0] in [1, 3]),
+                reader("swing_vertical", lambda v: v[0] < 2),
             ],
             # CapabilityId.TEMPERATURES too complex to be handled here
             CapabilityId.WIND_OFF_ME:  reader("wind_off_me", get_value(1)),
@@ -635,23 +662,30 @@ class CapabilitiesResponse(Response):
             # Unpack 16 bit ID
             (raw_id, ) = struct.unpack("<H", caps[0:2])
 
+            # Get value
+            value = caps[3:3+size]
+
             # Covert ID to enumerate type
             try:
                 capability_id = CapabilityId(raw_id)
             except ValueError:
                 _LOGGER.info(
-                    "Unknown capability ID: 0x%04X, Size: %d.", raw_id, size)
+                    "Unknown capability ID: 0x%04X, Size: %d, Value: %s.", raw_id, size, value.hex())
                 # Advanced to next capability
                 caps = caps[3+size:]
                 continue
 
-            # Fetch first cap value
-            value = caps[3]
+            # Log all known capabilities
+            _LOGGER.debug("Capability %r, Size: %d, Value: %s.",
+                          capability_id, size, value.hex())
 
             # Apply predefined capability reader if it exists
             if capability_id in capability_readers:
                 # Local function to apply a reader
-                def apply(d, v): return {d.name: d.read(v)}
+                def apply(d, v) -> dict[str, Any]:
+                    if (result := d.read(v)) is not None:
+                        return {d.name: result}
+                    return {}
 
                 reader = capability_readers[capability_id]
                 if isinstance(reader, list):
@@ -681,11 +715,11 @@ class CapabilitiesResponse(Response):
             elif capability_id == CapabilityId._UNKNOWN:
                 # Suppress warnings from unknown capability
                 _LOGGER.debug(
-                    "Ignored unknown capability ID: 0x%04X, Size: %d.", capability_id, size)
+                    "Ignored unknown capability %r.", capability_id)
 
             else:
                 _LOGGER.info(
-                    "Unsupported capability %r, Size: %d.", capability_id, size)
+                    "Unsupported capability %r.", capability_id)
 
             # Advanced to next capability
             caps = caps[3+size:]
@@ -820,7 +854,21 @@ class CapabilitiesResponse(Response):
 
     @property
     def ieco(self) -> bool:
-        return self._capabilities.get("ieco", False)
+        # TODO iECO can be cool, heat or both
+        ieco = self._capabilities.get("ieco", 0)
+        ieco_end = self._capabilities.get("ieco_end", 0)
+        return ieco in [1, 3, 4, 8] or ieco_end in [1, 2, 3, 8]
+
+    @property
+    def ieco_number(self) -> int:
+        # iECO "number" is based on iECO end capability
+        ieco_end = self._capabilities.get("ieco_end", 0)
+        if ieco_end == 8:
+            return 8  # ECOMaster
+        if ieco_end in [1, 2, 3]:
+            return 3
+
+        return 1
 
     @property
     def turbo(self) -> bool:
