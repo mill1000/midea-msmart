@@ -559,6 +559,9 @@ class CapabilitiesResponse(Response):
         def get_value(w) -> Callable[[memoryview], bool]:
             return lambda v: v[0] == w
 
+        def any_of(w) -> Callable[[memoryview], bool]:
+            return lambda v: v[0] in w
+
         # Define a named tuple that represents a decoder
         reader = namedtuple("decoder", "name read")
 
@@ -573,47 +576,48 @@ class CapabilitiesResponse(Response):
             CapabilityId.BREEZELESS: reader("breezeless", get_value(1)),
             CapabilityId.BUZZER:  reader("buzzer", get_value(1)),
             CapabilityId.CASCADE:  reader("cascade", get_value(1)),
-            CapabilityId.DISPLAY_CONTROL: reader("display_control", lambda v: v[0] in [1, 2, 100]),
+            CapabilityId.DISPLAY_CONTROL: reader("display_control", any_of([1, 2, 100])),
             CapabilityId.ENERGY: [
-                reader("energy_stats", lambda v: v[0] in [2, 3, 4, 5]),
-                reader("energy_setting", lambda v: v[0] in [3, 5]),
-                reader("energy_bcd", lambda v: v[0] in [2, 3]),
+                reader("energy_stats", any_of([2, 3, 4, 5])),
+                reader("energy_setting", any_of([3, 5])),
+                reader("energy_bcd", any_of([2, 3])),
             ],
             CapabilityId.FAHRENHEIT: reader("fahrenheit", get_value(0)),
             CapabilityId.FAN_SPEED_CONTROL: [
-                reader("fan_silent", lambda v: v[0] in [6, 9]),
-                reader("fan_low", lambda v: v[0] in [3, 4, 5, 6, 7, 9]),
-                reader("fan_medium", lambda v: v[0] in [5, 6, 7]),
-                reader("fan_high", lambda v: v[0] in [3, 4, 5, 6, 7, 9]),
-                reader("fan_auto", lambda v: v[0] in [4, 5, 6, 9]),
+                reader("fan_silent", any_of([6, 9])),
+                reader("fan_low", any_of([3, 4, 5, 6, 7, 9])),
+                reader("fan_medium", any_of([5, 6, 7])),
+                reader("fan_high", any_of([3, 4, 5, 6, 7, 9])),
+                reader("fan_auto", any_of([4, 5, 6, 9])),
                 reader("fan_custom", get_value(1)),
             ],
             CapabilityId.FILTER_REMIND: [
-                reader("filter_notice", lambda v: v[0] in [1, 2, 4]),
-                reader("filter_clean", lambda v: v[0] in [3, 4]),
+                reader("filter_notice", any_of([1, 2, 4])),
+                reader("filter_clean", any_of([3, 4])),
             ],
-            CapabilityId.FLASH: reader("flash", lambda v: v[0] in [1, 2, 3, 4]),
+            CapabilityId.FLASH: reader("flash", any_of([1, 2, 3, 4])),
             CapabilityId.FRESH_AIR: reader("fresh_air", get_value(1)),
             CapabilityId.HUMIDITY:
             [
-                reader("humidity_auto_set", lambda v: [0] in [1, 2]),
-                reader("humidity_manual_set", lambda v: v[0] in [2, 3]),
+                reader("humidity_auto_set", any_of([1, 2])),
+                reader("humidity_manual_set", any_of([2, 3])),
             ],
             CapabilityId.MODES: [
-                reader("heat_mode", lambda v:
-                       v[0] in [1, 2, 4, 6, 7, 9, 10, 11, 12, 13]),
-                reader("cool_mode", lambda v:
-                       v[0] in [0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 13, 14, 15]),
-                reader("dry_mode", lambda v:
-                       v[0] in [0, 1, 5, 6, 9, 11, 13, 14, 15]),
-                reader("auto_mode", lambda v:
-                       v[0] in [0, 1, 2, 7, 8, 9, 13, 14]),
-                reader("aux_heat_mode", lambda v: v[0] == 9),  # Heat & Aux
-                reader("aux_mode", lambda v:
-                       v[0] in [9, 10, 11, 13, 14, 15]),  # Aux only
+                reader("heat_mode",
+                       any_of([1, 2, 4, 6, 7, 9, 10, 11, 12, 13])),
+                reader("cool_mode",
+                       any_of([0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 13, 14, 15])),
+                reader("dry_mode",
+                       any_of([0, 1, 5, 6, 9, 11, 13, 14, 15])),
+                reader("auto_mode",
+                       any_of([0, 1, 2, 7, 8, 9, 13, 14])),
+                reader("aux_heat_mode",
+                       get_value(9)),  # Heat & Aux
+                reader("aux_mode",
+                       any_of([9, 10, 11, 13, 14, 15])),  # Aux only
             ],
-            CapabilityId.OUT_SILENT: reader("out_silent", lambda v: v[0] in [1, 3]),
-            CapabilityId.PRESET_ECO: reader("eco", lambda v: v[0] in [1, 2]),
+            CapabilityId.OUT_SILENT: reader("out_silent", any_of([1, 3])),
+            CapabilityId.PRESET_ECO: reader("eco", any_of([1, 2])),
             CapabilityId.PRESET_FREEZE_PROTECTION: reader("freeze_protection", get_value(1)),
             CapabilityId.PRESET_IECO: [
                 # 1,3,8 - Cool, 3,4,8 - Heat, 8 = ECOMaster
@@ -622,21 +626,22 @@ class CapabilitiesResponse(Response):
                 reader("ieco_end", lambda v: v[1] if len(v) > 1 else None)
             ],
             CapabilityId.PRESET_TURBO:  [
-                reader("turbo_heat", lambda v: v[0] in [1, 3]),
-                reader("turbo_cool", lambda v: v[0] in [0, 1]),
+                reader("turbo_heat", any_of([1, 3])),
+                reader("turbo_cool", any_of([0, 1])),
             ],
             CapabilityId.RATE_SELECT:  [
-                reader("rate_select_2_level", get_value(1)),  # Gear
-                reader("rate_select_5_level", lambda v: v[0] in [
-                       2, 3]),  # Genmode and Gear5
+                reader("rate_select_2_level",
+                       get_value(1)),  # Gear
+                reader("rate_select_5_level",
+                       any_of([2, 3])),  # Genmode and Gear5
             ],
             CapabilityId.SELF_CLEAN:  reader("self_clean", get_value(1)),
             CapabilityId.SMART_EYE:  reader("smart_eye", get_value(1)),
             CapabilityId.SWING_LR_ANGLE: reader("swing_horizontal_angle", get_value(1)),
             CapabilityId.SWING_UD_ANGLE: reader("swing_vertical_angle", get_value(1)),
             CapabilityId.SWING_MODES: [
-                reader("swing_horizontal", lambda v: v[0] in [1, 3]),
-                reader("swing_vertical", lambda v: v[0] < 2),
+                reader("swing_horizontal", any_of([1, 3])),
+                reader("swing_vertical", any_of([0, 1])),
             ],
             # CapabilityId.TEMPERATURES too complex to be handled here
             CapabilityId.WIND_OFF_ME:  reader("wind_off_me", get_value(1)),
