@@ -1211,6 +1211,7 @@ class AirConditioner(Device):
             "target_humidity": self.target_humidity,
             "indoor_humidity": self.indoor_humidity,
             "eco": self.eco,
+            "ieco": self.ieco,
             "turbo": self.turbo,
             "freeze_protection": self.freeze_protection,
             "sleep": self.sleep,
