@@ -1198,6 +1198,9 @@ class AirConditioner(Device):
             "swing_mode": self.swing_mode,
             "horizontal_swing_angle": self.horizontal_swing_angle,
             "vertical_swing_angle": self.vertical_swing_angle,
+            "breezeless": self.breezeless,
+            "breeze_away": self.breeze_away,
+            "breeze_mild": self.breeze_mild,
             "cascade_mode": self.cascade_mode,
             "fresh_air_fan_speed": self.fresh_air_fan_speed,
             "target_temperature": self.target_temperature,
@@ -1224,6 +1227,7 @@ class AirConditioner(Device):
             "error_code": self.error_code,
             "defrost": self.defrost_active,
             "out_silent": self.out_silent,
+            "flash": self.flash
         }}
 
     def capabilities_dict(self) -> dict:
