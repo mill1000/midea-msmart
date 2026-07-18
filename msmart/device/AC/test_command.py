@@ -62,6 +62,25 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(frame[9], FrameType.QUERY)
 
 
+class TestGetGroupCommand(unittest.TestCase):
+
+    def test_group_command_payload(self) -> None:
+        """Test that GetGroupCommand encodes the group number correctly."""
+        for group in [1, 2, 4, 5, 7]:
+            cmd = GetGroupCommand(group)
+            frame = cmd.tobytes()
+            self.assertIsNotNone(frame)
+            # payload[3] (frame byte 13) should be 0x40 | group
+            self.assertEqual(frame[13], 0x40 | group,
+                             msg=f"GetGroupCommand({group}) payload[3] mismatch")
+
+    def test_group_command_frame_type(self) -> None:
+        """Test that GetGroupCommand uses QUERY frame type."""
+        cmd = GetGroupCommand(1)
+        frame = cmd.tobytes()
+        self.assertEqual(frame[9], FrameType.QUERY)
+
+
 class TestStateResponse(_TestResponseBase):
     """Test device state response messages."""
 
@@ -1159,6 +1178,110 @@ class TestGroupDataResponse(_TestResponseBase):
                 resp = Group5Response(mv_payload)
 
             self.assertEqual(resp.defrost, defrost)
+
+    def test_group1_response_parsing(self) -> None:
+        """Test that Group1Response correctly parses outdoor unit performance data."""
+
+        # Construct a synthetic payload with known values
+        payload = bytearray(20)
+        payload[0] = 0xC1   # ResponseId.GROUP_DATA
+        payload[3] = 0x41   # group byte: 0x41 & 0xF = 1
+        payload[4] = 28     # compressor_frequency = 28 Hz
+        payload[7] = 1      # outdoor_unit_current = 1 A
+        payload[8] = 232    # outdoor_unit_voltage = 232 V
+        # T1 = (raw - 30) / 2 → raw = 71 → T1 = 20.5 °C
+        payload[10] = 71
+        # T2 = (raw - 30) / 2 → raw = 38 → T2 = 4.0 °C
+        payload[11] = 38
+        # T3 = (raw - 50) / 2 → raw = 102 → T3 = 26.0 °C
+        payload[12] = 102
+        # T4 = (raw - 50) / 2 → raw = 88 → T4 = 19.0 °C
+        payload[13] = 88
+        payload[14] = 45    # compressor_pressure
+
+        with memoryview(payload) as mv:
+            resp = Group1Response(mv)
+
+        self.assertEqual(resp.compressor_frequency, 28)
+        self.assertEqual(resp.outdoor_unit_current, 1)
+        self.assertEqual(resp.outdoor_unit_voltage, 232)
+        self.assertAlmostEqual(resp.temp_indoor_coil, 20.5)
+        self.assertAlmostEqual(resp.temp_outdoor_coil, 4.0)
+        self.assertAlmostEqual(resp.temp_discharge, 26.0)
+        self.assertAlmostEqual(resp.temp_suction, 19.0)
+        self.assertEqual(resp.compressor_pressure, 45)
+
+    def test_group1_response_construct(self) -> None:
+        """Test that Response.construct() returns Group1Response for group 1 frames."""
+
+        # Minimal valid framed Group 1 response (group byte = 0x41)
+        # We build a bytearray with correct structure and let construct() route it
+        payload = bytearray(20)
+        payload[0] = 0xC1
+        payload[3] = 0x41
+        with memoryview(payload) as mv:
+            resp = Group1Response(mv)
+        self.assertIsInstance(resp, Group1Response)
+        self._test_check_attributes(resp, [
+            "compressor_frequency", "outdoor_unit_current", "outdoor_unit_voltage",
+            "temp_indoor_coil", "temp_outdoor_coil", "temp_discharge",
+            "temp_suction", "compressor_pressure",
+        ])
+
+    def test_group2_response_parsing(self) -> None:
+        """Test that Group2Response correctly parses indoor fan speed."""
+
+        payload = bytearray(20)
+        payload[0] = 0xC1
+        payload[3] = 0x42   # group = 2
+        payload[5] = 53     # indoor_fan_speed = 53 * 8 = 424
+
+        with memoryview(payload) as mv:
+            resp = Group2Response(mv)
+
+        self.assertEqual(resp.indoor_fan_speed, 424)
+
+    def test_group2_response_zero(self) -> None:
+        """Test Group2Response with zero fan speed."""
+
+        payload = bytearray(20)
+        payload[0] = 0xC1
+        payload[3] = 0x42
+        payload[5] = 0
+
+        with memoryview(payload) as mv:
+            resp = Group2Response(mv)
+
+        self.assertEqual(resp.indoor_fan_speed, 0)
+
+    def test_group7_response_parsing(self) -> None:
+        """Test that Group7Response correctly parses outdoor unit power."""
+
+        payload = bytearray(20)
+        payload[0] = 0xC1
+        payload[3] = 0x47   # group = 7
+        # power = payload[10] + 255 * payload[11] = 13 + 255 = 268
+        payload[10] = 13
+        payload[11] = 1
+
+        with memoryview(payload) as mv:
+            resp = Group7Response(mv)
+
+        self.assertEqual(resp.outdoor_unit_power, 268)
+
+    def test_group7_response_zero(self) -> None:
+        """Test Group7Response with zero power (device off / no data)."""
+
+        payload = bytearray(20)
+        payload[0] = 0xC1
+        payload[3] = 0x47
+        payload[10] = 0
+        payload[11] = 0
+
+        with memoryview(payload) as mv:
+            resp = Group7Response(mv)
+
+        self.assertEqual(resp.outdoor_unit_power, 0)
 
 
 if __name__ == "__main__":

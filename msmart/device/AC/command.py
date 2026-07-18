@@ -283,13 +283,6 @@ class GetGroupCommand(Command):
         return super().tobytes(payload)
 
 
-class GetGroup5Command(GetGroupCommand):
-    """Deprecated: use GetGroupCommand(5) instead."""
-
-    def __init__(self) -> None:
-        super().__init__(group=5)
-
-
 class SetStateCommand(Command):
     """Command to set basic state of the device."""
 

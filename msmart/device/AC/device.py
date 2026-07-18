@@ -11,7 +11,7 @@ from msmart.utils import CapabilityManager, MideaIntEnum, deprecated
 
 from .command import (CapabilitiesResponse, Command, EnergyUsageResponse,
                       GetCapabilitiesCommand, GetEnergyUsageCommand,
-                      GetGroupCommand, GetGroup5Command, GetPropertiesCommand,
+                      GetGroupCommand, GetPropertiesCommand,
                       GetStateCommand,
                       Group1Response, Group2Response, Group5Response,
                       Group7Response, InvalidResponseException,

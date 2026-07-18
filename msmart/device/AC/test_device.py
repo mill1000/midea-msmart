@@ -3,9 +3,11 @@ import unittest
 from unittest.mock import patch
 
 from .command import (CapabilitiesResponse, EnergyUsageResponse,
-                      GetEnergyUsageCommand, GetGroup5Command,
-                      GetPropertiesCommand, GetStateCommand, Group5Response,
-                      PropertiesResponse, Response, StateResponse)
+                      GetEnergyUsageCommand, GetGroupCommand,
+                      GetPropertiesCommand, GetStateCommand,
+                      Group1Response, Group2Response, Group5Response,
+                      Group7Response, PropertiesResponse, Response,
+                      StateResponse)
 from .device import AirConditioner as AC
 from .device import PropertyId
 
@@ -708,7 +710,7 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
                             for cmd in commands))
 
     async def test_refresh_group5_humidity(self) -> None:
-        """Test that refresh() sends the GetGroup5Command when humidity is supported."""
+        """Test that refresh() sends GetGroupCommand(5) when humidity is supported."""
 
         # Create dummy device
         device = AC(0, 0, 0)
@@ -725,11 +727,11 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
             args, kwargs = patched_method.call_args
             commands = args[0]
 
-            self.assertTrue(any(isinstance(cmd, GetGroup5Command)
+            self.assertTrue(any(isinstance(cmd, GetGroupCommand) and cmd._group == 5
                             for cmd in commands))
 
     async def test_refresh_group5_enabled(self) -> None:
-        """Test that refresh() sends the GetGroup5Command when enabled."""
+        """Test that refresh() sends GetGroupCommand(5) when enabled."""
 
         # Create dummy device
         device = AC(0, 0, 0)
@@ -746,8 +748,143 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
             args, kwargs = patched_method.call_args
             commands = args[0]
 
-            self.assertTrue(any(isinstance(cmd, GetGroup5Command)
+            self.assertTrue(any(isinstance(cmd, GetGroupCommand) and cmd._group == 5
                             for cmd in commands))
+
+    async def test_refresh_group1_enabled(self) -> None:
+        """Test that refresh() sends GetGroupCommand(1) when enabled."""
+
+        device = AC(0, 0, 0)
+        device.enable_group1_data_requests = True
+
+        with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
+            await device.refresh()
+            patched_method.assert_awaited_once()
+
+            args, _ = patched_method.call_args
+            commands = args[0]
+
+            self.assertTrue(any(isinstance(cmd, GetGroupCommand) and cmd._group == 1
+                            for cmd in commands))
+
+    async def test_refresh_group2_enabled(self) -> None:
+        """Test that refresh() sends GetGroupCommand(2) when enabled."""
+
+        device = AC(0, 0, 0)
+        device.enable_group2_data_requests = True
+
+        with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
+            await device.refresh()
+            patched_method.assert_awaited_once()
+
+            args, _ = patched_method.call_args
+            commands = args[0]
+
+            self.assertTrue(any(isinstance(cmd, GetGroupCommand) and cmd._group == 2
+                            for cmd in commands))
+
+    async def test_refresh_group7_enabled(self) -> None:
+        """Test that refresh() sends GetGroupCommand(7) when enabled."""
+
+        device = AC(0, 0, 0)
+        device.enable_group7_data_requests = True
+
+        with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
+            await device.refresh()
+            patched_method.assert_awaited_once()
+
+            args, _ = patched_method.call_args
+            commands = args[0]
+
+            self.assertTrue(any(isinstance(cmd, GetGroupCommand) and cmd._group == 7
+                            for cmd in commands))
+
+    async def test_refresh_group_disabled_by_default(self) -> None:
+        """Test that Groups 1, 2 and 7 are NOT requested by default."""
+
+        device = AC(0, 0, 0)
+
+        with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[]) as patched_method:
+            await device.refresh()
+            patched_method.assert_awaited_once()
+
+            args, _ = patched_method.call_args
+            commands = args[0]
+
+            for group in [1, 2, 7]:
+                self.assertFalse(any(isinstance(cmd, GetGroupCommand) and cmd._group == group
+                                 for cmd in commands),
+                                 msg=f"GetGroupCommand({group}) should not be sent by default")
+
+    async def test_update_state_group1_response(self) -> None:
+        """Test that _update_state() correctly stores Group 1 sensor data."""
+
+        device = AC(0, 0, 0)
+
+        # Build a minimal Group1Response payload:
+        # byte 0  = response id (0xC1), bytes 1-3 header, byte 4 = compressor_freq,
+        # bytes 5-6 unused, byte 7 = current, byte 8 = voltage,
+        # bytes 9 unused, 10=T1, 11=T2, 12=T3, 13=T4, 14=TP
+        payload = bytearray(20)
+        payload[0] = 0xC1   # GROUP_DATA response id
+        payload[3] = 0x41   # group byte: group = 0x41 & 0xF = 1
+        payload[4] = 35     # compressor_frequency
+        payload[7] = 4      # outdoor_unit_current
+        payload[8] = 230    # outdoor_unit_voltage
+        payload[10] = 30 + int(21.0 * 2)  # T1: (raw-30)/2 = 21.0
+        payload[11] = 30 + int(8.0 * 2)   # T2: (raw-30)/2 = 8.0
+        payload[12] = 50 + int(45.0 * 2)  # T3: (raw-50)/2 = 45.0
+        payload[13] = 50 + int(12.0 * 2)  # T4: (raw-50)/2 = 12.0
+        payload[14] = 55    # compressor_pressure
+
+        with memoryview(payload) as mv:
+            resp = Group1Response(mv)
+
+        device._update_state(resp)
+
+        self.assertEqual(device.compressor_frequency, 35)
+        self.assertEqual(device.outdoor_unit_current, 4)
+        self.assertEqual(device.outdoor_unit_voltage, 230)
+        self.assertAlmostEqual(device.temp_indoor_coil, 21.0)
+        self.assertAlmostEqual(device.temp_outdoor_coil, 8.0)
+        self.assertAlmostEqual(device.temp_discharge, 45.0)
+        self.assertAlmostEqual(device.temp_suction, 12.0)
+        self.assertEqual(device.compressor_pressure, 55)
+
+    async def test_update_state_group2_response(self) -> None:
+        """Test that _update_state() correctly stores Group 2 indoor fan speed."""
+
+        device = AC(0, 0, 0)
+
+        payload = bytearray(20)
+        payload[0] = 0xC1
+        payload[3] = 0x42   # group = 2
+        payload[5] = 53     # indoor_fan_speed = 53 * 8 = 424
+
+        with memoryview(payload) as mv:
+            resp = Group2Response(mv)
+
+        device._update_state(resp)
+
+        self.assertEqual(device.indoor_fan_speed, 424)
+
+    async def test_update_state_group7_response(self) -> None:
+        """Test that _update_state() correctly stores Group 7 outdoor unit power."""
+
+        device = AC(0, 0, 0)
+
+        payload = bytearray(20)
+        payload[0] = 0xC1
+        payload[3] = 0x47   # group = 7
+        payload[10] = 13    # power = 13 + 255 * 1 = 268
+        payload[11] = 1
+
+        with memoryview(payload) as mv:
+            resp = Group7Response(mv)
+
+        device._update_state(resp)
+
+        self.assertEqual(device.outdoor_unit_power, 268)
 
     async def test_refresh_properties(self) -> None:
         """Test that refresh() sends the GetPropertiesCommand when supported properties are present."""
