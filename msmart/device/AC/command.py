@@ -265,10 +265,11 @@ class GetEnergyUsageCommand(Command):
         return super().tobytes(payload)
 
 
-class GetGroup5Command(Command):
-    """Command to query group 5 data from device."""
+class GetGroupCommand(Command):
+    """Command to query group data from device (generic, supports groups 1, 2, 4, 5, 7)."""
 
-    def __init__(self) -> None:
+    def __init__(self, group: int) -> None:
+        self._group = group
         super().__init__(frame_type=FrameType.QUERY)
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
@@ -277,9 +278,16 @@ class GetGroup5Command(Command):
         payload[0] = 0x41
         payload[1] = 0x21
         payload[2] = 0x01
-        payload[3] = 0x45
+        payload[3] = 0x40 | self._group
 
         return super().tobytes(payload)
+
+
+class GetGroup5Command(GetGroupCommand):
+    """Deprecated: use GetGroupCommand(5) instead."""
+
+    def __init__(self) -> None:
+        super().__init__(group=5)
 
 
 class SetStateCommand(Command):
@@ -522,10 +530,16 @@ class Response():
             elif response_id == ResponseId.GROUP_DATA:
                 # Response type depends on an additional "group" byte
                 group = frame_mv[13] & 0xF
-                if group == 4:
+                if group == 1:
+                    response_class = Group1Response
+                elif group == 2:
+                    response_class = Group2Response
+                elif group == 4:
                     response_class = EnergyUsageResponse
                 elif group == 5:
                     response_class = Group5Response
+                elif group == 7:
+                    response_class = Group7Response
 
             # Validate the payload CRC
             # ...except for properties which certain devices send invalid CRCs
@@ -1226,3 +1240,83 @@ class Group5Response(Response):
         self.outdoor_fan_speed = 8 * payload[8]
 
         self.defrost = bool(payload[10])
+
+
+class Group1Response(Response):
+    """Group 1 response — outdoor unit performance data.
+
+    Contains compressor frequency, current, voltage and
+    refrigerant circuit temperatures from the outdoor unit.
+    """
+
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
+
+        # Outdoor unit electrical data
+        self.compressor_frequency: Optional[int] = None
+        self.outdoor_unit_current: Optional[int] = None
+        self.outdoor_unit_voltage: Optional[int] = None
+
+        # Refrigerant circuit temperatures
+        # T1: indoor coil (evaporator/condenser)
+        self.temp_indoor_coil: Optional[float] = None
+        # T2: outdoor coil (condenser/evaporator)
+        self.temp_outdoor_coil: Optional[float] = None
+        # T3: discharge gas (compressor outlet)
+        self.temp_discharge: Optional[float] = None
+        # T4: suction gas (compressor inlet)
+        self.temp_suction: Optional[float] = None
+        # TP: high-pressure sensor (raw value)
+        self.compressor_pressure: Optional[int] = None
+
+        self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+        self.compressor_frequency = payload[4]
+        self.outdoor_unit_current = payload[7]
+        self.outdoor_unit_voltage = payload[8]
+
+        # Temperature formula from Midea reference: (raw - 30) / 2
+        self.temp_indoor_coil = (payload[10] - 30) / 2
+        self.temp_outdoor_coil = (payload[11] - 30) / 2
+        # Discharge/suction temps use offset 50: (raw - 50) / 2
+        self.temp_discharge = (payload[12] - 50) / 2
+        self.temp_suction = (payload[13] - 50) / 2
+
+        self.compressor_pressure = payload[14]
+
+
+class Group2Response(Response):
+    """Group 2 response — indoor unit fan data.
+
+    Contains the actual indoor fan speed (RPM-equivalent).
+    """
+
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
+
+        self.indoor_fan_speed: Optional[int] = None
+
+        self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+        # Raw value * 8 gives the fan speed in RPM-equivalent units
+        self.indoor_fan_speed = payload[5] * 8
+
+
+class Group7Response(Response):
+    """Group 7 response — outdoor unit power consumption.
+
+    Contains the real-time power draw of the outdoor unit in Watts.
+    """
+
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
+
+        self.outdoor_unit_power: Optional[float] = None
+
+        self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+        # Two-byte little-endian power value in Watts
+        self.outdoor_unit_power = payload[10] + 255 * payload[11]
