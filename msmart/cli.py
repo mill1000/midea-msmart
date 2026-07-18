@@ -146,7 +146,8 @@ async def _query(args) -> None:
     for group in (args.group or []):
         flag, description = _GROUP_FLAGS.get(group, (None, None))
         if flag is None:
-            _LOGGER.error("Unsupported group number: %d. Valid groups: 1, 2, 5, 7.", group)
+            _LOGGER.error(
+                "Unsupported group number: %d. Valid groups: 1, 2, 5, 7.", group)
             exit(1)
         if hasattr(device, flag):
             _LOGGER.info("Enabling %s data requests.", description)
