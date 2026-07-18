@@ -4,10 +4,9 @@ from unittest.mock import patch
 
 from .command import (CapabilitiesResponse, EnergyUsageResponse,
                       GetEnergyUsageCommand, GetGroupCommand,
-                      GetPropertiesCommand, GetStateCommand,
-                      Group1Response, Group2Response, Group5Response,
-                      Group7Response, PropertiesResponse, Response,
-                      StateResponse)
+                      GetPropertiesCommand, GetStateCommand, Group1Response,
+                      Group2Response, Group5Response, Group7Response,
+                      PropertiesResponse, Response, StateResponse)
 from .device import AirConditioner as AC
 from .device import PropertyId
 
