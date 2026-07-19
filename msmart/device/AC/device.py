@@ -256,7 +256,9 @@ class AirConditioner(Device):
         self._temp_discharge_pipe: Optional[int] = None
 
         # Group 2 — indoor unit fan data
+        self._target_indoor_fan_speed: Optional[int] = None
         self._indoor_fan_speed: Optional[int] = None
+        self._water_pump_running: Optional[bool] = None
 
         # Group 7 — outdoor unit power
         self._compressor_power: Optional[float] = None
@@ -430,7 +432,9 @@ class AirConditioner(Device):
             _LOGGER.debug("Group 2 response payload from device %s: %s",
                           self.id, res)
 
+            self._target_indoor_fan_speed = res.target_indoor_fan_speed
             self._indoor_fan_speed = res.indoor_fan_speed
+            self._water_pump_running = res.water_pump_running
 
         elif isinstance(res, Group5Response):
             _LOGGER.debug(
@@ -1305,9 +1309,19 @@ class AirConditioner(Device):
         return self._temp_discharge_pipe
 
     @property
+    def target_indoor_fan_speed(self) -> Optional[int]:
+        """Target indoor fan speed (from Group 2)."""
+        return self._target_indoor_fan_speed
+
+    @property
     def indoor_fan_speed(self) -> Optional[int]:
-        """Actual indoor fan speed in RPM-equivalent units (from Group 2)."""
+        """Indoor fan speed in RPM-equivalent (from Group 2)."""
         return self._indoor_fan_speed
+
+    @property
+    def water_pump_running(self) -> Optional[bool]:
+        """Indicates if the condensate water pump is currently running (from Group 2)."""
+        return self._water_pump_running
 
     @property
     def compressor_power(self) -> Optional[float]:
@@ -1383,10 +1397,12 @@ class AirConditioner(Device):
             "temp_indoor_coil": self.temp_indoor_coil,
             "temp_evaporator": self.temp_evaporator,
             "temp_condenser": self.temp_condenser,
-            "temp_outdoor": self.temp_outdoor,
+            "temp_outdoor": self.outdoor_temperature,
             "temp_discharge_pipe": self.temp_discharge_pipe,
-            # Group 2 — indoor unit fan
+            # Group 2 — indoor unit fan data
+            "target_indoor_fan_speed": self.target_indoor_fan_speed,
             "indoor_fan_speed": self.indoor_fan_speed,
+            "water_pump_running": self.water_pump_running,
             # Group 7 — outdoor unit power
             "compressor_power": self.compressor_power,
         }}

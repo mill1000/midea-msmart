@@ -1186,8 +1186,8 @@ class TestGroupDataResponse(_TestResponseBase):
         payload = bytearray(20)
         payload[0] = 0xC1   # ResponseId.GROUP_DATA
         payload[3] = 0x41   # group byte: 0x41 & 0xF = 1
-        payload[4] = 28     # target_compressor_frequency = 28 Hz
-        payload[5] = 29     # compressor_frequency = 29 Hz
+        payload[4] = 28     # compressor_frequency = 28 Hz
+        payload[5] = 29     # target_compressor_frequency = 29 Hz
         payload[7] = 1      # compressor_current = 1 A
         payload[8] = 232    # compressor_voltage = 232 V
         # T1 = (raw - 30) / 2 → raw = 71 → T1 = 20.5 °C
@@ -1203,8 +1203,8 @@ class TestGroupDataResponse(_TestResponseBase):
         with memoryview(payload) as mv:
             resp = Group1Response(mv)
 
-        self.assertEqual(resp.target_compressor_frequency, 28)
-        self.assertEqual(resp.compressor_frequency, 29)
+        self.assertEqual(resp.compressor_frequency, 28)
+        self.assertEqual(resp.target_compressor_frequency, 29)
         self.assertEqual(resp.compressor_current, 1)
         self.assertEqual(resp.compressor_voltage, 232)
         self.assertAlmostEqual(resp.temp_indoor_coil, 20.5)
@@ -1236,12 +1236,16 @@ class TestGroupDataResponse(_TestResponseBase):
         payload = bytearray(20)
         payload[0] = 0xC1
         payload[3] = 0x42   # group = 2
+        payload[4] = 52     # target_indoor_fan_speed = 52 * 8 = 416
         payload[5] = 53     # indoor_fan_speed = 53 * 8 = 424
+        payload[8] = 0x10   # water_pump_running = True
 
         with memoryview(payload) as mv:
             resp = Group2Response(mv)
 
+        self.assertEqual(resp.target_indoor_fan_speed, 416)
         self.assertEqual(resp.indoor_fan_speed, 424)
+        self.assertTrue(resp.water_pump_running)
 
     def test_group2_response_zero(self) -> None:
         """Test Group2Response with zero fan speed."""

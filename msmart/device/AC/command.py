@@ -1266,8 +1266,8 @@ class Group1Response(Response):
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
-        self.target_compressor_frequency = payload[4]
-        self.compressor_frequency = payload[5]
+        self.compressor_frequency = payload[4]
+        self.target_compressor_frequency = payload[5]
         self.compressor_current = payload[7]
         self.compressor_voltage = payload[8]
 
@@ -1290,13 +1290,20 @@ class Group2Response(Response):
     def __init__(self, payload: memoryview) -> None:
         super().__init__(payload)
 
+        self.target_indoor_fan_speed: Optional[int] = None
         self.indoor_fan_speed: Optional[int] = None
+        self.water_pump_running: Optional[bool] = None
 
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
         # Raw value * 8 gives the fan speed in RPM-equivalent units
+        self.target_indoor_fan_speed = payload[4] * 8
         self.indoor_fan_speed = payload[5] * 8
+
+        # Bit 4 of byte 8 indicates the condensate water pump state.
+        # This could also be the physical float switch (tank full) triggering the pump.
+        self.water_pump_running = bool(payload[8] & 0x10)
 
 
 class Group7Response(Response):
