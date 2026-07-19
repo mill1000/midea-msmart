@@ -249,10 +249,10 @@ class AirConditioner(Device):
         self._outdoor_unit_voltage: Optional[int] = None
         # Refrigerant circuit temperatures
         self._temp_indoor_coil: Optional[float] = None
-        self._temp_outdoor_coil: Optional[float] = None
-        self._temp_discharge: Optional[float] = None
-        self._temp_suction: Optional[float] = None
-        self._compressor_pressure: Optional[int] = None
+        self._temp_evaporator: Optional[float] = None
+        self._temp_condenser: Optional[float] = None
+        self._temp_outdoor: Optional[float] = None
+        self._temp_discharge_pipe: Optional[int] = None
 
         # Group 2 — indoor unit fan data
         self._indoor_fan_speed: Optional[int] = None
@@ -418,10 +418,10 @@ class AirConditioner(Device):
             self._outdoor_unit_current = res.outdoor_unit_current
             self._outdoor_unit_voltage = res.outdoor_unit_voltage
             self._temp_indoor_coil = res.temp_indoor_coil
-            self._temp_outdoor_coil = res.temp_outdoor_coil
-            self._temp_discharge = res.temp_discharge
-            self._temp_suction = res.temp_suction
-            self._compressor_pressure = res.compressor_pressure
+            self._temp_evaporator = res.temp_evaporator
+            self._temp_condenser = res.temp_condenser
+            self._temp_outdoor = res.temp_outdoor
+            self._temp_discharge_pipe = res.temp_discharge_pipe
 
         elif isinstance(res, Group2Response):
             _LOGGER.debug("Group 2 response payload from device %s: %s",
@@ -1278,24 +1278,24 @@ class AirConditioner(Device):
         return self._temp_indoor_coil
 
     @property
-    def temp_outdoor_coil(self) -> Optional[float]:
-        """Outdoor coil temperature in °C — T2 sensor (from Group 1)."""
-        return self._temp_outdoor_coil
+    def temp_evaporator(self) -> Optional[float]:
+        """Return the T2 evaporator temperature in °C."""
+        return self._temp_evaporator
 
     @property
-    def temp_discharge(self) -> Optional[float]:
-        """Compressor discharge gas temperature in °C — T3 sensor (from Group 1)."""
-        return self._temp_discharge
+    def temp_condenser(self) -> Optional[float]:
+        """Return the T3 condenser temperature in °C."""
+        return self._temp_condenser
 
     @property
-    def temp_suction(self) -> Optional[float]:
-        """Compressor suction gas temperature in °C — T4 sensor (from Group 1)."""
-        return self._temp_suction
+    def temp_outdoor(self) -> Optional[float]:
+        """Return the T4 outdoor ambient temperature in °C."""
+        return self._temp_outdoor
 
     @property
-    def compressor_pressure(self) -> Optional[int]:
-        """High-pressure sensor raw value — TP sensor (from Group 1)."""
-        return self._compressor_pressure
+    def temp_discharge_pipe(self) -> Optional[int]:
+        """Return the TP discharge pipe temperature in °C."""
+        return self._temp_discharge_pipe
 
     @property
     def indoor_fan_speed(self) -> Optional[int]:
@@ -1373,10 +1373,10 @@ class AirConditioner(Device):
             "outdoor_unit_current": self.outdoor_unit_current,
             "outdoor_unit_voltage": self.outdoor_unit_voltage,
             "temp_indoor_coil": self.temp_indoor_coil,
-            "temp_outdoor_coil": self.temp_outdoor_coil,
-            "temp_discharge": self.temp_discharge,
-            "temp_suction": self.temp_suction,
-            "compressor_pressure": self.compressor_pressure,
+            "temp_evaporator": self.temp_evaporator,
+            "temp_condenser": self.temp_condenser,
+            "temp_outdoor": self.temp_outdoor,
+            "temp_discharge_pipe": self.temp_discharge_pipe,
             # Group 2 — indoor unit fan
             "indoor_fan_speed": self.indoor_fan_speed,
             # Group 7 — outdoor unit power

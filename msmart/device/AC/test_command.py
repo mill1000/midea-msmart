@@ -1197,7 +1197,7 @@ class TestGroupDataResponse(_TestResponseBase):
         payload[12] = 102
         # T4 = (raw - 50) / 2 → raw = 88 → T4 = 19.0 °C
         payload[13] = 88
-        payload[14] = 45    # compressor_pressure
+        payload[14] = 45    # temp_discharge_pipe (TP) = 45 °C
 
         with memoryview(payload) as mv:
             resp = Group1Response(mv)
@@ -1206,10 +1206,10 @@ class TestGroupDataResponse(_TestResponseBase):
         self.assertEqual(resp.outdoor_unit_current, 1)
         self.assertEqual(resp.outdoor_unit_voltage, 232)
         self.assertAlmostEqual(resp.temp_indoor_coil, 20.5)
-        self.assertAlmostEqual(resp.temp_outdoor_coil, 4.0)
-        self.assertAlmostEqual(resp.temp_discharge, 26.0)
-        self.assertAlmostEqual(resp.temp_suction, 19.0)
-        self.assertEqual(resp.compressor_pressure, 45)
+        self.assertAlmostEqual(resp.temp_evaporator, 4.0)
+        self.assertAlmostEqual(resp.temp_condenser, 26.0)
+        self.assertAlmostEqual(resp.temp_outdoor, 19.0)
+        self.assertEqual(resp.temp_discharge_pipe, 45)
 
     def test_group1_response_construct(self) -> None:
         """Test that Response.construct() returns Group1Response for group 1 frames."""
@@ -1224,8 +1224,8 @@ class TestGroupDataResponse(_TestResponseBase):
         self.assertIsInstance(resp, Group1Response)
         self._test_check_attributes(resp, [
             "compressor_frequency", "outdoor_unit_current", "outdoor_unit_voltage",
-            "temp_indoor_coil", "temp_outdoor_coil", "temp_discharge",
-            "temp_suction", "compressor_pressure",
+            "temp_indoor_coil", "temp_evaporator", "temp_condenser",
+            "temp_outdoor", "temp_discharge_pipe",
         ])
 
     def test_group2_response_parsing(self) -> None:

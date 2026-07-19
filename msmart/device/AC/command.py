@@ -1251,16 +1251,16 @@ class Group1Response(Response):
         self.outdoor_unit_voltage: Optional[int] = None
 
         # Refrigerant circuit temperatures
-        # T1: indoor coil (evaporator/condenser)
+        # T1: indoor coil
         self.temp_indoor_coil: Optional[float] = None
-        # T2: outdoor coil (condenser/evaporator)
-        self.temp_outdoor_coil: Optional[float] = None
-        # T3: discharge gas (compressor outlet)
-        self.temp_discharge: Optional[float] = None
-        # T4: suction gas (compressor inlet)
-        self.temp_suction: Optional[float] = None
-        # TP: high-pressure sensor (raw value)
-        self.compressor_pressure: Optional[int] = None
+        # T2: evaporator outlet
+        self.temp_evaporator: Optional[float] = None
+        # T3: condenser temperature
+        self.temp_condenser: Optional[float] = None
+        # T4: outdoor ambient temperature
+        self.temp_outdoor: Optional[float] = None
+        # TP: discharge pipe temperature (compressor outlet), stored as raw °C
+        self.temp_discharge_pipe: Optional[int] = None
 
         self._parse(payload)
 
@@ -1269,14 +1269,14 @@ class Group1Response(Response):
         self.outdoor_unit_current = payload[7]
         self.outdoor_unit_voltage = payload[8]
 
-        # Temperature formula from Midea reference: (raw - 30) / 2
+        # T1/T2 use offset 30: (raw - 30) / 2
         self.temp_indoor_coil = (payload[10] - 30) / 2
-        self.temp_outdoor_coil = (payload[11] - 30) / 2
-        # Discharge/suction temps use offset 50: (raw - 50) / 2
-        self.temp_discharge = (payload[12] - 50) / 2
-        self.temp_suction = (payload[13] - 50) / 2
-
-        self.compressor_pressure = payload[14]
+        self.temp_evaporator = (payload[11] - 30) / 2
+        # T3/T4 use offset 50: (raw - 50) / 2
+        self.temp_condenser = (payload[12] - 50) / 2
+        self.temp_outdoor = (payload[13] - 50) / 2
+        # TP: raw byte is direct °C reading
+        self.temp_discharge_pipe = payload[14]
 
 
 class Group2Response(Response):
