@@ -1187,8 +1187,8 @@ class TestGroupDataResponse(_TestResponseBase):
         payload[0] = 0xC1   # ResponseId.GROUP_DATA
         payload[3] = 0x41   # group byte: 0x41 & 0xF = 1
         payload[4] = 28     # compressor_frequency = 28 Hz
-        payload[7] = 1      # outdoor_unit_current = 1 A
-        payload[8] = 232    # outdoor_unit_voltage = 232 V
+        payload[7] = 1      # compressor_current = 1 A
+        payload[8] = 232    # compressor_voltage = 232 V
         # T1 = (raw - 30) / 2 → raw = 71 → T1 = 20.5 °C
         payload[10] = 71
         # T2 = (raw - 30) / 2 → raw = 38 → T2 = 4.0 °C
@@ -1203,8 +1203,8 @@ class TestGroupDataResponse(_TestResponseBase):
             resp = Group1Response(mv)
 
         self.assertEqual(resp.compressor_frequency, 28)
-        self.assertEqual(resp.outdoor_unit_current, 1)
-        self.assertEqual(resp.outdoor_unit_voltage, 232)
+        self.assertEqual(resp.compressor_current, 1)
+        self.assertEqual(resp.compressor_voltage, 232)
         self.assertAlmostEqual(resp.temp_indoor_coil, 20.5)
         self.assertAlmostEqual(resp.temp_evaporator, 4.0)
         self.assertAlmostEqual(resp.temp_condenser, 26.0)
@@ -1223,7 +1223,7 @@ class TestGroupDataResponse(_TestResponseBase):
             resp = Group1Response(mv)
         self.assertIsInstance(resp, Group1Response)
         self._test_check_attributes(resp, [
-            "compressor_frequency", "outdoor_unit_current", "outdoor_unit_voltage",
+            "compressor_frequency", "compressor_current", "compressor_voltage",
             "temp_indoor_coil", "temp_evaporator", "temp_condenser",
             "temp_outdoor", "temp_discharge_pipe",
         ])
@@ -1267,7 +1267,7 @@ class TestGroupDataResponse(_TestResponseBase):
         with memoryview(payload) as mv:
             resp = Group7Response(mv)
 
-        self.assertEqual(resp.outdoor_unit_power, 268)
+        self.assertEqual(resp.compressor_power, 268)
 
     def test_group7_response_zero(self) -> None:
         """Test Group7Response with zero power (device off / no data)."""
@@ -1281,7 +1281,7 @@ class TestGroupDataResponse(_TestResponseBase):
         with memoryview(payload) as mv:
             resp = Group7Response(mv)
 
-        self.assertEqual(resp.outdoor_unit_power, 0)
+        self.assertEqual(resp.compressor_power, 0)
 
 
 if __name__ == "__main__":

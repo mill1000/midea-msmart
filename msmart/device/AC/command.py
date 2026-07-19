@@ -1247,8 +1247,8 @@ class Group1Response(Response):
 
         # Outdoor unit electrical data
         self.compressor_frequency: Optional[int] = None
-        self.outdoor_unit_current: Optional[int] = None
-        self.outdoor_unit_voltage: Optional[int] = None
+        self.compressor_current: Optional[int] = None
+        self.compressor_voltage: Optional[int] = None
 
         # Refrigerant circuit temperatures
         # T1: indoor coil
@@ -1266,8 +1266,8 @@ class Group1Response(Response):
 
     def _parse(self, payload: memoryview) -> None:
         self.compressor_frequency = payload[4]
-        self.outdoor_unit_current = payload[7]
-        self.outdoor_unit_voltage = payload[8]
+        self.compressor_current = payload[7]
+        self.compressor_voltage = payload[8]
 
         # T1/T2 use offset 30: (raw - 30) / 2
         self.temp_indoor_coil = (payload[10] - 30) / 2
@@ -1306,10 +1306,10 @@ class Group7Response(Response):
     def __init__(self, payload: memoryview) -> None:
         super().__init__(payload)
 
-        self.outdoor_unit_power: Optional[float] = None
+        self.compressor_power: Optional[float] = None
 
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
         # Two-byte little-endian power value in Watts
-        self.outdoor_unit_power = payload[10] + 255 * payload[11]
+        self.compressor_power = payload[10] + 255 * payload[11]

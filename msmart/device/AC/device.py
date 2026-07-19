@@ -245,8 +245,8 @@ class AirConditioner(Device):
 
         # Group 1 — outdoor unit performance data
         self._compressor_frequency: Optional[int] = None
-        self._outdoor_unit_current: Optional[int] = None
-        self._outdoor_unit_voltage: Optional[int] = None
+        self._compressor_current: Optional[int] = None
+        self._compressor_voltage: Optional[int] = None
         # Refrigerant circuit temperatures
         self._temp_indoor_coil: Optional[float] = None
         self._temp_evaporator: Optional[float] = None
@@ -258,7 +258,7 @@ class AirConditioner(Device):
         self._indoor_fan_speed: Optional[int] = None
 
         # Group 7 — outdoor unit power
-        self._outdoor_unit_power: Optional[float] = None
+        self._compressor_power: Optional[float] = None
 
         # Capabilities
         self._min_target_temperature = 16
@@ -415,8 +415,8 @@ class AirConditioner(Device):
                           self.id, res)
 
             self._compressor_frequency = res.compressor_frequency
-            self._outdoor_unit_current = res.outdoor_unit_current
-            self._outdoor_unit_voltage = res.outdoor_unit_voltage
+            self._compressor_current = res.compressor_current
+            self._compressor_voltage = res.compressor_voltage
             self._temp_indoor_coil = res.temp_indoor_coil
             self._temp_evaporator = res.temp_evaporator
             self._temp_condenser = res.temp_condenser
@@ -441,7 +441,7 @@ class AirConditioner(Device):
             _LOGGER.debug("Group 7 response payload from device %s: %s",
                           self.id, res)
 
-            self._outdoor_unit_power = res.outdoor_unit_power
+            self._compressor_power = res.compressor_power
 
         else:
             _LOGGER.debug("Ignored unknown response from device %s: %s",
@@ -1263,14 +1263,14 @@ class AirConditioner(Device):
         return self._compressor_frequency
 
     @property
-    def outdoor_unit_current(self) -> Optional[int]:
+    def compressor_current(self) -> Optional[int]:
         """Total current draw of the outdoor unit in Amperes (from Group 1)."""
-        return self._outdoor_unit_current
+        return self._compressor_current
 
     @property
-    def outdoor_unit_voltage(self) -> Optional[int]:
+    def compressor_voltage(self) -> Optional[int]:
         """Supply voltage of the outdoor unit in Volts (from Group 1)."""
-        return self._outdoor_unit_voltage
+        return self._compressor_voltage
 
     @property
     def temp_indoor_coil(self) -> Optional[float]:
@@ -1303,9 +1303,9 @@ class AirConditioner(Device):
         return self._indoor_fan_speed
 
     @property
-    def outdoor_unit_power(self) -> Optional[float]:
+    def compressor_power(self) -> Optional[float]:
         """Real-time power draw of the outdoor unit in Watts (from Group 7)."""
-        return self._outdoor_unit_power
+        return self._compressor_power
 
     @property
     def defrost_active(self) -> Optional[bool]:
@@ -1370,8 +1370,8 @@ class AirConditioner(Device):
             # Group 1 — outdoor unit performance
             "outdoor_fan_speed": self.outdoor_fan_speed,
             "compressor_frequency": self.compressor_frequency,
-            "outdoor_unit_current": self.outdoor_unit_current,
-            "outdoor_unit_voltage": self.outdoor_unit_voltage,
+            "compressor_current": self.compressor_current,
+            "compressor_voltage": self.compressor_voltage,
             "temp_indoor_coil": self.temp_indoor_coil,
             "temp_evaporator": self.temp_evaporator,
             "temp_condenser": self.temp_condenser,
@@ -1380,7 +1380,7 @@ class AirConditioner(Device):
             # Group 2 — indoor unit fan
             "indoor_fan_speed": self.indoor_fan_speed,
             # Group 7 — outdoor unit power
-            "outdoor_unit_power": self.outdoor_unit_power,
+            "compressor_power": self.compressor_power,
         }}
 
     def capabilities_dict(self) -> dict:

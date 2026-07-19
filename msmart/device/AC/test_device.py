@@ -828,8 +828,8 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
         payload[0] = 0xC1   # GROUP_DATA response id
         payload[3] = 0x41   # group byte: group = 0x41 & 0xF = 1
         payload[4] = 35     # compressor_frequency
-        payload[7] = 4      # outdoor_unit_current
-        payload[8] = 230    # outdoor_unit_voltage
+        payload[7] = 4      # compressor_current
+        payload[8] = 230    # compressor_voltage
         payload[10] = 30 + int(21.0 * 2)  # T1: (raw-30)/2 = 21.0
         payload[11] = 30 + int(8.0 * 2)   # T2: (raw-30)/2 = 8.0
         payload[12] = 50 + int(45.0 * 2)  # T3: (raw-50)/2 = 45.0
@@ -842,8 +842,8 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
         device._update_state(resp)
 
         self.assertEqual(device.compressor_frequency, 35)
-        self.assertEqual(device.outdoor_unit_current, 4)
-        self.assertEqual(device.outdoor_unit_voltage, 230)
+        self.assertEqual(device.compressor_current, 4)
+        self.assertEqual(device.compressor_voltage, 230)
         self.assertAlmostEqual(device.temp_indoor_coil, 21.0)
         self.assertAlmostEqual(device.temp_evaporator, 8.0)
         self.assertAlmostEqual(device.temp_condenser, 45.0)
@@ -883,7 +883,7 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
 
         device._update_state(resp)
 
-        self.assertEqual(device.outdoor_unit_power, 268)
+        self.assertEqual(device.compressor_power, 268)
 
     async def test_refresh_properties(self) -> None:
         """Test that refresh() sends the GetPropertiesCommand when supported properties are present."""
