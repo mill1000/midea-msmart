@@ -1260,14 +1260,14 @@ class TestGroupDataResponse(_TestResponseBase):
         payload = bytearray(20)
         payload[0] = 0xC1
         payload[3] = 0x47   # group = 7
-        # power = payload[10] + 255 * payload[11] = 13 + 255 = 268
+        # power = payload[10] + 256 * payload[11] = 13 + 256 = 269
         payload[10] = 13
         payload[11] = 1
 
         with memoryview(payload) as mv:
             resp = Group7Response(mv)
 
-        self.assertEqual(resp.compressor_power, 268)
+        self.assertEqual(resp.compressor_power, 269)
 
     def test_group7_response_zero(self) -> None:
         """Test Group7Response with zero power (device off / no data)."""

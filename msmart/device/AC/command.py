@@ -1312,4 +1312,4 @@ class Group7Response(Response):
 
     def _parse(self, payload: memoryview) -> None:
         # Two-byte little-endian power value in Watts
-        self.compressor_power = payload[10] + 255 * payload[11]
+        self.compressor_power = payload[10] + 256 * payload[11]

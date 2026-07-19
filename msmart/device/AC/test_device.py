@@ -875,7 +875,7 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
         payload = bytearray(20)
         payload[0] = 0xC1
         payload[3] = 0x47   # group = 7
-        payload[10] = 13    # power = 13 + 255 * 1 = 268
+        payload[10] = 13    # power = 13 + 256 * 1 = 269
         payload[11] = 1
 
         with memoryview(payload) as mv:
@@ -883,7 +883,7 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
 
         device._update_state(resp)
 
-        self.assertEqual(device.compressor_power, 268)
+        self.assertEqual(device.compressor_power, 269)
 
     async def test_refresh_properties(self) -> None:
         """Test that refresh() sends the GetPropertiesCommand when supported properties are present."""
