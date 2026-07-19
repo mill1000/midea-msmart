@@ -827,7 +827,8 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
         payload = bytearray(20)
         payload[0] = 0xC1   # GROUP_DATA response id
         payload[3] = 0x41   # group byte: group = 0x41 & 0xF = 1
-        payload[4] = 35     # compressor_frequency
+        payload[4] = 35     # target_compressor_frequency
+        payload[5] = 36     # compressor_frequency
         payload[7] = 4      # compressor_current
         payload[8] = 230    # compressor_voltage
         payload[10] = 30 + int(21.0 * 2)  # T1: (raw-30)/2 = 21.0
@@ -841,7 +842,8 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
 
         device._update_state(resp)
 
-        self.assertEqual(device.compressor_frequency, 35)
+        self.assertEqual(device.target_compressor_frequency, 35)
+        self.assertEqual(device.compressor_frequency, 36)
         self.assertEqual(device.compressor_current, 4)
         self.assertEqual(device.compressor_voltage, 230)
         self.assertAlmostEqual(device.temp_indoor_coil, 21.0)

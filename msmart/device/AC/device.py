@@ -244,6 +244,7 @@ class AirConditioner(Device):
         self._use_binary_energy = False  # Deprecated
 
         # Group 1 — outdoor unit performance data
+        self._target_compressor_frequency: Optional[int] = None
         self._compressor_frequency: Optional[int] = None
         self._compressor_current: Optional[int] = None
         self._compressor_voltage: Optional[int] = None
@@ -414,6 +415,8 @@ class AirConditioner(Device):
             _LOGGER.debug("Group 1 response payload from device %s: %s",
                           self.id, res)
 
+            self._target_compressor_frequency = res.target_compressor_frequency
+            self._target_compressor_frequency = res.target_compressor_frequency
             self._compressor_frequency = res.compressor_frequency
             self._compressor_current = res.compressor_current
             self._compressor_voltage = res.compressor_voltage
@@ -1258,6 +1261,10 @@ class AirConditioner(Device):
         self._request_group7_data = enable
 
     @property
+    def target_compressor_frequency(self) -> Optional[int]:
+        return self._target_compressor_frequency
+
+    @property
     def compressor_frequency(self) -> Optional[int]:
         """Compressor operating frequency in Hz (from Group 1)."""
         return self._compressor_frequency
@@ -1369,6 +1376,7 @@ class AirConditioner(Device):
             "flash": self.flash,
             # Group 1 — outdoor unit performance
             "outdoor_fan_speed": self.outdoor_fan_speed,
+            "target_compressor_frequency": self.target_compressor_frequency,
             "compressor_frequency": self.compressor_frequency,
             "compressor_current": self.compressor_current,
             "compressor_voltage": self.compressor_voltage,

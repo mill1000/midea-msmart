@@ -1246,6 +1246,7 @@ class Group1Response(Response):
         super().__init__(payload)
 
         # Outdoor unit electrical data
+        self.target_compressor_frequency: Optional[int] = None
         self.compressor_frequency: Optional[int] = None
         self.compressor_current: Optional[int] = None
         self.compressor_voltage: Optional[int] = None
@@ -1265,7 +1266,8 @@ class Group1Response(Response):
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
-        self.compressor_frequency = payload[4]
+        self.target_compressor_frequency = payload[4]
+        self.compressor_frequency = payload[5]
         self.compressor_current = payload[7]
         self.compressor_voltage = payload[8]
 
