@@ -261,7 +261,7 @@ class AirConditioner(Device):
         self._water_pump_running: Optional[bool] = None
 
         # Group 7 — outdoor unit power
-        self._compressor_power: Optional[float] = None
+        self._outdoor_unit_power: Optional[float] = None
 
         # Capabilities
         self._min_target_temperature = 16
@@ -448,7 +448,7 @@ class AirConditioner(Device):
             _LOGGER.debug("Group 7 response payload from device %s: %s",
                           self.id, res)
 
-            self._compressor_power = res.compressor_power
+            self._outdoor_unit_power = res.outdoor_unit_power
 
         else:
             _LOGGER.debug("Ignored unknown response from device %s: %s",
@@ -1324,9 +1324,9 @@ class AirConditioner(Device):
         return self._water_pump_running
 
     @property
-    def compressor_power(self) -> Optional[float]:
+    def outdoor_unit_power(self) -> Optional[float]:
         """Real-time power draw of the outdoor unit in Watts (from Group 7)."""
-        return self._compressor_power
+        return self._outdoor_unit_power
 
     @property
     def defrost_active(self) -> Optional[bool]:
@@ -1404,7 +1404,7 @@ class AirConditioner(Device):
             "indoor_fan_speed": self.indoor_fan_speed,
             "water_pump_running": self.water_pump_running,
             # Group 7 — outdoor unit power
-            "compressor_power": self.compressor_power,
+            "outdoor_unit_power": self.outdoor_unit_power,
         }}
 
     def capabilities_dict(self) -> dict:

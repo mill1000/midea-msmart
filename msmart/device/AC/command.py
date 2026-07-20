@@ -1315,10 +1315,12 @@ class Group7Response(Response):
     def __init__(self, payload: memoryview) -> None:
         super().__init__(payload)
 
-        self.compressor_power: Optional[float] = None
+        # NOTE: This represents the power consumption of the outdoor unit.
+        # For a Midea PortaSplit, this would effectively be the indoor unit.
+        self.outdoor_unit_power: Optional[float] = None
 
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
         # Two-byte little-endian power value in Watts
-        self.compressor_power = payload[10] + 256 * payload[11]
+        self.outdoor_unit_power = payload[10] + 256 * payload[11]

@@ -889,7 +889,7 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
 
         device._update_state(resp)
 
-        self.assertEqual(device.compressor_power, 269)
+        self.assertEqual(device.outdoor_unit_power, 269)
 
     async def test_refresh_properties(self) -> None:
         """Test that refresh() sends the GetPropertiesCommand when supported properties are present."""

@@ -1273,7 +1273,7 @@ class TestGroupDataResponse(_TestResponseBase):
         with memoryview(payload) as mv:
             resp = Group7Response(mv)
 
-        self.assertEqual(resp.compressor_power, 269)
+        self.assertEqual(resp.outdoor_unit_power, 269)
 
     def test_group7_response_zero(self) -> None:
         """Test Group7Response with zero power (device off / no data)."""
@@ -1287,7 +1287,7 @@ class TestGroupDataResponse(_TestResponseBase):
         with memoryview(payload) as mv:
             resp = Group7Response(mv)
 
-        self.assertEqual(resp.compressor_power, 0)
+        self.assertEqual(resp.outdoor_unit_power, 0)
 
 
 if __name__ == "__main__":
