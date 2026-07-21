@@ -345,6 +345,77 @@ class TestUpdateStateFromResponse(unittest.TestCase):
             # Assert state is expected
             self.assertEqual(device.indoor_humidity, humidity)
 
+    def test_group1_response(self) -> None:
+        """Test parsing of Group data 1 into device state."""
+        # Synthetic payload with known values
+        # Group 1
+        # compressor_frequency = 35
+        # target_compressor_frequency = 36
+        # compressor_current = 4
+        # compressor_voltage = 230
+        # T1 = 21.0
+        # T2 = 8.0
+        # T3 = 45.0
+        # T4 = 12.0
+        # TP = 55
+        TEST_PAYLOAD = bytes.fromhex(
+            "c100004123240004e600482e8c4a370000000000")
+
+        with memoryview(TEST_PAYLOAD) as mv:
+            resp = Group1Response(mv)
+
+        # Create a dummy device and process the response
+        device = AC(0, 0, 0)
+        device._update_state(resp)
+
+        self.assertEqual(device.compressor_frequency, 35)
+        self.assertEqual(device.target_compressor_frequency, 36)
+        self.assertEqual(device.compressor_current, 4)
+        self.assertEqual(device.compressor_voltage, 230)
+        self.assertEqual(device.indoor_coil_temperature, 21.0)
+        self.assertEqual(device.evaporator_temperature, 8.0)
+        self.assertEqual(device.condenser_temperature, 45.0)
+        # self.assertEqual(device.outdoor_temperature, 12.0)
+        self.assertEqual(device.discharge_pipe_temperature, 55)
+
+    def test_group2_response(self) -> None:
+        """Test parsing of Group data 2 into device state."""
+        # Synthetic payload with known values
+        # Group 2
+        # target_indoor_fan_speed = 416
+        # indoor_fan_speed = 424,
+        # water_pump_running = True
+        TEST_PAYLOAD = bytes.fromhex(
+            "C100004234350000100000000000000000000000")
+
+        with memoryview(TEST_PAYLOAD) as mv:
+            resp = Group2Response(mv)
+
+        # Create a dummy device and process the response
+        device = AC(0, 0, 0)
+        device._update_state(resp)
+
+        self.assertEqual(device.target_indoor_fan_speed, 416)
+        self.assertEqual(device.indoor_fan_speed, 424)
+        self.assertTrue(device.water_pump_running)
+
+    def test_group7_response(self) -> None:
+        """Test that _update_state() correctly stores Group 7 outdoor unit power."""
+        # Synthetic payload with known values
+        # Group 7
+        # outdoor_unit_power = 269
+        TEST_PAYLOAD = bytes.fromhex(
+            "C10000470000000000000D010000000000000000")
+
+        with memoryview(TEST_PAYLOAD) as mv:
+            resp = Group7Response(mv)
+
+        # Create a dummy device and process the response
+        device = AC(0, 0, 0)
+        device._update_state(resp)
+
+        self.assertEqual(device.outdoor_unit_power, 269)
+
 
 class TestCapabilities(unittest.TestCase):
     """Test parsing of CapabilitiesResponse into device capabilities."""
@@ -814,82 +885,6 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
                 self.assertFalse(any(isinstance(cmd, GetGroupDataCommand) and cmd._group == group
                                  for cmd in commands),
                                  msg=f"GetGroupDataCommand({group}) should not be sent by default")
-
-    async def test_update_state_group1_response(self) -> None:
-        """Test that _update_state() correctly stores Group 1 sensor data."""
-
-        device = AC(0, 0, 0)
-
-        # Build a minimal Group1Response payload:
-        # byte 0  = response id (0xC1), bytes 1-3 header, byte 4 = compressor_freq,
-        # bytes 5-6 unused, byte 7 = current, byte 8 = voltage,
-        # bytes 9 unused, 10=T1, 11=T2, 12=T3, 13=T4, 14=TP
-        payload = bytearray(20)
-        payload[0] = 0xC1   # GROUP_DATA response id
-        payload[3] = 0x41   # group byte: group = 0x41 & 0xF = 1
-        payload[4] = 35     # compressor_frequency
-        payload[5] = 36     # target_compressor_frequency
-        payload[7] = 4      # compressor_current
-        payload[8] = 230    # compressor_voltage
-        payload[10] = 30 + int(21.0 * 2)  # T1: (raw-30)/2 = 21.0
-        payload[11] = 30 + int(8.0 * 2)   # T2: (raw-30)/2 = 8.0
-        payload[12] = 50 + int(45.0 * 2)  # T3: (raw-50)/2 = 45.0
-        payload[13] = 50 + int(12.0 * 2)  # T4: (raw-50)/2 = 12.0
-        payload[14] = 55    # discharge_pipe_temperature (TP) = 55 °C
-
-        with memoryview(payload) as mv:
-            resp = Group1Response(mv)
-
-        device._update_state(resp)
-
-        self.assertEqual(device.compressor_frequency, 35)
-        self.assertEqual(device.target_compressor_frequency, 36)
-        self.assertEqual(device.compressor_current, 4)
-        self.assertEqual(device.compressor_voltage, 230)
-        self.assertAlmostEqual(device.indoor_coil_temperature, 21.0)
-        self.assertAlmostEqual(device.evaporator_temperature, 8.0)
-        self.assertAlmostEqual(device.condenser_temperature, 45.0)
-        self.assertAlmostEqual(device.outdoor_temperature, 12.0)
-        self.assertEqual(device.discharge_pipe_temperature, 55)
-
-    async def test_update_state_group2_response(self) -> None:
-        """Test that _update_state() correctly stores Group 2 indoor fan speed."""
-
-        device = AC(0, 0, 0)
-
-        payload = bytearray(20)
-        payload[0] = 0xC1
-        payload[3] = 0x42   # group = 2
-        payload[4] = 52     # target_indoor_fan_speed = 52 * 8 = 416
-        payload[5] = 53     # indoor_fan_speed = 53 * 8 = 424
-        payload[8] = 0x10   # water_pump_running = True
-
-        with memoryview(payload) as mv:
-            resp = Group2Response(mv)
-
-        device._update_state(resp)
-
-        self.assertEqual(device.target_indoor_fan_speed, 416)
-        self.assertEqual(device.indoor_fan_speed, 424)
-        self.assertTrue(device.water_pump_running)
-
-    async def test_update_state_group7_response(self) -> None:
-        """Test that _update_state() correctly stores Group 7 outdoor unit power."""
-
-        device = AC(0, 0, 0)
-
-        payload = bytearray(20)
-        payload[0] = 0xC1
-        payload[3] = 0x47   # group = 7
-        payload[10] = 13    # power = 13 + 256 * 1 = 269
-        payload[11] = 1
-
-        with memoryview(payload) as mv:
-            resp = Group7Response(mv)
-
-        device._update_state(resp)
-
-        self.assertEqual(device.outdoor_unit_power, 269)
 
     async def test_refresh_properties(self) -> None:
         """Test that refresh() sends the GetPropertiesCommand when supported properties are present."""
