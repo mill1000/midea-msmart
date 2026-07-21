@@ -835,7 +835,7 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
         payload[11] = 30 + int(8.0 * 2)   # T2: (raw-30)/2 = 8.0
         payload[12] = 50 + int(45.0 * 2)  # T3: (raw-50)/2 = 45.0
         payload[13] = 50 + int(12.0 * 2)  # T4: (raw-50)/2 = 12.0
-        payload[14] = 55    # temp_discharge_pipe (TP) = 55 °C
+        payload[14] = 55    # discharge_pipe_temperature (TP) = 55 °C
 
         with memoryview(payload) as mv:
             resp = Group1Response(mv)
@@ -846,11 +846,11 @@ class TestRefresh(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(device.target_compressor_frequency, 36)
         self.assertEqual(device.compressor_current, 4)
         self.assertEqual(device.compressor_voltage, 230)
-        self.assertAlmostEqual(device.temp_indoor_coil, 21.0)
-        self.assertAlmostEqual(device.temp_evaporator, 8.0)
-        self.assertAlmostEqual(device.temp_condenser, 45.0)
-        self.assertAlmostEqual(device.temp_outdoor, 12.0)
-        self.assertEqual(device.temp_discharge_pipe, 55)
+        self.assertAlmostEqual(device.indoor_coil_temperature, 21.0)
+        self.assertAlmostEqual(device.evaporator_temperature, 8.0)
+        self.assertAlmostEqual(device.condenser_temperature, 45.0)
+        self.assertAlmostEqual(device.outdoor_temperature, 12.0)
+        self.assertEqual(device.discharge_pipe_temperature, 55)
 
     async def test_update_state_group2_response(self) -> None:
         """Test that _update_state() correctly stores Group 2 indoor fan speed."""

@@ -1253,15 +1253,15 @@ class Group1Response(Response):
 
         # Refrigerant circuit temperatures
         # T1: indoor coil
-        self.temp_indoor_coil: Optional[float] = None
+        self.indoor_coil_temperature: Optional[float] = None
         # T2: evaporator outlet
-        self.temp_evaporator: Optional[float] = None
+        self.evaporator_temperature: Optional[float] = None
         # T3: condenser temperature
-        self.temp_condenser: Optional[float] = None
+        self.condenser_temperature: Optional[float] = None
         # T4: outdoor ambient temperature
-        self.temp_outdoor: Optional[float] = None
+        self.outdoor_temperature: Optional[float] = None
         # TP: discharge pipe temperature (compressor outlet), stored as raw °C
-        self.temp_discharge_pipe: Optional[int] = None
+        self.discharge_pipe_temperature: Optional[int] = None
 
         self._parse(payload)
 
@@ -1272,13 +1272,13 @@ class Group1Response(Response):
         self.compressor_voltage = payload[8]
 
         # T1/T2 use offset 30: (raw - 30) / 2
-        self.temp_indoor_coil = (payload[10] - 30) / 2
-        self.temp_evaporator = (payload[11] - 30) / 2
+        self.indoor_coil_temperature = (payload[10] - 30) / 2
+        self.evaporator_temperature = (payload[11] - 30) / 2
         # T3/T4 use offset 50: (raw - 50) / 2
-        self.temp_condenser = (payload[12] - 50) / 2
-        self.temp_outdoor = (payload[13] - 50) / 2
+        self.condenser_temperature = (payload[12] - 50) / 2
+        self.outdoor_temperature = (payload[13] - 50) / 2
         # TP: raw byte is direct °C reading
-        self.temp_discharge_pipe = payload[14]
+        self.discharge_pipe_temperature = payload[14]
 
 
 class Group2Response(Response):

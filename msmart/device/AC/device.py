@@ -249,11 +249,10 @@ class AirConditioner(Device):
         self._compressor_current: Optional[int] = None
         self._compressor_voltage: Optional[int] = None
         # Refrigerant circuit temperatures
-        self._temp_indoor_coil: Optional[float] = None
-        self._temp_evaporator: Optional[float] = None
-        self._temp_condenser: Optional[float] = None
-        self._temp_outdoor: Optional[float] = None
-        self._temp_discharge_pipe: Optional[int] = None
+        self._indoor_coil_temperature: Optional[float] = None
+        self._evaporator_temperature: Optional[float] = None
+        self._condenser_temperature: Optional[float] = None
+        self._discharge_pipe_temperature: Optional[int] = None
 
         # Group 2 — indoor unit fan data
         self._target_indoor_fan_speed: Optional[int] = None
@@ -422,11 +421,11 @@ class AirConditioner(Device):
             self._compressor_frequency = res.compressor_frequency
             self._compressor_current = res.compressor_current
             self._compressor_voltage = res.compressor_voltage
-            self._temp_indoor_coil = res.temp_indoor_coil
-            self._temp_evaporator = res.temp_evaporator
-            self._temp_condenser = res.temp_condenser
-            self._temp_outdoor = res.temp_outdoor
-            self._temp_discharge_pipe = res.temp_discharge_pipe
+            self._indoor_coil_temperature = res.indoor_coil_temperature
+            self._evaporator_temperature = res.evaporator_temperature
+            self._condenser_temperature = res.condenser_temperature
+            self._outdoor_temperature = res.outdoor_temperature
+            self._discharge_pipe_temperature = res.discharge_pipe_temperature
 
         elif isinstance(res, Group2Response):
             _LOGGER.debug("Group 2 response payload from device %s: %s",
@@ -1284,29 +1283,24 @@ class AirConditioner(Device):
         return self._compressor_voltage
 
     @property
-    def temp_indoor_coil(self) -> Optional[float]:
+    def indoor_coil_temperature(self) -> Optional[float]:
         """Indoor coil temperature in °C — T1 sensor (from Group 1)."""
-        return self._temp_indoor_coil
+        return self._indoor_coil_temperature
 
     @property
-    def temp_evaporator(self) -> Optional[float]:
+    def evaporator_temperature(self) -> Optional[float]:
         """Return the T2 evaporator temperature in °C."""
-        return self._temp_evaporator
+        return self._evaporator_temperature
 
     @property
-    def temp_condenser(self) -> Optional[float]:
+    def condenser_temperature(self) -> Optional[float]:
         """Return the T3 condenser temperature in °C."""
-        return self._temp_condenser
+        return self._condenser_temperature
 
     @property
-    def temp_outdoor(self) -> Optional[float]:
-        """Return the T4 outdoor ambient temperature in °C."""
-        return self._temp_outdoor
-
-    @property
-    def temp_discharge_pipe(self) -> Optional[int]:
+    def discharge_pipe_temperature(self) -> Optional[int]:
         """Return the TP discharge pipe temperature in °C."""
-        return self._temp_discharge_pipe
+        return self._discharge_pipe_temperature
 
     @property
     def target_indoor_fan_speed(self) -> Optional[int]:
@@ -1394,11 +1388,10 @@ class AirConditioner(Device):
             "compressor_frequency": self.compressor_frequency,
             "compressor_current": self.compressor_current,
             "compressor_voltage": self.compressor_voltage,
-            "temp_indoor_coil": self.temp_indoor_coil,
-            "temp_evaporator": self.temp_evaporator,
-            "temp_condenser": self.temp_condenser,
-            "temp_outdoor": self.outdoor_temperature,
-            "temp_discharge_pipe": self.temp_discharge_pipe,
+            "indoor_coil_temperature": self.indoor_coil_temperature,
+            "evaporator_temperature": self.evaporator_temperature,
+            "condenser_temperature": self.condenser_temperature,
+            "discharge_pipe_temperature": self.discharge_pipe_temperature,
             # Group 2 — indoor unit fan data
             "target_indoor_fan_speed": self.target_indoor_fan_speed,
             "indoor_fan_speed": self.indoor_fan_speed,
