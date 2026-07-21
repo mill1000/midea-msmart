@@ -62,25 +62,6 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(frame[9], FrameType.QUERY)
 
 
-class TestGetGroupCommand(unittest.TestCase):
-
-    def test_group_command_payload(self) -> None:
-        """Test that GetGroupCommand encodes the group number correctly."""
-        for group in [1, 2, 4, 5, 7]:
-            cmd = GetGroupCommand(group)
-            frame = cmd.tobytes()
-            self.assertIsNotNone(frame)
-            # payload[3] (frame byte 13) should be 0x40 | group
-            self.assertEqual(frame[13], 0x40 | group,
-                             msg=f"GetGroupCommand({group}) payload[3] mismatch")
-
-    def test_group_command_frame_type(self) -> None:
-        """Test that GetGroupCommand uses QUERY frame type."""
-        cmd = GetGroupCommand(1)
-        frame = cmd.tobytes()
-        self.assertEqual(frame[9], FrameType.QUERY)
-
-
 class TestStateResponse(_TestResponseBase):
     """Test device state response messages."""
 
@@ -1088,6 +1069,22 @@ class TestResponseConstruct(_TestResponseBase):
             Response.construct(TEST_RESPONSE_TYPE_CC)
 
 
+class TestGetGroupDataCommand(unittest.TestCase):
+
+    def test_group_command_payload(self) -> None:
+        """Test that GetGroupDataCommand encodes the group number correctly."""
+        for group in [1, 2, 4, 5, 7]:
+            # Build command
+            command = GetGroupDataCommand(group)
+
+            # Fetch payload
+            payload = command.tobytes()[10:-1]
+            self.assertIsNotNone(payload)
+
+            # Assert group byte is set in payload[3]
+            self.assertEqual(payload[3], 0x40 | group)
+
+
 class TestGroupDataResponse(_TestResponseBase):
     """Test group data response messages."""
 
@@ -1108,8 +1105,8 @@ class TestGroupDataResponse(_TestResponseBase):
             resp = self._test_build_response(response)
 
             # Assert response is a correct type
-            self.assertEqual(type(resp), EnergyUsageResponse)
-            resp = cast(EnergyUsageResponse, resp)
+            self.assertEqual(type(resp), Group4Response)
+            resp = cast(Group4Response, resp)
 
             total, current, real_time = power
 
@@ -1131,8 +1128,8 @@ class TestGroupDataResponse(_TestResponseBase):
             resp = self._test_build_response(response)
 
             # Assert response is a correct type
-            self.assertEqual(type(resp), EnergyUsageResponse)
-            resp = cast(EnergyUsageResponse, resp)
+            self.assertEqual(type(resp), Group4Response)
+            resp = cast(Group4Response, resp)
 
             total, current, real_time = power
 

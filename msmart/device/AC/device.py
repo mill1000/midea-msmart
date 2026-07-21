@@ -9,14 +9,13 @@ from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 from msmart.utils import CapabilityManager, MideaIntEnum, deprecated
 
-from .command import (CapabilitiesResponse, Command, EnergyUsageResponse,
-                      GetCapabilitiesCommand, GetEnergyUsageCommand,
-                      GetGroupCommand, GetPropertiesCommand, GetStateCommand,
-                      Group1Response, Group2Response, Group5Response,
-                      Group7Response, InvalidResponseException,
-                      PropertiesResponse, PropertyId, Response,
-                      SetPropertiesCommand, SetStateCommand, StateResponse,
-                      ToggleDisplayCommand)
+from .command import (CapabilitiesResponse, Command, GetCapabilitiesCommand,
+                      GetGroupDataCommand, GetPropertiesCommand,
+                      GetStateCommand, Group1Response, Group2Response,
+                      Group4Response, Group5Response, Group7Response,
+                      InvalidResponseException, PropertiesResponse, PropertyId,
+                      Response, SetPropertiesCommand, SetStateCommand,
+                      StateResponse, ToggleDisplayCommand)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -279,9 +278,9 @@ class AirConditioner(Device):
         self._supported_aux_modes = [AirConditioner.AuxHeatMode.OFF]
 
         # Misc
-        self._request_energy_usage = False
         self._request_group1_data = False
         self._request_group2_data = False
+        self._request_group4_data = False
         self._request_group5_data = False
         self._request_group7_data = False
 
@@ -399,19 +398,6 @@ class AirConditioner(Device):
             if (value := res.get_property(PropertyId.OUT_SILENT)) is not None:
                 self._out_silent = value
 
-        elif isinstance(res, EnergyUsageResponse):
-            _LOGGER.debug("Energy response payload from device %s: %s",
-                          self.id, res)
-
-            self._total_energy_usage = {AirConditioner.EnergyDataFormat.BCD: res.total_energy,
-                                        AirConditioner.EnergyDataFormat.BINARY: res.total_energy_binary}
-
-            self._current_energy_usage = {AirConditioner.EnergyDataFormat.BCD: res.current_energy,
-                                          AirConditioner.EnergyDataFormat.BINARY: res.current_energy_binary}
-
-            self._real_time_power_usage = {AirConditioner.EnergyDataFormat.BCD: res.real_time_power,
-                                           AirConditioner.EnergyDataFormat.BINARY: res.real_time_power_binary}
-
         elif isinstance(res, Group1Response):
             _LOGGER.debug("Group 1 response payload from device %s: %s",
                           self.id, res)
@@ -434,6 +420,19 @@ class AirConditioner(Device):
             self._target_indoor_fan_speed = res.target_indoor_fan_speed
             self._indoor_fan_speed = res.indoor_fan_speed
             self._water_pump_running = res.water_pump_running
+
+        elif isinstance(res, Group4Response):
+            _LOGGER.debug("Group 4 (energy data) response payload from device %s: %s",
+                          self.id, res)
+
+            self._total_energy_usage = {AirConditioner.EnergyDataFormat.BCD: res.total_energy,
+                                        AirConditioner.EnergyDataFormat.BINARY: res.total_energy_binary}
+
+            self._current_energy_usage = {AirConditioner.EnergyDataFormat.BCD: res.current_energy,
+                                          AirConditioner.EnergyDataFormat.BINARY: res.current_energy_binary}
+
+            self._real_time_power_usage = {AirConditioner.EnergyDataFormat.BCD: res.real_time_power,
+                                           AirConditioner.EnergyDataFormat.BINARY: res.real_time_power_binary}
 
         elif isinstance(res, Group5Response):
             _LOGGER.debug(
@@ -527,7 +526,7 @@ class AirConditioner(Device):
 
         # Allow capabilities to enable energy usage requests, but not disable them
         # We've seen devices that claim no capability but return energy data
-        self._request_energy_usage |= res.energy_stats
+        self._request_group4_data |= res.energy_stats
 
         self._capabilities.set(
             AirConditioner.Capability.HUMIDITY, res.humidity)
@@ -722,25 +721,25 @@ class AirConditioner(Device):
         # Always request state updates
         commands.append(GetStateCommand())
 
-        # Fetch power stats if supported
-        if self._request_energy_usage:
-            commands.append(GetEnergyUsageCommand())
-
         # Request Group 1 data (outdoor unit performance) if enabled
         if self._request_group1_data:
-            commands.append(GetGroupCommand(1))
+            commands.append(GetGroupDataCommand(1))
 
         # Request Group 2 data (indoor fan speed) if enabled
         if self._request_group2_data:
-            commands.append(GetGroupCommand(2))
+            commands.append(GetGroupDataCommand(2))
+
+        # Request Group 4 data (energy stats) if supported
+        if self._request_group4_data:
+            commands.append(GetGroupDataCommand(4))
 
         # Request Group 5 data if humidity is supported or otherwise enabled
         if self.supports_humidity or self._request_group5_data:
-            commands.append(GetGroupCommand(5))
+            commands.append(GetGroupDataCommand(5))
 
         # Request Group 7 data (outdoor unit power) if enabled
         if self._request_group7_data:
-            commands.append(GetGroupCommand(7))
+            commands.append(GetGroupDataCommand(7))
 
         # Update supported properties
         if len(self._supported_properties):
@@ -1155,11 +1154,11 @@ class AirConditioner(Device):
 
     @property
     def enable_energy_usage_requests(self) -> bool:
-        return self._request_energy_usage
+        return self._request_group4_data
 
     @enable_energy_usage_requests.setter
     def enable_energy_usage_requests(self, enable: bool) -> None:
-        self._request_energy_usage = enable
+        self._request_group4_data = enable
 
     def get_total_energy_usage(self, format: EnergyDataFormat = EnergyDataFormat.BCD) -> Optional[float]:
         return self._total_energy_usage[format]
