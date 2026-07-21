@@ -248,11 +248,13 @@ class GetStateCommand(Command):
         ]))
 
 
-class GetEnergyUsageCommand(Command):
-    """Command to query energy usage from device."""
+class GetGroupDataCommand(Command):
+    """Command to query group data from device."""
 
-    def __init__(self) -> None:
+    def __init__(self, group: int) -> None:
         super().__init__(frame_type=FrameType.QUERY)
+
+        self._group = group
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
         payload = bytearray(20)
@@ -260,24 +262,7 @@ class GetEnergyUsageCommand(Command):
         payload[0] = 0x41
         payload[1] = 0x21
         payload[2] = 0x01
-        payload[3] = 0x44
-
-        return super().tobytes(payload)
-
-
-class GetGroup5Command(Command):
-    """Command to query group 5 data from device."""
-
-    def __init__(self) -> None:
-        super().__init__(frame_type=FrameType.QUERY)
-
-    def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
-        payload = bytearray(20)
-
-        payload[0] = 0x41
-        payload[1] = 0x21
-        payload[2] = 0x01
-        payload[3] = 0x45
+        payload[3] = 0x40 | self._group
 
         return super().tobytes(payload)
 
@@ -522,10 +507,16 @@ class Response():
             elif response_id == ResponseId.GROUP_DATA:
                 # Response type depends on an additional "group" byte
                 group = frame_mv[13] & 0xF
-                if group == 4:
-                    response_class = EnergyUsageResponse
+                if group == 1:
+                    response_class = Group1Response
+                elif group == 2:
+                    response_class = Group2Response
+                elif group == 4:
+                    response_class = Group4Response
                 elif group == 5:
                     response_class = Group5Response
+                elif group == 7:
+                    response_class = Group7Response
 
             # Validate the payload CRC
             # ...except for properties which certain devices send invalid CRCs
@@ -1134,8 +1125,79 @@ class PropertiesResponse(Response):
         return self._properties.get(id, None)
 
 
-class EnergyUsageResponse(Response):
-    """Response to a GetEnergyUsageCommand."""
+class Group1Response(Response):
+    """Group 1 response — outdoor unit performance data.
+
+    Contains compressor frequency, current, voltage and
+    refrigerant circuit temperatures from the outdoor unit.
+    """
+
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
+
+        # Outdoor unit electrical data
+        self.target_compressor_frequency: Optional[int] = None
+        self.compressor_frequency: Optional[int] = None
+        self.compressor_current: Optional[int] = None
+        self.compressor_voltage: Optional[int] = None
+
+        # Refrigerant circuit temperatures
+        # T1: indoor coil
+        self.indoor_coil_temperature: Optional[float] = None
+        # T2: evaporator outlet
+        self.evaporator_temperature: Optional[float] = None
+        # T3: condenser temperature
+        self.condenser_temperature: Optional[float] = None
+        # T4: outdoor ambient temperature
+        self.outdoor_temperature: Optional[float] = None
+        # TP: discharge pipe temperature (compressor outlet)
+        self.discharge_pipe_temperature: Optional[int] = None
+
+        self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+        self.compressor_frequency = payload[4]
+        self.target_compressor_frequency = payload[5]
+        self.compressor_current = payload[7]
+        self.compressor_voltage = payload[8]
+
+        # T1/T2 use offset 30: (raw - 30) / 2
+        self.indoor_coil_temperature = (payload[10] - 30) / 2
+        self.evaporator_temperature = (payload[11] - 30) / 2
+        # T3/T4 use offset 50: (raw - 50) / 2
+        self.condenser_temperature = (payload[12] - 50) / 2
+        self.outdoor_temperature = (payload[13] - 50) / 2
+        # TP: raw temperature in C
+        self.discharge_pipe_temperature = payload[14]
+
+
+class Group2Response(Response):
+    """Group 2 response — indoor unit fan data.
+
+    Contains the actual indoor fan speed (RPM-equivalent).
+    """
+
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
+
+        self.target_indoor_fan_speed: Optional[int] = None
+        self.indoor_fan_speed: Optional[int] = None
+        self.water_pump_running: Optional[bool] = None
+
+        self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+        # Raw value * 8 gives the fan speed in RPM-equivalent units
+        self.target_indoor_fan_speed = payload[4] * 8
+        self.indoor_fan_speed = payload[5] * 8
+
+        # Bit 4 of byte 8 indicates the condensate water pump state.
+        # This could also be the physical float switch (tank full) triggering the pump.
+        self.water_pump_running = bool(payload[8] & 0x10)
+
+
+class Group4Response(Response):
+    """Response to a Group data 4 (energy usage) command."""
 
     def __init__(self, payload: memoryview) -> None:
         super().__init__(payload)
@@ -1151,9 +1213,6 @@ class EnergyUsageResponse(Response):
         self._parse(payload)
 
     def _parse(self, payload: memoryview) -> None:
-        # Response is technically a "group data 4" response
-        # and may contain other interesting data
-
         def decode_bcd(d: int) -> int:
             return 10 * (d >> 4) + (d & 0xF)
 
@@ -1226,3 +1285,23 @@ class Group5Response(Response):
         self.outdoor_fan_speed = 8 * payload[8]
 
         self.defrost = bool(payload[10])
+
+
+class Group7Response(Response):
+    """Group 7 response — outdoor unit power consumption.
+
+    Contains the real-time power draw of the outdoor unit in Watts.
+    """
+
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
+
+        # NOTE: This represents the power consumption of the outdoor unit.
+        # For a Midea PortaSplit, this would effectively be the indoor unit.
+        self.outdoor_unit_power: Optional[float] = None
+
+        self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+        # Two-byte little-endian power value in Watts
+        self.outdoor_unit_power = payload[10] + 256 * payload[11]

@@ -1069,6 +1069,22 @@ class TestResponseConstruct(_TestResponseBase):
             Response.construct(TEST_RESPONSE_TYPE_CC)
 
 
+class TestGetGroupDataCommand(unittest.TestCase):
+
+    def test_group_command_payload(self) -> None:
+        """Test that GetGroupDataCommand encodes the group number correctly."""
+        for group in [1, 2, 4, 5, 7]:
+            # Build command
+            command = GetGroupDataCommand(group)
+
+            # Fetch payload
+            payload = command.tobytes()[10:-1]
+            self.assertIsNotNone(payload)
+
+            # Assert group byte is set in payload[3]
+            self.assertEqual(payload[3], 0x40 | group)
+
+
 class TestGroupDataResponse(_TestResponseBase):
     """Test group data response messages."""
 
@@ -1089,8 +1105,8 @@ class TestGroupDataResponse(_TestResponseBase):
             resp = self._test_build_response(response)
 
             # Assert response is a correct type
-            self.assertEqual(type(resp), EnergyUsageResponse)
-            resp = cast(EnergyUsageResponse, resp)
+            self.assertEqual(type(resp), Group4Response)
+            resp = cast(Group4Response, resp)
 
             total, current, real_time = power
 
@@ -1112,8 +1128,8 @@ class TestGroupDataResponse(_TestResponseBase):
             resp = self._test_build_response(response)
 
             # Assert response is a correct type
-            self.assertEqual(type(resp), EnergyUsageResponse)
-            resp = cast(EnergyUsageResponse, resp)
+            self.assertEqual(type(resp), Group4Response)
+            resp = cast(Group4Response, resp)
 
             total, current, real_time = power
 
@@ -1159,6 +1175,63 @@ class TestGroupDataResponse(_TestResponseBase):
                 resp = Group5Response(mv_payload)
 
             self.assertEqual(resp.defrost, defrost)
+
+    def test_group1_response(self) -> None:
+        """Test that Group1Response correctly parses outdoor unit performance data."""
+        # Synthetic payload with known values
+        # Group 1
+        # compressor_frequency = 28 Hz
+        # target_compressor_frequency = 29 Hz
+        # compressor_current = 1 A
+        # compressor_voltage = 232 V
+        # T1 = 71 -> 20.5 C
+        # T2 = 38 -> 4.0 C
+        # T3 = 102 -> 26.0 C
+        # T4 = 88 -> 19.0 C
+        # discharge_pipe_temperature (TP) = 45 C
+        TEST_PAYLOAD = bytes.fromhex(
+            "c10000411c1d0001e800472666582d0000000000")
+
+        with memoryview(TEST_PAYLOAD) as mv:
+            resp = Group1Response(mv)
+
+        self.assertEqual(resp.compressor_frequency, 28)
+        self.assertEqual(resp.target_compressor_frequency, 29)
+        self.assertEqual(resp.compressor_current, 1)
+        self.assertEqual(resp.compressor_voltage, 232)
+        self.assertEqual(resp.indoor_coil_temperature, 20.5)
+        self.assertEqual(resp.evaporator_temperature, 4.0)
+        self.assertEqual(resp.condenser_temperature, 26.0)
+        self.assertEqual(resp.outdoor_temperature, 19.0)
+        self.assertEqual(resp.discharge_pipe_temperature, 45)
+
+    def test_group2_response(self) -> None:
+        """Test that Group2Response correctly parses indoor fan speed."""
+        # Group 2
+        # target_indoor_fan_speed = 416
+        # indoor_fan_speed = 424
+        # water_pump_running = True
+        TEST_PAYLOAD = bytes.fromhex(
+            "c100004234350000100000000000000000000000")
+
+        with memoryview(TEST_PAYLOAD) as mv:
+            resp = Group2Response(mv)
+
+        self.assertEqual(resp.target_indoor_fan_speed, 416)
+        self.assertEqual(resp.indoor_fan_speed, 424)
+        self.assertTrue(resp.water_pump_running)
+
+    def test_group7_response(self) -> None:
+        """Test that Group7Response correctly parses outdoor unit power."""
+        # Group 7
+        # power = payload[10] + 256 * payload[11] = 13 + 256 = 269
+        TEST_PAYLOAD = bytes.fromhex(
+            "c10000470000000000000d010000000000000000")
+
+        with memoryview(TEST_PAYLOAD) as mv:
+            resp = Group7Response(mv)
+
+        self.assertEqual(resp.outdoor_unit_power, 269)
 
 
 if __name__ == "__main__":

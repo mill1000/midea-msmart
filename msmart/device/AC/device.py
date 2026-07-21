@@ -9,13 +9,13 @@ from msmart.const import DeviceType
 from msmart.frame import InvalidFrameException
 from msmart.utils import CapabilityManager, MideaIntEnum, deprecated
 
-from .command import (CapabilitiesResponse, Command, EnergyUsageResponse,
-                      GetCapabilitiesCommand, GetEnergyUsageCommand,
-                      GetGroup5Command, GetPropertiesCommand, GetStateCommand,
-                      Group5Response, InvalidResponseException,
-                      PropertiesResponse, PropertyId, Response,
-                      SetPropertiesCommand, SetStateCommand, StateResponse,
-                      ToggleDisplayCommand)
+from .command import (CapabilitiesResponse, Command, GetCapabilitiesCommand,
+                      GetGroupDataCommand, GetPropertiesCommand,
+                      GetStateCommand, Group1Response, Group2Response,
+                      Group4Response, Group5Response, Group7Response,
+                      InvalidResponseException, PropertiesResponse, PropertyId,
+                      Response, SetPropertiesCommand, SetStateCommand,
+                      StateResponse, ToggleDisplayCommand)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -242,6 +242,25 @@ class AirConditioner(Device):
         }
         self._use_binary_energy = False  # Deprecated
 
+        # Group 1 — outdoor unit performance data
+        self._target_compressor_frequency: Optional[int] = None
+        self._compressor_frequency: Optional[int] = None
+        self._compressor_current: Optional[int] = None
+        self._compressor_voltage: Optional[int] = None
+        # Refrigerant circuit temperatures
+        self._indoor_coil_temperature: Optional[float] = None
+        self._evaporator_temperature: Optional[float] = None
+        self._condenser_temperature: Optional[float] = None
+        self._discharge_pipe_temperature: Optional[int] = None
+
+        # Group 2 — indoor unit fan data
+        self._target_indoor_fan_speed: Optional[int] = None
+        self._indoor_fan_speed: Optional[int] = None
+        self._water_pump_running: Optional[bool] = None
+
+        # Group 7 — outdoor unit power
+        self._outdoor_unit_power: Optional[float] = None
+
         # Capabilities
         self._min_target_temperature = 16
         self._max_target_temperature = 30
@@ -259,8 +278,11 @@ class AirConditioner(Device):
         self._supported_aux_modes = [AirConditioner.AuxHeatMode.OFF]
 
         # Misc
-        self._request_energy_usage = False
+        self._request_group1_data = False
+        self._request_group2_data = False
+        self._request_group4_data = False
         self._request_group5_data = False
+        self._request_group7_data = False
 
         # Default to assuming device can't handle any properties
         self._supported_properties = set()
@@ -376,8 +398,31 @@ class AirConditioner(Device):
             if (value := res.get_property(PropertyId.OUT_SILENT)) is not None:
                 self._out_silent = value
 
-        elif isinstance(res, EnergyUsageResponse):
-            _LOGGER.debug("Energy response payload from device %s: %s",
+        elif isinstance(res, Group1Response):
+            _LOGGER.debug("Group 1 response payload from device %s: %s",
+                          self.id, res)
+
+            self._target_compressor_frequency = res.target_compressor_frequency
+            self._target_compressor_frequency = res.target_compressor_frequency
+            self._compressor_frequency = res.compressor_frequency
+            self._compressor_current = res.compressor_current
+            self._compressor_voltage = res.compressor_voltage
+            self._indoor_coil_temperature = res.indoor_coil_temperature
+            self._evaporator_temperature = res.evaporator_temperature
+            self._condenser_temperature = res.condenser_temperature
+            # self._outdoor_temperature = res.outdoor_temperature
+            self._discharge_pipe_temperature = res.discharge_pipe_temperature
+
+        elif isinstance(res, Group2Response):
+            _LOGGER.debug("Group 2 response payload from device %s: %s",
+                          self.id, res)
+
+            self._target_indoor_fan_speed = res.target_indoor_fan_speed
+            self._indoor_fan_speed = res.indoor_fan_speed
+            self._water_pump_running = res.water_pump_running
+
+        elif isinstance(res, Group4Response):
+            _LOGGER.debug("Group 4 (energy data) response payload from device %s: %s",
                           self.id, res)
 
             self._total_energy_usage = {AirConditioner.EnergyDataFormat.BCD: res.total_energy,
@@ -396,6 +441,12 @@ class AirConditioner(Device):
             self._indoor_humidity = res.humidity
             self._outdoor_fan_speed = res.outdoor_fan_speed
             self._defrost_active = res.defrost
+
+        elif isinstance(res, Group7Response):
+            _LOGGER.debug("Group 7 response payload from device %s: %s",
+                          self.id, res)
+
+            self._outdoor_unit_power = res.outdoor_unit_power
 
         else:
             _LOGGER.debug("Ignored unknown response from device %s: %s",
@@ -475,7 +526,7 @@ class AirConditioner(Device):
 
         # Allow capabilities to enable energy usage requests, but not disable them
         # We've seen devices that claim no capability but return energy data
-        self._request_energy_usage |= res.energy_stats
+        self._request_group4_data |= res.energy_stats
 
         self._capabilities.set(
             AirConditioner.Capability.HUMIDITY, res.humidity)
@@ -670,13 +721,25 @@ class AirConditioner(Device):
         # Always request state updates
         commands.append(GetStateCommand())
 
-        # Fetch power stats if supported
-        if self._request_energy_usage:
-            commands.append(GetEnergyUsageCommand())
+        # Request Group 1 data (outdoor unit performance) if enabled
+        if self._request_group1_data:
+            commands.append(GetGroupDataCommand(1))
+
+        # Request Group 2 data (indoor fan speed) if enabled
+        if self._request_group2_data:
+            commands.append(GetGroupDataCommand(2))
+
+        # Request Group 4 data (energy stats) if supported
+        if self._request_group4_data:
+            commands.append(GetGroupDataCommand(4))
 
         # Request Group 5 data if humidity is supported or otherwise enabled
         if self.supports_humidity or self._request_group5_data:
-            commands.append(GetGroup5Command())
+            commands.append(GetGroupDataCommand(5))
+
+        # Request Group 7 data (outdoor unit power) if enabled
+        if self._request_group7_data:
+            commands.append(GetGroupDataCommand(7))
 
         # Update supported properties
         if len(self._supported_properties):
@@ -1091,11 +1154,11 @@ class AirConditioner(Device):
 
     @property
     def enable_energy_usage_requests(self) -> bool:
-        return self._request_energy_usage
+        return self._request_group4_data
 
     @enable_energy_usage_requests.setter
     def enable_energy_usage_requests(self, enable: bool) -> None:
-        self._request_energy_usage = enable
+        self._request_group4_data = enable
 
     def get_total_energy_usage(self, format: EnergyDataFormat = EnergyDataFormat.BCD) -> Optional[float]:
         return self._total_energy_usage[format]
@@ -1164,12 +1227,100 @@ class AirConditioner(Device):
         return self._error_code
 
     @property
+    def enable_group1_data_requests(self) -> bool:
+        """Enable Group data 1 (outdoor unit performance data) queries."""
+        return self._request_group1_data
+
+    @enable_group1_data_requests.setter
+    def enable_group1_data_requests(self, enable: bool) -> None:
+        self._request_group1_data = enable
+
+    @property
+    def enable_group2_data_requests(self) -> bool:
+        """Enable Group data 2 (indoor fan speed data) queries."""
+        return self._request_group2_data
+
+    @enable_group2_data_requests.setter
+    def enable_group2_data_requests(self, enable: bool) -> None:
+        self._request_group2_data = enable
+
+    @property
     def enable_group5_data_requests(self) -> bool:
+        """Enable Group data 5 (humidity, defrost, outdoor fan speed) queries."""
         return self._request_group5_data
 
     @enable_group5_data_requests.setter
     def enable_group5_data_requests(self, enable: bool) -> None:
         self._request_group5_data = enable
+
+    @property
+    def enable_group7_data_requests(self) -> bool:
+        """Enable Group 7 data (outdoor unit power) queries."""
+        return self._request_group7_data
+
+    @enable_group7_data_requests.setter
+    def enable_group7_data_requests(self, enable: bool) -> None:
+        self._request_group7_data = enable
+
+    @property
+    def target_compressor_frequency(self) -> Optional[int]:
+        """Target compressor operating frequency in Hz."""
+        return self._target_compressor_frequency
+
+    @property
+    def compressor_frequency(self) -> Optional[int]:
+        """Compressor operating frequency in Hz."""
+        return self._compressor_frequency
+
+    @property
+    def compressor_current(self) -> Optional[int]:
+        """Total current draw of the outdoor unit in Amperes."""
+        return self._compressor_current
+
+    @property
+    def compressor_voltage(self) -> Optional[int]:
+        """Supply voltage of the outdoor unit in Volts."""
+        return self._compressor_voltage
+
+    @property
+    def indoor_coil_temperature(self) -> Optional[float]:
+        """Indoor coil temperature in C — T1 sensor."""
+        return self._indoor_coil_temperature
+
+    @property
+    def evaporator_temperature(self) -> Optional[float]:
+        """Evaporator temperature in C - T2 sensor."""
+        return self._evaporator_temperature
+
+    @property
+    def condenser_temperature(self) -> Optional[float]:
+        """Condenser temperature in C - T3 sensor."""
+        return self._condenser_temperature
+
+    @property
+    def discharge_pipe_temperature(self) -> Optional[int]:
+        """Discharge pipe temperature in C - TP sensor."""
+        return self._discharge_pipe_temperature
+
+    @property
+    def target_indoor_fan_speed(self) -> Optional[int]:
+        """Target indoor fan speed."""
+        return self._target_indoor_fan_speed
+
+    @property
+    def indoor_fan_speed(self) -> Optional[int]:
+        """Indoor fan speed in RPM."""
+        return self._indoor_fan_speed
+
+    @property
+    def water_pump_running(self) -> Optional[bool]:
+        """Condensate water pump is currently running."""
+        return self._water_pump_running
+
+    @property
+    def outdoor_unit_power(self) -> Optional[float]:
+        """Real-time power draw of the outdoor unit in Watts."""
+        return self._outdoor_unit_power
 
     @property
     def defrost_active(self) -> Optional[bool]:
@@ -1230,7 +1381,23 @@ class AirConditioner(Device):
             "error_code": self.error_code,
             "defrost": self.defrost_active,
             "out_silent": self.out_silent,
-            "flash": self.flash
+            "flash": self.flash,
+            # Group 1 — outdoor unit performance
+            "outdoor_fan_speed": self.outdoor_fan_speed,
+            "target_compressor_frequency": self.target_compressor_frequency,
+            "compressor_frequency": self.compressor_frequency,
+            "compressor_current": self.compressor_current,
+            "compressor_voltage": self.compressor_voltage,
+            "indoor_coil_temperature": self.indoor_coil_temperature,
+            "evaporator_temperature": self.evaporator_temperature,
+            "condenser_temperature": self.condenser_temperature,
+            "discharge_pipe_temperature": self.discharge_pipe_temperature,
+            # Group 2 — indoor unit fan data
+            "target_indoor_fan_speed": self.target_indoor_fan_speed,
+            "indoor_fan_speed": self.indoor_fan_speed,
+            "water_pump_running": self.water_pump_running,
+            # Group 7 — outdoor unit power
+            "outdoor_unit_power": self.outdoor_unit_power,
         }}
 
     def capabilities_dict(self) -> dict:

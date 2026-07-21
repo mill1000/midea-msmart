@@ -135,6 +135,26 @@ async def _query(args) -> None:
             _LOGGER.error("Device does not support energy data.")
             exit(1)
 
+    # Enable group data requests
+    # Map group number -> (flag attribute, description)
+    _GROUP_FLAGS = {
+        1: ("enable_group1_data_requests", "Group 1 (outdoor unit performance)"),
+        2: ("enable_group2_data_requests", "Group 2 (indoor fan speed)"),
+        5: ("enable_group5_data_requests", "Group 5 (humidity, defrost)"),
+        7: ("enable_group7_data_requests", "Group 7 (outdoor unit power)"),
+    }
+    for group in (args.group or []):
+        flag, description = _GROUP_FLAGS.get(group, (None, None))
+        if flag is None:
+            _LOGGER.error(
+                "Unsupported group number: %d. Valid groups: 1, 2, 5, 7.", group)
+            exit(1)
+        if hasattr(device, flag):
+            _LOGGER.info("Enabling %s data requests.", description)
+            setattr(device, flag, True)
+        else:
+            _LOGGER.warning("Device does not support %s.", description)
+
     _LOGGER.info("Querying device state.")
     await device.refresh()
 
@@ -397,6 +417,12 @@ def main() -> NoReturn:
     query_parser.add_argument("--energy",
                               help="Request energy information along with state.",
                               action="store_true")
+    query_parser.add_argument("--group",
+                              help="Request group data: 1=outdoor performance, 2=indoor fan, 5=humidity/defrost, 7=outdoor power. Can be specified multiple times.",
+                              type=int,
+                              choices=[1, 2, 5, 7],
+                              action="append",
+                              metavar="{1,2,5,7}")
     query_parser.set_defaults(func=_query)
 
     # Setup control parser
