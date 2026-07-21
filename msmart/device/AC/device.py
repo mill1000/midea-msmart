@@ -410,7 +410,7 @@ class AirConditioner(Device):
             self._indoor_coil_temperature = res.indoor_coil_temperature
             self._evaporator_temperature = res.evaporator_temperature
             self._condenser_temperature = res.condenser_temperature
-            self._outdoor_temperature = res.outdoor_temperature
+            # self._outdoor_temperature = res.outdoor_temperature
             self._discharge_pipe_temperature = res.discharge_pipe_temperature
 
         elif isinstance(res, Group2Response):
