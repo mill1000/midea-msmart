@@ -1228,7 +1228,7 @@ class AirConditioner(Device):
 
     @property
     def enable_group1_data_requests(self) -> bool:
-        """Enable periodic Group 1 queries (outdoor unit performance data)."""
+        """Enable Group data 1 (outdoor unit performance data) queries."""
         return self._request_group1_data
 
     @enable_group1_data_requests.setter
@@ -1237,7 +1237,7 @@ class AirConditioner(Device):
 
     @property
     def enable_group2_data_requests(self) -> bool:
-        """Enable periodic Group 2 queries (indoor fan speed data)."""
+        """Enable Group data 2 (indoor fan speed data) queries."""
         return self._request_group2_data
 
     @enable_group2_data_requests.setter
@@ -1246,7 +1246,7 @@ class AirConditioner(Device):
 
     @property
     def enable_group5_data_requests(self) -> bool:
-        """Enable periodic Group 5 queries (humidity, defrost, outdoor fan speed)."""
+        """Enable Group data 5 (humidity, defrost, outdoor fan speed) queries."""
         return self._request_group5_data
 
     @enable_group5_data_requests.setter
@@ -1255,7 +1255,7 @@ class AirConditioner(Device):
 
     @property
     def enable_group7_data_requests(self) -> bool:
-        """Enable periodic Group 7 queries (outdoor unit power)."""
+        """Enable Group 7 data (outdoor unit power) queries."""
         return self._request_group7_data
 
     @enable_group7_data_requests.setter
@@ -1264,61 +1264,62 @@ class AirConditioner(Device):
 
     @property
     def target_compressor_frequency(self) -> Optional[int]:
+        """Target compressor operating frequency in Hz."""
         return self._target_compressor_frequency
 
     @property
     def compressor_frequency(self) -> Optional[int]:
-        """Compressor operating frequency in Hz (from Group 1)."""
+        """Compressor operating frequency in Hz."""
         return self._compressor_frequency
 
     @property
     def compressor_current(self) -> Optional[int]:
-        """Total current draw of the outdoor unit in Amperes (from Group 1)."""
+        """Total current draw of the outdoor unit in Amperes."""
         return self._compressor_current
 
     @property
     def compressor_voltage(self) -> Optional[int]:
-        """Supply voltage of the outdoor unit in Volts (from Group 1)."""
+        """Supply voltage of the outdoor unit in Volts."""
         return self._compressor_voltage
 
     @property
     def indoor_coil_temperature(self) -> Optional[float]:
-        """Indoor coil temperature in °C — T1 sensor (from Group 1)."""
+        """Indoor coil temperature in C — T1 sensor."""
         return self._indoor_coil_temperature
 
     @property
     def evaporator_temperature(self) -> Optional[float]:
-        """Return the T2 evaporator temperature in °C."""
+        """Evaporator temperature in C - T2 sensor."""
         return self._evaporator_temperature
 
     @property
     def condenser_temperature(self) -> Optional[float]:
-        """Return the T3 condenser temperature in °C."""
+        """Condenser temperature in C - T3 sensor."""
         return self._condenser_temperature
 
     @property
     def discharge_pipe_temperature(self) -> Optional[int]:
-        """Return the TP discharge pipe temperature in °C."""
+        """Discharge pipe temperature in C - TP sensor."""
         return self._discharge_pipe_temperature
 
     @property
     def target_indoor_fan_speed(self) -> Optional[int]:
-        """Target indoor fan speed (from Group 2)."""
+        """Target indoor fan speed."""
         return self._target_indoor_fan_speed
 
     @property
     def indoor_fan_speed(self) -> Optional[int]:
-        """Indoor fan speed in RPM-equivalent (from Group 2)."""
+        """Indoor fan speed in RPM."""
         return self._indoor_fan_speed
 
     @property
     def water_pump_running(self) -> Optional[bool]:
-        """Indicates if the condensate water pump is currently running (from Group 2)."""
+        """Condensate water pump is currently running."""
         return self._water_pump_running
 
     @property
     def outdoor_unit_power(self) -> Optional[float]:
-        """Real-time power draw of the outdoor unit in Watts (from Group 7)."""
+        """Real-time power draw of the outdoor unit in Watts."""
         return self._outdoor_unit_power
 
     @property
