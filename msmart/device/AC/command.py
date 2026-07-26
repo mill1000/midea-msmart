@@ -517,6 +517,8 @@ class Response():
                     response_class = Group5Response
                 elif group == 7:
                     response_class = Group7Response
+                elif group == 11:
+                    response_class = Group11Response
 
             # Validate the payload CRC
             # ...except for properties which certain devices send invalid CRCs
@@ -1305,3 +1307,21 @@ class Group7Response(Response):
     def _parse(self, payload: memoryview) -> None:
         # Two-byte little-endian power value in Watts
         self.outdoor_unit_power = payload[10] + 256 * payload[11]
+
+class Group11Response(Response):
+    """Group 11 response — indoor unit louvers angles
+
+    Contains the actual angles of the horizontal and vertical louvers of the indoor unit, in degrees,
+    """
+
+    def __init__(self, payload: memoryview) -> None:
+        super().__init__(payload)
+
+        self.horizontal_louvers_angle: Optional[int] = None
+        self.vertical_louvers_angle: Optional[int] = None
+
+        self._parse(payload)
+
+    def _parse(self, payload: memoryview) -> None:
+        self.horizontal_louvers_angle = payload[9]
+        self.vertical_louvers_angle = payload[12]

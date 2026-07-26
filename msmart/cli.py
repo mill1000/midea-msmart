@@ -142,6 +142,7 @@ async def _query(args) -> None:
         2: ("enable_group2_data_requests", "Group 2 (indoor fan speed)"),
         5: ("enable_group5_data_requests", "Group 5 (humidity, defrost)"),
         7: ("enable_group7_data_requests", "Group 7 (outdoor unit power)"),
+        11: ("enable_group11_data_requests", "Group 11 (louvers angles)"),
     }
     for group in (args.group or []):
         flag, description = _GROUP_FLAGS.get(group, (None, None))
@@ -418,11 +419,11 @@ def main() -> NoReturn:
                               help="Request energy information along with state.",
                               action="store_true")
     query_parser.add_argument("--group",
-                              help="Request group data: 1=outdoor performance, 2=indoor fan, 5=humidity/defrost, 7=outdoor power. Can be specified multiple times.",
+                              help="Request group data: 1=outdoor performance, 2=indoor fan, 5=humidity/defrost, 7=outdoor power, 11=louvers angles. Can be specified multiple times.",
                               type=int,
-                              choices=[1, 2, 5, 7],
+                              choices=[1, 2, 5, 7, 11],
                               action="append",
-                              metavar="{1,2,5,7}")
+                              metavar="{1,2,5,7,11}")
     query_parser.set_defaults(func=_query)
 
     # Setup control parser

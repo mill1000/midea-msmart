@@ -3,9 +3,10 @@ import unittest
 from unittest.mock import patch
 
 from .command import (CapabilitiesResponse, GetGroupDataCommand,
-                      GetPropertiesCommand, GetStateCommand, Group1Response,
-                      Group2Response, Group4Response, Group5Response,
-                      Group7Response, PropertiesResponse, Response,
+                      GetPropertiesCommand, GetStateCommand,
+                      Group1Response, Group2Response, Group4Response,
+                      Group5Response, Group7Response, Group11Response,
+                      PropertiesResponse, Response,
                       StateResponse)
 from .device import AirConditioner as AC
 from .device import PropertyId
@@ -415,6 +416,25 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         device._update_state(resp)
 
         self.assertEqual(device.outdoor_unit_power, 269)
+
+    def test_group11_response(self) -> None:
+        """Test that _update_state() correctly stores Group 11 louvers angles."""
+        # Synthetic payload with known values
+        # Group 11
+        # horizontal_louvers_angle = 72
+        # vertical_louvers_angle = 240
+        TEST_PAYLOAD = bytes.fromhex(
+            "c100004b0064006400486400f000000000000000")
+
+        with memoryview(TEST_PAYLOAD) as mv:
+            resp = Group11Response(mv)
+
+        # Create a dummy device and process the response
+        device = AC(0, 0, 0)
+        device._update_state(resp)
+
+        self.assertEqual(device.horizontal_louvers_angle, 72)
+        self.assertEqual(device.vertical_louvers_angle, 240)
 
 
 class TestCapabilities(unittest.TestCase):
