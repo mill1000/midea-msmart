@@ -41,7 +41,7 @@ class CapabilityId(IntEnum):
     RATE_SELECT = 0x0048
     FSU_SMART_COOL = 0x0049  # Floor-standing Unit, "Prevent Super Cool"
     FRESH_AIR = 0x004B
-    PARENT_CONTROL = 0x0051  # ??
+    PARENT_CONTROL = 0x0051  # AKA "Temp Range" (Sets software min/max target temperature limits)
     PREVENT_STRAIGHT_WIND_SELECT = 0x0058  # ??
     CASCADE = 0x0059  # AKA "Wind Around"
     FSU_STERILIZE = 0x005A  # Floor-standing Unit
