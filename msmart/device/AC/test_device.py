@@ -347,21 +347,9 @@ class TestUpdateStateFromResponse(unittest.TestCase):
 
     def test_group1_response(self) -> None:
         """Test parsing of Group data 1 into device state."""
-        # Synthetic payload with known values
-        # Group 1
-        # compressor_frequency = 35
-        # target_compressor_frequency = 36
-        # compressor_current = 4
-        # outdoor_voltage = 230
-        # T1 = 21.0
-        # T2 = 8.0
-        # T3 = 45.0
-        # T4 = 12.0
-        # TP = 55
-        # outdoor_total_current = 16
-        # indoor_operating_mode = 0
+        # Real captured payload
         TEST_PAYLOAD = bytes.fromhex(
-            "c100004123240404e600482e8c4a4c0000000000")
+            "c12101411c1d0001e601482a6f603000000000000000b8")
 
         with memoryview(TEST_PAYLOAD) as mv:
             resp = Group1Response(mv)
@@ -370,17 +358,17 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         device = AC(0, 0, 0)
         device._update_state(resp)
 
-        self.assertEqual(device.compressor_frequency, 35)
-        self.assertEqual(device.target_compressor_frequency, 36)
-        self.assertEqual(device.compressor_current, 4)
-        self.assertEqual(device.outdoor_total_current, 16)
+        self.assertEqual(device.compressor_frequency, 28)
+        self.assertEqual(device.target_compressor_frequency, 29)
+        self.assertEqual(device.compressor_current, 0)
+        self.assertEqual(device.outdoor_total_current, 4)
         self.assertEqual(device.outdoor_voltage, 230)
-        self.assertEqual(device.indoor_operating_mode, 0)
+        self.assertEqual(device.indoor_operating_mode, 1)
         self.assertEqual(device.indoor_coil_temperature, 21.0)
-        self.assertEqual(device.evaporator_temperature, 8.0)
-        self.assertEqual(device.condenser_temperature, 45.0)
-        # self.assertEqual(device.outdoor_temperature, 12.0)
-        self.assertEqual(device.discharge_pipe_temperature, 55)
+        self.assertEqual(device.evaporator_temperature, 6.0)
+        self.assertEqual(device.condenser_temperature, 30.5)
+        # self.assertEqual(device.outdoor_temperature, 23.0)
+        self.assertEqual(device.discharge_pipe_temperature, 36)
 
     def test_group2_response(self) -> None:
         """Test parsing of Group data 2 into device state."""

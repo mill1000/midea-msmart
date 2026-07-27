@@ -1178,36 +1178,24 @@ class TestGroupDataResponse(_TestResponseBase):
 
     def test_group1_response(self) -> None:
         """Test that Group1Response correctly parses outdoor unit performance data."""
-        # Synthetic payload with known values
-        # Group 1
-        # compressor_frequency = 28 Hz
-        # target_compressor_frequency = 29 Hz
-        # compressor_current = 1 A
-        # outdoor_voltage = 232
-        # T1 = 71 -> 20.5 C
-        # T2 = 38 -> 4.0 C
-        # T3 = 102 -> 26.0 C
-        # T4 = 88 -> 19.0 C
-        # discharge_pipe_temperature (TP) = 45 C
-        # indoor_operating_mode = 0
-        # outdoor_total_current = 4 A
+        # Real captured payload
         TEST_PAYLOAD = bytes.fromhex(
-            "c10000411c1d0101e800472666583e0000000000")
+            "c12101411c1d0001e601482a6f603000000000000000b8")
 
         with memoryview(TEST_PAYLOAD) as mv:
             resp = Group1Response(mv)
 
         self.assertEqual(resp.compressor_frequency, 28)
         self.assertEqual(resp.target_compressor_frequency, 29)
-        self.assertEqual(resp.compressor_current, 1)
+        self.assertEqual(resp.compressor_current, 0)
         self.assertEqual(resp.outdoor_total_current, 4)
-        self.assertEqual(resp.outdoor_voltage, 232)
-        self.assertEqual(resp.indoor_operating_mode, 0)
-        self.assertEqual(resp.indoor_coil_temperature, 20.5)
-        self.assertEqual(resp.evaporator_temperature, 4.0)
-        self.assertEqual(resp.condenser_temperature, 26.0)
-        self.assertEqual(resp.outdoor_temperature, 19.0)
-        self.assertEqual(resp.discharge_pipe_temperature, 45)
+        self.assertEqual(resp.outdoor_voltage, 230)
+        self.assertEqual(resp.indoor_operating_mode, 1)
+        self.assertEqual(resp.indoor_coil_temperature, 21.0)
+        self.assertEqual(resp.evaporator_temperature, 6.0)
+        self.assertEqual(resp.condenser_temperature, 30.5)
+        self.assertEqual(resp.outdoor_temperature, 23.0)
+        self.assertEqual(resp.discharge_pipe_temperature, 36)
 
     def test_group2_response(self) -> None:
         """Test that Group2Response correctly parses indoor fan speed."""
