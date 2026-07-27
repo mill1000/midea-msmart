@@ -358,8 +358,10 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         # T3 = 45.0
         # T4 = 12.0
         # TP = 55
+        # outdoor_total_current = 16
+        # indoor_operating_mode = 0
         TEST_PAYLOAD = bytes.fromhex(
-            "c100004123240004e600482e8c4a370000000000")
+            "c100004123240404e600482e8c4a4c0000000000")
 
         with memoryview(TEST_PAYLOAD) as mv:
             resp = Group1Response(mv)
@@ -371,7 +373,9 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(device.compressor_frequency, 35)
         self.assertEqual(device.target_compressor_frequency, 36)
         self.assertEqual(device.compressor_current, 4)
+        self.assertEqual(device.outdoor_total_current, 16)
         self.assertEqual(device.outdoor_voltage, 230)
+        self.assertEqual(device.indoor_operating_mode, 0)
         self.assertEqual(device.indoor_coil_temperature, 21.0)
         self.assertEqual(device.evaporator_temperature, 8.0)
         self.assertEqual(device.condenser_temperature, 45.0)

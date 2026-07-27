@@ -1189,8 +1189,10 @@ class TestGroupDataResponse(_TestResponseBase):
         # T3 = 102 -> 26.0 C
         # T4 = 88 -> 19.0 C
         # discharge_pipe_temperature (TP) = 45 C
+        # indoor_operating_mode = 0
+        # outdoor_total_current = 4 A
         TEST_PAYLOAD = bytes.fromhex(
-            "c10000411c1d0001e800472666582d0000000000")
+            "c10000411c1d0101e800472666583e0000000000")
 
         with memoryview(TEST_PAYLOAD) as mv:
             resp = Group1Response(mv)
@@ -1198,7 +1200,9 @@ class TestGroupDataResponse(_TestResponseBase):
         self.assertEqual(resp.compressor_frequency, 28)
         self.assertEqual(resp.target_compressor_frequency, 29)
         self.assertEqual(resp.compressor_current, 1)
+        self.assertEqual(resp.outdoor_total_current, 4)
         self.assertEqual(resp.outdoor_voltage, 232)
+        self.assertEqual(resp.indoor_operating_mode, 0)
         self.assertEqual(resp.indoor_coil_temperature, 20.5)
         self.assertEqual(resp.evaporator_temperature, 4.0)
         self.assertEqual(resp.condenser_temperature, 26.0)
