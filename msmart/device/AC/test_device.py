@@ -352,7 +352,7 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         # compressor_frequency = 35
         # target_compressor_frequency = 36
         # compressor_current = 4
-        # compressor_voltage = 230
+        # outdoor_voltage = 230
         # T1 = 21.0
         # T2 = 8.0
         # T3 = 45.0
@@ -371,7 +371,7 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(device.compressor_frequency, 35)
         self.assertEqual(device.target_compressor_frequency, 36)
         self.assertEqual(device.compressor_current, 4)
-        self.assertEqual(device.compressor_voltage, 230)
+        self.assertEqual(device.outdoor_voltage, 230)
         self.assertEqual(device.indoor_coil_temperature, 21.0)
         self.assertEqual(device.evaporator_temperature, 8.0)
         self.assertEqual(device.condenser_temperature, 45.0)

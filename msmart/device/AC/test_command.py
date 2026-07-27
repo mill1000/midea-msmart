@@ -1183,7 +1183,7 @@ class TestGroupDataResponse(_TestResponseBase):
         # compressor_frequency = 28 Hz
         # target_compressor_frequency = 29 Hz
         # compressor_current = 1 A
-        # compressor_voltage = 232 V
+        # outdoor_voltage = 232
         # T1 = 71 -> 20.5 C
         # T2 = 38 -> 4.0 C
         # T3 = 102 -> 26.0 C
@@ -1198,7 +1198,7 @@ class TestGroupDataResponse(_TestResponseBase):
         self.assertEqual(resp.compressor_frequency, 28)
         self.assertEqual(resp.target_compressor_frequency, 29)
         self.assertEqual(resp.compressor_current, 1)
-        self.assertEqual(resp.compressor_voltage, 232)
+        self.assertEqual(resp.outdoor_voltage, 232)
         self.assertEqual(resp.indoor_coil_temperature, 20.5)
         self.assertEqual(resp.evaporator_temperature, 4.0)
         self.assertEqual(resp.condenser_temperature, 26.0)

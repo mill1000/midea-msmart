@@ -246,7 +246,9 @@ class AirConditioner(Device):
         self._target_compressor_frequency: Optional[int] = None
         self._compressor_frequency: Optional[int] = None
         self._compressor_current: Optional[int] = None
-        self._compressor_voltage: Optional[int] = None
+        self._outdoor_total_current: Optional[int] = None
+        self._outdoor_voltage: Optional[int] = None
+        self._indoor_operating_mode: Optional[int] = None
         # Refrigerant circuit temperatures
         self._indoor_coil_temperature: Optional[float] = None
         self._evaporator_temperature: Optional[float] = None
@@ -406,7 +408,9 @@ class AirConditioner(Device):
             self._target_compressor_frequency = res.target_compressor_frequency
             self._compressor_frequency = res.compressor_frequency
             self._compressor_current = res.compressor_current
-            self._compressor_voltage = res.compressor_voltage
+            self._outdoor_total_current = res.outdoor_total_current
+            self._outdoor_voltage = res.outdoor_voltage
+            self._indoor_operating_mode = res.indoor_operating_mode
             self._indoor_coil_temperature = res.indoor_coil_temperature
             self._evaporator_temperature = res.evaporator_temperature
             self._condenser_temperature = res.condenser_temperature
@@ -1274,13 +1278,23 @@ class AirConditioner(Device):
 
     @property
     def compressor_current(self) -> Optional[int]:
-        """Total current draw of the outdoor unit in Amperes."""
+        """Compressor current draw in Amperes."""
         return self._compressor_current
 
     @property
-    def compressor_voltage(self) -> Optional[int]:
+    def outdoor_total_current(self) -> Optional[int]:
+        """Total current draw of the outdoor unit in Amperes."""
+        return self._outdoor_total_current
+
+    @property
+    def outdoor_voltage(self) -> Optional[int]:
         """Supply voltage of the outdoor unit in Volts."""
-        return self._compressor_voltage
+        return self._outdoor_voltage
+
+    @property
+    def indoor_operating_mode(self) -> Optional[int]:
+        """Operating mode of the indoor unit."""
+        return self._indoor_operating_mode
 
     @property
     def indoor_coil_temperature(self) -> Optional[float]:
@@ -1387,7 +1401,9 @@ class AirConditioner(Device):
             "target_compressor_frequency": self.target_compressor_frequency,
             "compressor_frequency": self.compressor_frequency,
             "compressor_current": self.compressor_current,
-            "compressor_voltage": self.compressor_voltage,
+            "outdoor_total_current": self.outdoor_total_current,
+            "outdoor_voltage": self.outdoor_voltage,
+            "indoor_operating_mode": self.indoor_operating_mode,
             "indoor_coil_temperature": self.indoor_coil_temperature,
             "evaporator_temperature": self.evaporator_temperature,
             "condenser_temperature": self.condenser_temperature,
