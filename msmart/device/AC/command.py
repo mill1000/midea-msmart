@@ -1125,7 +1125,6 @@ class PropertiesResponse(Response):
         return self._properties.get(id, None)
 
 
-
 _DISCHARGE_PIPE_TEMP_TABLE = (
     -48, -48, -33, -25, -20, -16, -13, -10, -7, -4,
     -2, 0, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
@@ -1143,6 +1142,7 @@ _DISCHARGE_PIPE_TEMP_TABLE = (
     175, 178, 181, 185, 188, 192, 196, 201, 206, 211, 218, 225, 233, 243, 254, 269,
     289, 318, 367, 506
 )
+
 
 class Group1Response(Response):
     """Group 1 response — outdoor unit performance data.
