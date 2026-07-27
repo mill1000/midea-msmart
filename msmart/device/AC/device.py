@@ -405,7 +405,6 @@ class AirConditioner(Device):
                           self.id, res)
 
             self._target_compressor_frequency = res.target_compressor_frequency
-            self._target_compressor_frequency = res.target_compressor_frequency
             self._compressor_frequency = res.compressor_frequency
             self._compressor_current = res.compressor_current
             self._outdoor_total_current = res.outdoor_total_current
