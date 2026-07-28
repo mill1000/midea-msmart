@@ -1308,6 +1308,7 @@ class Group7Response(Response):
         # Two-byte little-endian power value in Watts
         self.outdoor_unit_power = payload[10] + 256 * payload[11]
 
+
 class Group11Response(Response):
     """Group 11 response — indoor unit louvers angles
 
