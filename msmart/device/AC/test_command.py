@@ -1247,5 +1247,6 @@ class TestGroupDataResponse(_TestResponseBase):
         self.assertEqual(resp.horizontal_louvers_angle, 72)
         self.assertEqual(resp.vertical_louvers_angle, 240)
 
+
 if __name__ == "__main__":
     unittest.main()
