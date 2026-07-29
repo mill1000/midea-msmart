@@ -10,12 +10,13 @@ from msmart.frame import InvalidFrameException
 from msmart.utils import CapabilityManager, MideaIntEnum, deprecated
 
 from .command import (CapabilitiesResponse, Command, GetCapabilitiesCommand,
-                      GetGroupDataCommand, GetPropertiesCommand, GetStateCommand,
-                      Group1Response, Group2Response, Group4Response,
-                      Group5Response, Group7Response, Group11Response,
-                      InvalidResponseException, PropertiesResponse, PropertyId,
-                      Response, SetPropertiesCommand, SetStateCommand,
-                      StateResponse, ToggleDisplayCommand)
+                      GetGroupDataCommand, GetPropertiesCommand,
+                      GetStateCommand, Group1Response, Group2Response,
+                      Group4Response, Group5Response, Group7Response,
+                      Group11Response, InvalidResponseException,
+                      PropertiesResponse, PropertyId, Response,
+                      SetPropertiesCommand, SetStateCommand, StateResponse,
+                      ToggleDisplayCommand)
 
 _LOGGER = logging.getLogger(__name__)
 
