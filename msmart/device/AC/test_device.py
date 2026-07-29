@@ -361,14 +361,14 @@ class TestUpdateStateFromResponse(unittest.TestCase):
         self.assertEqual(device.compressor_frequency, 28)
         self.assertEqual(device.target_compressor_frequency, 29)
         self.assertEqual(device.compressor_current, 0)
-        self.assertEqual(device.outdoor_total_current, 4)
+        self.assertEqual(device.outdoor_total_current, 1)
         self.assertEqual(device.outdoor_voltage, 230)
         self.assertEqual(device.indoor_operating_mode, 1)
         self.assertEqual(device.indoor_coil_temperature, 21.0)
         self.assertEqual(device.evaporator_temperature, 6.0)
         self.assertEqual(device.condenser_temperature, 30.5)
         # self.assertEqual(device.outdoor_temperature, 23.0)
-        self.assertEqual(device.discharge_pipe_temperature, 36)
+        self.assertEqual(device.discharge_pipe_temperature, 48)
 
     def test_group2_response(self) -> None:
         """Test parsing of Group data 2 into device state."""

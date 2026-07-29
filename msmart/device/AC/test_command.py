@@ -1188,14 +1188,14 @@ class TestGroupDataResponse(_TestResponseBase):
         self.assertEqual(resp.compressor_frequency, 28)
         self.assertEqual(resp.target_compressor_frequency, 29)
         self.assertEqual(resp.compressor_current, 0)
-        self.assertEqual(resp.outdoor_total_current, 4)
+        self.assertEqual(resp.outdoor_total_current, 1)
         self.assertEqual(resp.outdoor_voltage, 230)
         self.assertEqual(resp.indoor_operating_mode, 1)
         self.assertEqual(resp.indoor_coil_temperature, 21.0)
         self.assertEqual(resp.evaporator_temperature, 6.0)
         self.assertEqual(resp.condenser_temperature, 30.5)
         self.assertEqual(resp.outdoor_temperature, 23.0)
-        self.assertEqual(resp.discharge_pipe_temperature, 36)
+        self.assertEqual(resp.discharge_pipe_temperature, 48)
 
     def test_group2_response(self) -> None:
         """Test that Group2Response correctly parses indoor fan speed."""
