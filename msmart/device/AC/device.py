@@ -13,9 +13,10 @@ from .command import (CapabilitiesResponse, Command, GetCapabilitiesCommand,
                       GetGroupDataCommand, GetPropertiesCommand,
                       GetStateCommand, Group1Response, Group2Response,
                       Group4Response, Group5Response, Group7Response,
-                      InvalidResponseException, PropertiesResponse, PropertyId,
-                      Response, SetPropertiesCommand, SetStateCommand,
-                      StateResponse, ToggleDisplayCommand)
+                      Group11Response, InvalidResponseException,
+                      PropertiesResponse, PropertyId, Response,
+                      SetPropertiesCommand, SetStateCommand, StateResponse,
+                      ToggleDisplayCommand)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -261,6 +262,10 @@ class AirConditioner(Device):
         # Group 7 — outdoor unit power
         self._outdoor_unit_power: Optional[float] = None
 
+        # Group 11 — louvers angles
+        self._horizontal_louvers_angle: Optional[int] = None
+        self._vertical_louvers_angle: Optional[int] = None
+
         # Capabilities
         self._min_target_temperature = 16
         self._max_target_temperature = 30
@@ -283,6 +288,7 @@ class AirConditioner(Device):
         self._request_group4_data = False
         self._request_group5_data = False
         self._request_group7_data = False
+        self._request_group11_data = False
 
         # Default to assuming device can't handle any properties
         self._supported_properties = set()
@@ -447,6 +453,13 @@ class AirConditioner(Device):
                           self.id, res)
 
             self._outdoor_unit_power = res.outdoor_unit_power
+
+        elif isinstance(res, Group11Response):
+            _LOGGER.debug("Group 11 response payload from device %s: %s",
+                          self.id, res)
+
+            self._horizontal_louvers_angle = res.horizontal_louvers_angle
+            self._vertical_louvers_angle = res.vertical_louvers_angle
 
         else:
             _LOGGER.debug("Ignored unknown response from device %s: %s",
@@ -741,7 +754,11 @@ class AirConditioner(Device):
         if self._request_group7_data:
             commands.append(GetGroupDataCommand(7))
 
-        # Update supported properties
+        # Request Group 11 data (louvers angles) if enabled
+        if self._request_group11_data:
+            commands.append(GetGroupDataCommand(11))
+
+            # Update supported properties
         if len(self._supported_properties):
             commands.append(GetPropertiesCommand(self._supported_properties))
 
@@ -1263,6 +1280,15 @@ class AirConditioner(Device):
         self._request_group7_data = enable
 
     @property
+    def enable_group11_data_requests(self) -> bool:
+        """Enable Group 11 data (louvers angles) queries."""
+        return self._request_group11_data
+
+    @enable_group11_data_requests.setter
+    def enable_group11_data_requests(self, enable: bool) -> None:
+        self._request_group11_data = enable
+
+    @property
     def target_compressor_frequency(self) -> Optional[int]:
         """Target compressor operating frequency in Hz."""
         return self._target_compressor_frequency
@@ -1329,6 +1355,14 @@ class AirConditioner(Device):
     @property
     def outdoor_fan_speed(self) -> Optional[int]:
         return self._outdoor_fan_speed
+
+    @property
+    def horizontal_louvers_angle(self) -> Optional[int]:
+        return self._horizontal_louvers_angle
+
+    @property
+    def vertical_louvers_angle(self) -> Optional[int]:
+        return self._vertical_louvers_angle
 
     @property
     def supports_out_silent(self) -> bool:
@@ -1398,6 +1432,9 @@ class AirConditioner(Device):
             "water_pump_running": self.water_pump_running,
             # Group 7 — outdoor unit power
             "outdoor_unit_power": self.outdoor_unit_power,
+            # Group 11 — louvers angles
+            "horizontal_louvers_angle": self.horizontal_louvers_angle,
+            "vertical_louvers_angle": self.vertical_louvers_angle,
         }}
 
     def capabilities_dict(self) -> dict:

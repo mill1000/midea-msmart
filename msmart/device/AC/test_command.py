@@ -1073,7 +1073,7 @@ class TestGetGroupDataCommand(unittest.TestCase):
 
     def test_group_command_payload(self) -> None:
         """Test that GetGroupDataCommand encodes the group number correctly."""
-        for group in [1, 2, 4, 5, 7]:
+        for group in [1, 2, 4, 5, 7, 11]:
             # Build command
             command = GetGroupDataCommand(group)
 
@@ -1232,6 +1232,20 @@ class TestGroupDataResponse(_TestResponseBase):
             resp = Group7Response(mv)
 
         self.assertEqual(resp.outdoor_unit_power, 269)
+
+    def test_group11_response(self) -> None:
+        """Test that Group11Response correctly parses louvers angles."""
+        # Group 11
+        # horizontal_louvers_angle = 72
+        # vertical_louvers_angle = 240
+        TEST_PAYLOAD = bytes.fromhex(
+            "c100004b0064006400486400f000000000000000")
+
+        with memoryview(TEST_PAYLOAD) as mv:
+            resp = Group11Response(mv)
+
+        self.assertEqual(resp.horizontal_louvers_angle, 72)
+        self.assertEqual(resp.vertical_louvers_angle, 240)
 
 
 if __name__ == "__main__":
