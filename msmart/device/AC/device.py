@@ -412,7 +412,7 @@ class AirConditioner(Device):
             self._compressor_frequency = res.compressor_frequency
             self._compressor_current = res.compressor_current
             self._compressor_voltage = res.compressor_voltage
-            #self._indoor_temperature = res.indoor_temperature
+            # self._indoor_temperature = res.indoor_temperature
             self._indoor_coil_temperature = res.indoor_coil_temperature
             self._outdoor_coil_temperature = res.outdoor_coil_temperature
             # self._outdoor_temperature = res.outdoor_temperature
