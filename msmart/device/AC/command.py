@@ -1144,12 +1144,12 @@ class Group1Response(Response):
         self.compressor_voltage: Optional[int] = None
 
         # Refrigerant circuit temperatures
-        # T1: indoor coil
+        # T1: indoor ambient
+        self.indoor_temperature: Optional[float] = None
+        # T2: indoor coil
         self.indoor_coil_temperature: Optional[float] = None
-        # T2: evaporator outlet
-        self.evaporator_temperature: Optional[float] = None
-        # T3: condenser temperature
-        self.condenser_temperature: Optional[float] = None
+        # T3: outdoor coil
+        self.outdoor_coil_temperature: Optional[float] = None
         # T4: outdoor ambient temperature
         self.outdoor_temperature: Optional[float] = None
         # TP: discharge pipe temperature (compressor outlet)
@@ -1164,10 +1164,10 @@ class Group1Response(Response):
         self.compressor_voltage = payload[8]
 
         # T1/T2 use offset 30: (raw - 30) / 2
-        self.indoor_coil_temperature = (payload[10] - 30) / 2
-        self.evaporator_temperature = (payload[11] - 30) / 2
+        self.indoor_temperature = (payload[10] - 30) / 2
+        self.indoor_coil_temperature = (payload[11] - 30) / 2
         # T3/T4 use offset 50: (raw - 50) / 2
-        self.condenser_temperature = (payload[12] - 50) / 2
+        self.outdoor_coil_temperature = (payload[12] - 50) / 2
         self.outdoor_temperature = (payload[13] - 50) / 2
         # TP: raw temperature in C
         self.discharge_pipe_temperature = payload[14]

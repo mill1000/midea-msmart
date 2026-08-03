@@ -250,8 +250,7 @@ class AirConditioner(Device):
         self._compressor_voltage: Optional[int] = None
         # Refrigerant circuit temperatures
         self._indoor_coil_temperature: Optional[float] = None
-        self._evaporator_temperature: Optional[float] = None
-        self._condenser_temperature: Optional[float] = None
+        self._outdoor_coil_temperature: Optional[float] = None
         self._discharge_pipe_temperature: Optional[int] = None
 
         # Group 2 — indoor unit fan data
@@ -413,9 +412,9 @@ class AirConditioner(Device):
             self._compressor_frequency = res.compressor_frequency
             self._compressor_current = res.compressor_current
             self._compressor_voltage = res.compressor_voltage
+            # self._indoor_temperature = res.indoor_temperature
             self._indoor_coil_temperature = res.indoor_coil_temperature
-            self._evaporator_temperature = res.evaporator_temperature
-            self._condenser_temperature = res.condenser_temperature
+            self._outdoor_coil_temperature = res.outdoor_coil_temperature
             # self._outdoor_temperature = res.outdoor_temperature
             self._discharge_pipe_temperature = res.discharge_pipe_temperature
 
@@ -1310,18 +1309,13 @@ class AirConditioner(Device):
 
     @property
     def indoor_coil_temperature(self) -> Optional[float]:
-        """Indoor coil temperature in C — T1 sensor."""
+        """Indoor coil temperature in C — T2 sensor."""
         return self._indoor_coil_temperature
 
     @property
-    def evaporator_temperature(self) -> Optional[float]:
-        """Evaporator temperature in C - T2 sensor."""
-        return self._evaporator_temperature
-
-    @property
-    def condenser_temperature(self) -> Optional[float]:
-        """Condenser temperature in C - T3 sensor."""
-        return self._condenser_temperature
+    def outdoor_coil_temperature(self) -> Optional[float]:
+        """Outdoor coil temperature in C - T3 sensor."""
+        return self._outdoor_coil_temperature
 
     @property
     def discharge_pipe_temperature(self) -> Optional[int]:
@@ -1423,8 +1417,7 @@ class AirConditioner(Device):
             "compressor_current": self.compressor_current,
             "compressor_voltage": self.compressor_voltage,
             "indoor_coil_temperature": self.indoor_coil_temperature,
-            "evaporator_temperature": self.evaporator_temperature,
-            "condenser_temperature": self.condenser_temperature,
+            "outdoor_coil_temperature": self.outdoor_coil_temperature,
             "discharge_pipe_temperature": self.discharge_pipe_temperature,
             # Group 2 — indoor unit fan data
             "target_indoor_fan_speed": self.target_indoor_fan_speed,

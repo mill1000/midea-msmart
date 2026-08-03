@@ -1199,9 +1199,9 @@ class TestGroupDataResponse(_TestResponseBase):
         self.assertEqual(resp.target_compressor_frequency, 29)
         self.assertEqual(resp.compressor_current, 1)
         self.assertEqual(resp.compressor_voltage, 232)
-        self.assertEqual(resp.indoor_coil_temperature, 20.5)
-        self.assertEqual(resp.evaporator_temperature, 4.0)
-        self.assertEqual(resp.condenser_temperature, 26.0)
+        self.assertEqual(resp.indoor_temperature, 20.5)
+        self.assertEqual(resp.indoor_coil_temperature, 4.0)
+        self.assertEqual(resp.outdoor_coil_temperature, 26.0)
         self.assertEqual(resp.outdoor_temperature, 19.0)
         self.assertEqual(resp.discharge_pipe_temperature, 45)
 
