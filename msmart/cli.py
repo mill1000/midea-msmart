@@ -5,6 +5,7 @@ import logging
 from typing import NoReturn, Union
 
 from msmart import __version__
+from msmart import config
 from msmart.base_device import Device
 from msmart.cloud import CloudError, NetHomePlusCloud, SmartHomeCloud
 from msmart.const import DEFAULT_CLOUD_REGION, DeviceType
@@ -58,6 +59,31 @@ async def _discover(args) -> None:
 
 async def _connect(args) -> Union[AC, CC]:
     """Connect to a device directly or via discovery."""
+
+    # Cloud transport: control the appliance through the Midea cloud instead of
+    # the local network. `host` is the numeric appliance id in this mode.
+    if getattr(args, "cloud", False):
+        from msmart.cloud_lan import CloudLAN, attach
+
+        if not (args.account and args.password):
+            _LOGGER.error("--cloud requires --account and --password.")
+            exit(1)
+        try:
+            appliance_id = int(args.host)
+        except (TypeError, ValueError):
+            _LOGGER.error("With --cloud, host must be the numeric appliance id.")
+            exit(1)
+
+        cloud = CloudLAN(appliance_id, args.account, args.password)
+        try:
+            await cloud.login()
+        except Exception as e:  # noqa: BLE001
+            _LOGGER.error("Cloud login failed: %s", e)
+            exit(1)
+
+        device = AC(ip="cloud", port=0, device_id=appliance_id)
+        attach(device, cloud)
+        return device
 
     if args.auto and (args.token or args.key or args.device_id or args.device_type):
         _LOGGER.warning(
@@ -353,6 +379,10 @@ def _run(args) -> NoReturn:
 def main() -> NoReturn:
     """Main entry point for msmart-ng command."""
 
+    # Load credentials/defaults from a config file (if present) before building
+    # the parser so env-derived defaults are available.
+    config.load_config_file()
+
     # Define the main parser to select subcommands
     parser = argparse.ArgumentParser(
         description="Command line utility for msmart-ng."
@@ -367,15 +397,16 @@ def main() -> NoReturn:
     common_parser.add_argument("-d", "--debug",
                                help="Enable debug logging.", action="store_true")
     common_parser.add_argument("--region",
-                               help="Country/region for built-in cloud credential selection.",
+                               help="Country/region for built-in cloud credential selection. "
+                                    "[config: region]",
                                choices=CLOUD_CREDENTIALS.keys(),
-                               default=DEFAULT_CLOUD_REGION)
+                               default=config.get("region", DEFAULT_CLOUD_REGION))
     common_parser.add_argument("--account",
-                               help="Manually specify a username for cloud authentication.",
-                               default=None)
+                               help="Username/email for cloud authentication. [config: account]",
+                               default=config.get("account"))
     common_parser.add_argument("--password",
-                               help="Manually specify a password for cloud authentication.",
-                               default=None)
+                               help="Password for cloud authentication. [config: password]",
+                               default=config.get("password"))
 
     # Setup discover parser
     discover_parser = subparsers.add_parser("discover",
@@ -394,7 +425,9 @@ def main() -> NoReturn:
                                          description="Query information from a device on the local network.",
                                          parents=[common_parser])
     query_parser.add_argument("host",
-                              help="Hostname or IP address of device.")
+                              nargs="?",
+                              default=config.get("host"),
+                              help="Hostname/IP of device (or appliance id with --cloud). [config: host]")
     query_parser.add_argument("--capabilities",
                               help="Query device capabilities before state. If FILE is provided, write capabilities as YAML to the file.",
                               metavar="FILE",
@@ -406,6 +439,12 @@ def main() -> NoReturn:
     query_parser.add_argument("--auto",
                               help="Automatically identify, connect and authenticate with the device.",
                               action="store_true")
+    query_parser.add_argument("--cloud",
+                              help="Control via the Midea cloud instead of the local network. "
+                                   "Requires --account/--password; host is the numeric appliance id. "
+                                   "[config: cloud]",
+                              action="store_true",
+                              default=config.as_bool(config.get("cloud")))
     query_parser.add_argument("--id",
                               help="Device ID for V3 devices.",
                               dest="device_id", type=int, default=0)
@@ -431,7 +470,9 @@ def main() -> NoReturn:
                                            description="Control a device on the local network.",
                                            parents=[common_parser])
     control_parser.add_argument("host",
-                                help="Hostname or IP address of device.")
+                                nargs="?",
+                                default=config.get("host"),
+                                help="Hostname/IP of device (or appliance id with --cloud). [config: host]")
     control_parser.add_argument("--capabilities",
                                 help="Query device capabilities before sending commands.",
                                 action="store_true")
@@ -441,6 +482,12 @@ def main() -> NoReturn:
     control_parser.add_argument("--auto",
                                 help="Automatically identify, connect and authenticate with the device.",
                                 action="store_true")
+    control_parser.add_argument("--cloud",
+                                help="Control via the Midea cloud instead of the local network. "
+                                     "Requires --account/--password; host is the numeric appliance id. "
+                                     "[config: cloud]",
+                                action="store_true",
+                                default=config.as_bool(config.get("cloud")))
     control_parser.add_argument("--id",
                                 help="Device ID for V3 devices.",
                                 dest="device_id", type=int, default=0)
@@ -465,7 +512,16 @@ def main() -> NoReturn:
     download.set_defaults(func=_download)
 
     # Run with args
-    _run(parser.parse_args())
+    args = parser.parse_args()
+
+    # If host is defaulted from config, a leading "key=value" settings token can
+    # get grabbed as the positional host. Detect that and restore it as a setting.
+    if getattr(args, "host", None) and "=" in str(args.host):
+        if hasattr(args, "settings"):
+            args.settings.insert(0, args.host)
+        args.host = config.get("host")
+
+    _run(args)
 
 
 if __name__ == "__main__":

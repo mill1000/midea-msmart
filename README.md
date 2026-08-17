@@ -1,5 +1,5 @@
 # msmart-ng
-A Python library for local control of Midea (and associated brands) smart air conditioners. Designed for ease of integration, with async support and minimal dependencies.
+A Python library for controlling Midea (and associated brands) smart air conditioners over the local network or the Midea cloud. Designed for ease of integration, with async support and minimal dependencies.
 
 [![Code Quality Checks](https://github.com/mill1000/midea-msmart/actions/workflows/checks.yml/badge.svg)](https://github.com/mill1000/midea-msmart/actions/workflows/checks.yml)
 [![PyPI](https://img.shields.io/pypi/v/msmart-ng?logo=PYPI)](https://pypi.org/project/msmart-ng/)
@@ -7,6 +7,7 @@ A Python library for local control of Midea (and associated brands) smart air co
 ## Supported Devices
 This library supports air conditioners from Midea and several associated brands that use the following Android apps or their iOS equivalents:
 * Artic King (com.arcticking.ac)
+* Cooper & Hunter (com.ch.air)
 * Midea Air (com.midea.aircondition.obm)
 * NetHome Plus (com.midea.aircondition)
 * SmartHome/MSmartHome (com.midea.ai.overseas)
@@ -16,9 +17,11 @@ This library supports air conditioners from Midea and several associated brands 
 __Note: Only air conditioners (type 0xAC and 0xCC) are supported. See the [usage](#usage) section for how to check compatibility.__ 
 
 ## Note On Cloud Usage
-This library (and its Home Assistant integration [midea-ac-py](https://github.com/mill1000/midea-ac-py)) works locally. No internet connection is required to control your device. 
+By default this library (and its Home Assistant integration [midea-ac-py](https://github.com/mill1000/midea-ac-py)) controls devices locally. In that mode no internet connection is required once set up.
 
-_However_, for newer "V3" devices, the Midea Cloud is used to acquire a token & key for device authentication. Once retrieved and saved, no further cloud connection is required. Devices are not linked to the library’s built-in accounts and concerned users may supply their own account credentials if they prefer.
+For newer "V3" devices, the Midea Cloud is used to acquire a token & key for device authentication. Once retrieved and saved, no further cloud connection is required for local control. Devices are not linked to the library’s built-in accounts and concerned users may supply their own account credentials if they prefer.
+
+There is also an optional cloud control mode for AC devices. It sends commands through the Midea cloud so you can control a unit that is not reachable on your local network, for example one placed on an isolated guest or IoT network. This mode does use the internet for every command. See [Cloud control](#cloud-control-control-over-the-internet).
 
 ## Features
 #### Async Support
@@ -137,6 +140,49 @@ $ msmart-ng control <HOST> operational_mode=cool target_temperature=20.5 fan_spe
 **Note:** Version 3 devices need to specify either the `--auto` argument or the `--token`, `--key` and `--id` arguments to make a connection.
 
 **Note:** For CC devices, either the `--auto` argument or the `--device_type` argument must be specified.
+
+#### Cloud control (control over the internet)
+Add `--cloud` to `query` or `control` to reach the device through the Midea cloud instead of the local network. This works from anywhere with internet access, so you do not need to be on the same network as the unit.
+
+The main reason to use this is network isolation. You can put the air conditioner on a guest or IoT WiFi network, away from your computers and phones, and still control it. The unit does not need to be reachable from your LAN at all.
+
+With `--cloud`, the host argument is the numeric appliance id (not an IP). Get the id from `msmart-ng discover` (the `id` field) while the device is still reachable locally, or from your Midea account. You also need `--account` and `--password`.
+
+```shell
+$ msmart-ng query 151732606158606 --cloud --account you@example.com --password secret
+$ msmart-ng control 151732606158606 --cloud --account you@example.com --password secret operational_mode=cool target_temperature=24
+```
+
+Notes:
+* Cloud control is currently supported for AC (0xAC) devices.
+* Cloud set commands take a few seconds to reach the unit.
+* Logging in for cloud access uses one session per account. If you run cloud commands while the phone app is open, one of them may get signed out. Use the config file below so you are not passing credentials on every command.
+
+#### Config file
+To avoid repeating `--account`, `--password`, and other options on every command, put them in a config file. Keys match the flag names.
+
+msmart-ng looks for a config file in this order:
+1. the path in the `MSMART_CONFIG` environment variable
+2. `.msmart-ng.env` in the current directory
+3. `~/.config/msmart-ng/config`
+
+Example config file:
+
+```ini
+account = you@example.com
+password = secret
+host = 151732606158606
+cloud = true
+```
+
+With that file in place you can just run:
+
+```shell
+$ msmart-ng query
+$ msmart-ng control operational_mode=cool target_temperature=24
+```
+
+Command line flags always override the config file. Supported keys are `account`, `password`, `region`, `host`, `cloud`, `app_id`, and `app_key`.
 
 ### Home Assistant
 To control your Midea AC units via Home Assistant, use this [midea-ac-py](https://github.com/mill1000/midea-ac-py) fork.
