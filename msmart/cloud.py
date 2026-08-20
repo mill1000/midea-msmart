@@ -160,16 +160,21 @@ class BaseCloud:
 
         return login_id
 
-    async def get_token(self, udpid: str) -> tuple[str, str]:
+    async def get_token(self, udpid: str,
+                        appliance_id: Optional[int] = None) -> tuple[str, str]:
         """Get token and key for the provided udpid."""
+
+        data = {"udpid": udpid}
+
+        # The SmartHome cloud rejects getToken with 3004 "value is illegal"
+        # unless the appliance ID is supplied as well. Clouds that don't
+        # require it ignore the additional field.
+        if appliance_id is not None:
+            data["applianceCodes"] = str(appliance_id)
 
         response = await self._api_request(
             "/v1/iot/secure/getToken",
-            self._build_request_body(
-                {
-                    "udpid": udpid
-                }
-            )
+            self._build_request_body(data)
         )
 
         # Assert response is not None since we should throw on errors

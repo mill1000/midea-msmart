@@ -372,7 +372,7 @@ class Discover:
             _LOGGER.debug(
                 "Fetching token and key for udpid '%s' (%s).", udpid, endian)
             try:
-                token, key = await cloud.get_token(udpid)
+                token, key = await cloud.get_token(udpid, dev.id)
             except CloudError as e:
                 _LOGGER.error("Failed to get token from cloud. Error: %s", e)
                 raise CloudError(f"Failed to get token from cloud. {e}")
