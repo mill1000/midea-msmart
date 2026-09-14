@@ -84,6 +84,12 @@ class AirConditioner(Device):
 
         DEFAULT = OFF
 
+    class BreezeAwayDirection(MideaIntEnum):
+        UP = 2
+        DOWN = 3
+
+        DEFAULT = UP
+
     class BreezeMode(MideaIntEnum):
         OFF = 1
         BREEZE_AWAY = 2
@@ -136,6 +142,7 @@ class AirConditioner(Device):
 
         # Breeze control
         BREEZE_AWAY = auto()
+        BREEZE_AWAY_DIRECTION = auto()
         BREEZE_CONTROL = auto()
         BREEZELESS = auto()
 
@@ -157,6 +164,7 @@ class AirConditioner(Device):
     # Create a dict to map attributes to property values
     _PROPERTY_MAP = {
         PropertyId.BREEZE_AWAY: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZE_AWAY,
+        PropertyId.BREEZE_AWAY_DIRECTION: lambda s: s._breeze_away_direction,
         PropertyId.BREEZE_CONTROL: lambda s: s._breeze_mode,
         PropertyId.BREEZELESS: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZELESS,
         PropertyId.CASCADE: lambda s: s._cascade_mode,
@@ -216,6 +224,7 @@ class AirConditioner(Device):
         self._fresh_air_fan_speed = AirConditioner.FreshAirFanSpeed.OFF
         self._rate_select = AirConditioner.RateSelect.OFF
         self._breeze_mode = AirConditioner.BreezeMode.OFF
+        self._breeze_away_direction = AirConditioner.BreezeAwayDirection.UP
         self._aux_mode = AirConditioner.AuxHeatMode.OFF
 
         # Sensors
@@ -397,6 +406,11 @@ class AirConditioner(Device):
                     self._breeze_mode = (AirConditioner.BreezeMode.BREEZELESS if value
                                          else AirConditioner.BreezeMode.OFF)
 
+            if (value := res.get_property(PropertyId.BREEZE_AWAY_DIRECTION)) is not None:
+                self._breeze_away_direction = cast(
+                    AirConditioner.BreezeAwayDirection,
+                    AirConditioner.BreezeAwayDirection.get_from_value(value))
+
             if (value := res.get_property(PropertyId.IECO)) is not None:
                 self._ieco = value
 
@@ -550,6 +564,9 @@ class AirConditioner(Device):
         self._capabilities.set(
             AirConditioner.Capability.SWING_HORIZONTAL_ANGLE, res.swing_horizontal_angle)
 
+        self._capabilities.set(
+            AirConditioner.Capability.BREEZE_AWAY_DIRECTION, res.breeze_away_direction)
+
         self._capabilities.set(AirConditioner.Capability.CASCADE, res.cascade)
 
         self._capabilities.set(AirConditioner.Capability.FLASH, res.flash)
@@ -601,6 +618,7 @@ class AirConditioner(Device):
         # Map of capability flag to property ID
         _CAPABILITY_MAP = {
             AirConditioner.Capability.BREEZE_AWAY: PropertyId.BREEZE_AWAY,
+            AirConditioner.Capability.BREEZE_AWAY_DIRECTION: PropertyId.BREEZE_AWAY_DIRECTION,
             AirConditioner.Capability.BREEZE_CONTROL: PropertyId.BREEZE_CONTROL,
             AirConditioner.Capability.BREEZELESS: PropertyId.BREEZELESS,
             AirConditioner.Capability.CASCADE: PropertyId.CASCADE,
@@ -965,6 +983,23 @@ class AirConditioner(Device):
         self._updated_properties.add(
             PropertyId.BREEZE_CONTROL if self._capabilities.has(AirConditioner.Capability.BREEZE_CONTROL)
             else PropertyId.BREEZE_AWAY)
+
+    @property
+    def supports_breeze_away_direction(self) -> bool:
+        return self._capabilities.has(AirConditioner.Capability.BREEZE_AWAY_DIRECTION)
+
+    @property
+    def breeze_away_direction(self) -> BreezeAwayDirection:
+        return self._breeze_away_direction
+
+    @breeze_away_direction.setter
+    def breeze_away_direction(self, direction: BreezeAwayDirection) -> None:
+        self._breeze_away_direction = direction
+        self._updated_properties.add(PropertyId.BREEZE_AWAY_DIRECTION)
+
+        # The direction is only accepted while breeze away is enabled, so carry
+        # the current breeze away state in the same frame.
+        self._updated_properties.add(PropertyId.BREEZE_AWAY)
 
     @property
     def supports_breeze_mild(self) -> bool:
@@ -1381,6 +1416,7 @@ class AirConditioner(Device):
             "vertical_swing_angle": self.vertical_swing_angle,
             "breezeless": self.breezeless,
             "breeze_away": self.breeze_away,
+            "breeze_away_direction": self.breeze_away_direction,
             "breeze_mild": self.breeze_mild,
             "cascade_mode": self.cascade_mode,
             "fresh_air_fan_speed": self.fresh_air_fan_speed,
