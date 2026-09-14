@@ -85,7 +85,7 @@ class CapabilityId(IntEnum):
     FAHRENHEIT = 0x0222
     DISPLAY_CONTROL = 0x0224
     TEMPERATURES = 0x0225
-    BUZZER = 0x022C  # TODO Reference refers to this as "sound". Is this different then buzzer?
+    SOUND = 0x022C
     MAIN_HORIZONTAL_GUIDE_STRIP = 0x0230  # ??
     SUP_HORIZONTAL_GUIDE_STRIP = 0x0231  # ??
     TWINS_MACHINE = 0x0232  # ??
@@ -109,6 +109,7 @@ class PropertyId(IntEnum):
     OUT_SILENT = 0x00CD  # Portasplit outdoor silent mode
     IECO = 0x00E3
     ANION = 0x021E
+    SOUND = 0x022C
 
     @property
     def _supported(self) -> bool:
@@ -125,6 +126,7 @@ class PropertyId(IntEnum):
             PropertyId.OUT_SILENT,
             PropertyId.RATE_SELECT,
             PropertyId.SELF_CLEAN,
+            PropertyId.SOUND,
             PropertyId.SWING_LR_ANGLE,
             PropertyId.SWING_UD_ANGLE,
         ]
@@ -134,7 +136,7 @@ class PropertyId(IntEnum):
         if not self._supported:
             raise NotImplementedError(f"{repr(self)} decode is not supported.")
 
-        if self in [PropertyId.BREEZELESS, PropertyId.FLASH, PropertyId.SELF_CLEAN]:
+        if self in [PropertyId.BREEZELESS, PropertyId.FLASH, PropertyId.SELF_CLEAN, PropertyId.SOUND]:
             return bool(data[0])
         elif self == PropertyId.BREEZE_AWAY:
             return data[0] == 2
@@ -567,7 +569,7 @@ class CapabilitiesResponse(Response):
             CapabilityId.BREEZE_AWAY: reader("breeze_away", get_value(1)),
             CapabilityId.BREEZE_CONTROL: reader("breeze_control", get_value(1)),
             CapabilityId.BREEZELESS: reader("breezeless", get_value(1)),
-            CapabilityId.BUZZER:  reader("buzzer", get_value(1)),
+            CapabilityId.SOUND:  reader("sound", get_value(1)),
             CapabilityId.CASCADE:  reader("cascade", get_value(1)),
             CapabilityId.DISPLAY_CONTROL: reader("display_control", any_of([1, 2, 100])),
             CapabilityId.ENERGY: [
@@ -796,6 +798,10 @@ class CapabilitiesResponse(Response):
     @property
     def fresh_air(self) -> bool:
         return self._capabilities.get("fresh_air", False)
+
+    @property
+    def sound(self) -> bool:
+        return self._capabilities.get("sound", False)
 
     @property
     def swing_horizontal_angle(self) -> bool:

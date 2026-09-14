@@ -635,7 +635,7 @@ class TestCapabilities(unittest.TestCase):
         self.assertEqual(device.supports_out_silent, True)
 
 
-class TestSetState(unittest.TestCase):
+class TestSetState(unittest.IsolatedAsyncioTestCase):
     """Test setting device state."""
 
     def test_properties_breeze_control(self) -> None:
@@ -753,6 +753,52 @@ class TestSetState(unittest.TestCase):
 
         # Assert correct property is being updated
         self.assertIn(PropertyId.OUT_SILENT, device._updated_properties)
+
+    def test_properties_sound(self) -> None:
+        """Test setting sound property."""
+
+        # Create dummy device with sound
+        device = AC(0, 0, 0)
+        device._capabilities.set(AC.Capability.SOUND)
+
+        # Enable sound
+        device.sound = True
+
+        # Assert state is expected
+        self.assertEqual(device.sound, True)
+
+        # Assert correct property is being updated
+        self.assertIn(PropertyId.SOUND, device._updated_properties)
+
+    async def test_apply_properties_beep(self) -> None:
+        """Test that apply() always sends the beep property"""
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        # Enable an unrelated property
+        device._supported_properties.add(PropertyId.IECO)
+        device.ieco = True
+
+        # Patch to prevent network access and catch SetPropertiesCommand construction
+        with (
+            patch(
+                "msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[]),
+            patch("msmart.device.AC.device.SetPropertiesCommand", autospec=True) as patched_class
+        ):
+
+            # Apply changed settings
+            await device.apply()
+
+            # Assert patched method was awaited
+            patched_class.assert_called_once()
+
+            # Get call arguments
+            args, _kwargs = patched_class.call_args
+            props = args[0]
+
+            # Assert buzzer present
+            self.assertIn(PropertyId.BUZZER, props)
 
 
 class TestRefresh(unittest.IsolatedAsyncioTestCase):
@@ -1171,6 +1217,26 @@ class TestDeprecation(unittest.TestCase):
 
             self.assertRegex("\n".join(log.output),
                              "'flash_cool' is deprecated")
+
+    def test_deprecated_beep(self) -> None:
+        """Test accessing deprecated beep properties emits a warning."""
+
+        # Create dummy device
+        device = AC(0, 0, 0)
+
+        # Getter
+        with self.assertLogs("msmart", logging.DEBUG) as log:
+            beep = device.beep
+
+            self.assertRegex("\n".join(log.output),
+                             "'beep' is deprecated")
+
+        # Setter
+        with self.assertLogs("msmart", logging.DEBUG) as log:
+            device.beep = False
+
+            self.assertRegex("\n".join(log.output),
+                             "'beep' is deprecated")
 
 
 class TestCapabilityOverrides(unittest.TestCase):
