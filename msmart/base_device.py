@@ -250,5 +250,9 @@ class Device():
             from msmart.device import CommercialAirConditioner
             return CommercialAirConditioner(**kwargs)
 
+        if type == DeviceType.HEAT_PUMP:
+            from msmart.device import HeatPump
+            return HeatPump(**kwargs)
+
         # Unknown type return generic device
         return Device(device_type=type, **kwargs)
