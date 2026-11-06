@@ -529,6 +529,7 @@ class TestCapabilities(unittest.TestCase):
 
         self.assertEqual(device.supports_ieco_cool, True)
         self.assertEqual(device.supports_ieco_heat, False)
+        self.assertEqual(device.supports_ieco, True)
 
     def test_ieco_ecomaster(self) -> None:
         """Test ieco ECOMaster device capability (both cool and heat)."""
@@ -543,6 +544,7 @@ class TestCapabilities(unittest.TestCase):
 
         self.assertEqual(device.supports_ieco_cool, True)
         self.assertEqual(device.supports_ieco_heat, True)
+        self.assertEqual(device.supports_ieco, True)
 
     def test_breeze_modes(self) -> None:
         """Test breeze mode capabilities."""

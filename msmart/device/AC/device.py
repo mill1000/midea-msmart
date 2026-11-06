@@ -156,6 +156,9 @@ class AirConditioner(Device):
             PURIFIER
         )
 
+        # Aliases "deprecated" enums to keep overrides working
+        IECO = IECO_COOL | IECO_HEAT
+
     # Create a dict to map attributes to property values
     _PROPERTY_MAP = {
         PropertyId.BREEZE_AWAY: lambda s: s._breeze_mode == AirConditioner.BreezeMode.BREEZE_AWAY,
@@ -1087,6 +1090,11 @@ class AirConditioner(Device):
     @property
     def supports_ieco_heat(self) -> bool:
         return self._capabilities.has(AirConditioner.Capability.IECO_HEAT)
+
+    @property
+    def supports_ieco(self) -> bool:
+        return (self._capabilities.has(AirConditioner.Capability.IECO_COOL)
+                or self._capabilities.has(AirConditioner.Capability.IECO_HEAT))
 
     @property
     def ieco(self) -> Optional[bool]:
