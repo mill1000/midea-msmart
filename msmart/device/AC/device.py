@@ -121,7 +121,8 @@ class AirConditioner(Device):
         FREEZE_PROTECTION = auto()
         IECO_COOL = auto()
         IECO_HEAT = auto()
-        TURBO = auto()
+        TURBO_COOL = auto()
+        TURBO_HEAT = auto()
 
         # UI
         DISPLAY_CONTROL = auto()
@@ -151,10 +152,13 @@ class AirConditioner(Device):
 
         DEFAULT = (
             CUSTOM_FAN_SPEED |
-            ECO | TURBO | FREEZE_PROTECTION |
+            ECO | TURBO_COOL | TURBO_HEAT | FREEZE_PROTECTION |
             DISPLAY_CONTROL | FILTER_REMINDER |
             PURIFIER
         )
+
+        # Aliases "deprecated" enums to keep overrides working
+        TURBO = TURBO_COOL | TURBO_HEAT
 
     # Create a dict to map attributes to property values
     _PROPERTY_MAP = {
@@ -519,7 +523,10 @@ class AirConditioner(Device):
             AirConditioner.Capability.CUSTOM_FAN_SPEED, res.fan_custom)
 
         self._capabilities.set(AirConditioner.Capability.ECO, res.eco)
-        self._capabilities.set(AirConditioner.Capability.TURBO, res.turbo)
+        self._capabilities.set(
+            AirConditioner.Capability.TURBO_COOL, res.turbo_cool)
+        self._capabilities.set(
+            AirConditioner.Capability.TURBO_HEAT, res.turbo_heat)
         self._capabilities.set(
             AirConditioner.Capability.FREEZE_PROTECTION, res.freeze_protection)
 
@@ -1111,8 +1118,17 @@ class AirConditioner(Device):
         self._updated_properties.add(PropertyId.FLASH)
 
     @property
+    def supports_turbo_cool(self) -> bool:
+        return self._capabilities.has(AirConditioner.Capability.TURBO_COOL)
+
+    @property
+    def supports_turbo_heat(self) -> bool:
+        return self._capabilities.has(AirConditioner.Capability.TURBO_HEAT)
+
+    @property
     def supports_turbo(self) -> bool:
-        return self._capabilities.has(AirConditioner.Capability.TURBO)
+        return (self._capabilities.has(AirConditioner.Capability.TURBO_COOL)
+                or self._capabilities.has(AirConditioner.Capability.TURBO_HEAT))
 
     @property
     def turbo(self) -> Optional[bool]:
