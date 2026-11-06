@@ -104,6 +104,11 @@ class PropertyId(IntEnum):
     BREEZE_CONTROL = 0x0043  # AKA "FA No Wind Sense"
     RATE_SELECT = 0x0048
     FRESH_AIR = 0x004B
+    # Direction of the Breeze Away airflow. Writable only while BREEZE_AWAY is
+    # enabled; the device rejects the write (result 0x11) otherwise. Accepts
+    # exactly 0x02 (up) and 0x03 (down) - verified against a Rotenso/Midea 0xAC
+    # unit advertising capability 0x0058 = 2.
+    BREEZE_AWAY_DIRECTION = 0x0058  # AKA "Prevent Straight Wind Select"
     CASCADE = 0x0059  # AKA "Wind Around"
     FLASH = 0x0067  # AKA "Jet Cool"
     OUT_SILENT = 0x00CD  # Portasplit outdoor silent mode
@@ -116,6 +121,7 @@ class PropertyId(IntEnum):
         """Check if a property ID is supported/tested."""
         return self in [
             PropertyId.BREEZE_AWAY,
+            PropertyId.BREEZE_AWAY_DIRECTION,
             PropertyId.BREEZE_CONTROL,
             PropertyId.BREEZELESS,
             PropertyId.BUZZER,
@@ -567,6 +573,7 @@ class CapabilitiesResponse(Response):
             CapabilityId.AUX_FAN_SPEED_CONTROL: reader("aux_fan_speed", get_value(1)),
             CapabilityId.AUX_HEAT_FAN_SPEED_CONTROL: reader("aux_heat_fan_speed", get_value(1)),
             CapabilityId.BREEZE_AWAY: reader("breeze_away", get_value(1)),
+            CapabilityId.PREVENT_STRAIGHT_WIND_SELECT: reader("breeze_away_direction", get_value(2)),
             CapabilityId.BREEZE_CONTROL: reader("breeze_control", get_value(1)),
             CapabilityId.BREEZELESS: reader("breezeless", get_value(1)),
             CapabilityId.SOUND:  reader("sound", get_value(1)),
@@ -778,6 +785,10 @@ class CapabilitiesResponse(Response):
     @property
     def breeze_away(self) -> bool:
         return self._capabilities.get("breeze_away", False)
+
+    @property
+    def breeze_away_direction(self) -> bool:
+        return self._capabilities.get("breeze_away_direction", False)
 
     @property
     def breeze_control(self) -> bool:
