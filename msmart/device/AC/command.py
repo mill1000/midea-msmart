@@ -857,11 +857,16 @@ class CapabilitiesResponse(Response):
         return self._capabilities.get("eco", False)
 
     @property
-    def ieco(self) -> bool:
-        # TODO iECO can be cool, heat or both
+    def ieco_cool(self) -> bool:
         ieco = self._capabilities.get("ieco", 0)
         ieco_end = self._capabilities.get("ieco_end", 0)
-        return ieco in [1, 3, 4, 8] or ieco_end in [1, 2, 3, 8]
+        return ieco in [1, 3, 8] or ieco_end in [1, 2, 8]
+
+    @property
+    def ieco_heat(self) -> bool:
+        ieco = self._capabilities.get("ieco", 0)
+        ieco_end = self._capabilities.get("ieco_end", 0)
+        return ieco in [3, 4, 8] or ieco_end in [2, 3, 8]
 
     @property
     def ieco_number(self) -> int:

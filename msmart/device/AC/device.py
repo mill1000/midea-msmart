@@ -119,7 +119,8 @@ class AirConditioner(Device):
         # Presets
         ECO = auto()
         FREEZE_PROTECTION = auto()
-        IECO = auto()
+        IECO_COOL = auto()
+        IECO_HEAT = auto()
         TURBO = auto()
 
         # UI
@@ -592,7 +593,10 @@ class AirConditioner(Device):
             self._capabilities.set(
                 AirConditioner.Capability.BREEZELESS, res.breezeless)
 
-        self._capabilities.set(AirConditioner.Capability.IECO, res.ieco)
+        self._capabilities.set(
+            AirConditioner.Capability.IECO_COOL, res.ieco_cool)
+        self._capabilities.set(
+            AirConditioner.Capability.IECO_HEAT, res.ieco_heat)
         self._ieco_number = res.ieco_number
 
         self._capabilities.set(
@@ -614,7 +618,8 @@ class AirConditioner(Device):
             AirConditioner.Capability.CASCADE: PropertyId.CASCADE,
             AirConditioner.Capability.FLASH: PropertyId.FLASH,
             AirConditioner.Capability.FRESH_AIR: PropertyId.FRESH_AIR,
-            AirConditioner.Capability.IECO: PropertyId.IECO,
+            AirConditioner.Capability.IECO_COOL: PropertyId.IECO,
+            AirConditioner.Capability.IECO_HEAT: PropertyId.IECO,
             AirConditioner.Capability.OUT_SILENT: PropertyId.OUT_SILENT,
             AirConditioner.Capability.SELF_CLEAN: PropertyId.SELF_CLEAN,
             AirConditioner.Capability.SOUND: PropertyId.SOUND,
@@ -1076,8 +1081,12 @@ class AirConditioner(Device):
         self._eco = enabled
 
     @property
-    def supports_ieco(self) -> bool:
-        return self._capabilities.has(AirConditioner.Capability.IECO)
+    def supports_ieco_cool(self) -> bool:
+        return self._capabilities.has(AirConditioner.Capability.IECO_COOL)
+
+    @property
+    def supports_ieco_heat(self) -> bool:
+        return self._capabilities.has(AirConditioner.Capability.IECO_HEAT)
 
     @property
     def ieco(self) -> Optional[bool]:

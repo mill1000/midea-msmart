@@ -256,7 +256,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
         "swing_horizontal", "swing_vertical", "swing_both",
         "dry_mode", "cool_mode", "heat_mode", "auto_mode",
         "aux_heat_mode", "aux_mode", "aux_electric_heat",
-        "eco", "ieco", "turbo", "freeze_protection",
+        "eco", "ieco_cool", "ieco_heat", "turbo", "freeze_protection",
         "display_control", "filter_reminder",
         "min_temperature", "max_temperature",
         "energy_stats", "humidity", "target_humidity", "self_clean",
@@ -366,7 +366,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "heat_mode": True, "auto_mode": True,
             "aux_heat_mode": False, "aux_mode": False,
             "aux_electric_heat": False,
-            "eco": True, "ieco": False,
+            "eco": True, "ieco_cool": False, "ieco_heat": False,
             "turbo": True, "freeze_protection": True,
             "display_control": False, "filter_reminder": False,
             "min_temperature": 16.0, "max_temperature": 30.0,
@@ -428,7 +428,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "heat_mode": True, "auto_mode": True,
             "aux_heat_mode": False, "aux_mode": False,
             "aux_electric_heat": False,
-            "eco": True, "ieco": False,
+            "eco": True, "ieco_cool": False, "ieco_heat": False,
             "turbo": True, "freeze_protection": False,
             "display_control": False, "filter_reminder": False,
             "min_temperature": 16.0, "max_temperature": 30.0,
@@ -479,7 +479,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "heat_mode": False, "auto_mode": True,
             "aux_heat_mode": False, "aux_mode": False,
             "aux_electric_heat": False,
-            "eco": True, "ieco": False,
+            "eco": True, "ieco_cool": False, "ieco_heat": False,
             "turbo": False, "freeze_protection": False,
             "display_control": True, "filter_reminder": True,
             "min_temperature": 16.0, "max_temperature": 30.0,
@@ -532,7 +532,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "heat_mode": False, "auto_mode": True,
             "aux_heat_mode": False, "aux_mode": False,
             "aux_electric_heat": False,
-            "eco": True, "ieco": False,
+            "eco": True, "ieco_cool": False, "ieco_heat": False,
             "turbo": True, "freeze_protection": False,
             "display_control": True, "filter_reminder": True,
             "min_temperature": 16.0, "max_temperature": 30.0,
@@ -645,7 +645,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "heat_mode": True, "auto_mode": True,
             "aux_heat_mode": False, "aux_mode": False,
             "aux_electric_heat": False,
-            "eco": True, "ieco": False,
+            "eco": True, "ieco_cool": False, "ieco_heat": False,
             "turbo": True, "freeze_protection": True,
             "display_control": False, "filter_reminder": False,
             "min_temperature": 16.0, "max_temperature": 30.0,
@@ -758,7 +758,8 @@ class TestCapabilitiesResponse(_TestResponseBase):
         self.assertIn("ieco", resp._capabilities)
         self.assertNotIn("ieco_end", resp._capabilities)
 
-        self.assertEqual(resp.ieco, True)
+        self.assertEqual(resp.ieco_cool, True)
+        self.assertEqual(resp.ieco_heat, False)
         self.assertEqual(resp.ieco_number, 1)
 
     def test_capabilities_ieco_ecomaster(self) -> None:
@@ -774,7 +775,8 @@ class TestCapabilitiesResponse(_TestResponseBase):
         self.assertIn("ieco", resp._capabilities)
         self.assertIn("ieco_end", resp._capabilities)
 
-        self.assertEqual(resp.ieco, True)
+        self.assertEqual(resp.ieco_cool, True)
+        self.assertEqual(resp.ieco_heat, True)
         self.assertEqual(resp.ieco_number, 8)
 
 
