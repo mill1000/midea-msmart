@@ -516,6 +516,34 @@ class TestCapabilities(unittest.TestCase):
 
         # TODO find device with 5 levels of rate select
 
+    def test_ieco(self) -> None:
+        """Test ieco cool-only device capability."""
+        # https://github.com/mill1000/midea-msmart/issues/148#issuecomment-2271734098
+        CAPABILITIES_PAYLOAD = bytes.fromhex(
+            "b5071f0201002c020101160201043900010151000101e3000101130201010002")
+
+        device = AC(0, 0, 0)
+        with memoryview(CAPABILITIES_PAYLOAD) as payload:
+            resp = CapabilitiesResponse(payload)
+            device._update_capabilities(resp)
+
+        self.assertEqual(device.supports_ieco_cool, True)
+        self.assertEqual(device.supports_ieco_heat, False)
+
+    def test_ieco_ecomaster(self) -> None:
+        """Test ieco ECOMaster device capability (both cool and heat)."""
+        # https://github.com/mill1000/midea-ac-py/issues/426#issue-4693037160
+        CAPABILITIES_PAYLOAD = bytes.fromhex(
+            "b50f120201001402010015020101160201041a02010110020101250207203c203c203c002402010151000101e3000208086700010495000101980001017c000100cd0001000100")
+
+        device = AC(0, 0, 0)
+        with memoryview(CAPABILITIES_PAYLOAD) as payload:
+            resp = CapabilitiesResponse(payload)
+            device._update_capabilities(resp)
+
+        self.assertEqual(device.supports_ieco_cool, True)
+        self.assertEqual(device.supports_ieco_heat, True)
+
     def test_breeze_modes(self) -> None:
         """Test breeze mode capabilities."""
         # "Modern" breezeless device with "breeze control" i.e. breeze away, breeze mild and breezeless.
@@ -769,6 +797,45 @@ class TestSetState(unittest.IsolatedAsyncioTestCase):
 
         # Assert correct property is being updated
         self.assertIn(PropertyId.SOUND, device._updated_properties)
+
+    def test_properties_ieco(self) -> None:
+        """Test ieco supported and updated properties for all capability combinations."""
+        # Cool only
+        device = AC(0, 0, 0)
+        device._capabilities.set(AC.Capability.IECO_COOL, True)
+        device._capabilities.set(AC.Capability.IECO_HEAT, False)
+        device._update_supported_properties()
+        self.assertIn(PropertyId.IECO, device._supported_properties)
+
+        device.ieco = True
+        self.assertIn(PropertyId.IECO, device._updated_properties)
+
+        # Heat only
+        device = AC(0, 0, 0)
+        device._capabilities.set(AC.Capability.IECO_COOL, False)
+        device._capabilities.set(AC.Capability.IECO_HEAT, True)
+        device._update_supported_properties()
+        self.assertIn(PropertyId.IECO, device._supported_properties)
+
+        device.ieco = True
+        self.assertIn(PropertyId.IECO, device._updated_properties)
+
+        # Both
+        device = AC(0, 0, 0)
+        device._capabilities.set(AC.Capability.IECO_COOL, True)
+        device._capabilities.set(AC.Capability.IECO_HEAT, True)
+        device._update_supported_properties()
+        self.assertIn(PropertyId.IECO, device._supported_properties)
+
+        device.ieco = True
+        self.assertIn(PropertyId.IECO, device._updated_properties)
+
+        # Neither
+        device = AC(0, 0, 0)
+        device._capabilities.set(AC.Capability.IECO_COOL, False)
+        device._capabilities.set(AC.Capability.IECO_HEAT, False)
+        device._update_supported_properties()
+        self.assertNotIn(PropertyId.IECO, device._supported_properties)
 
     async def test_apply_properties_beep(self) -> None:
         """Test that apply() always sends the beep property"""
