@@ -798,6 +798,45 @@ class TestSetState(unittest.IsolatedAsyncioTestCase):
         # Assert correct property is being updated
         self.assertIn(PropertyId.SOUND, device._updated_properties)
 
+    def test_properties_ieco(self) -> None:
+        """Test ieco supported and updated properties for all capability combinations."""
+        # Cool only
+        device = AC(0, 0, 0)
+        device._capabilities.set(AC.Capability.IECO_COOL, True)
+        device._capabilities.set(AC.Capability.IECO_HEAT, False)
+        device._update_supported_properties()
+        self.assertIn(PropertyId.IECO, device._supported_properties)
+
+        device.ieco = True
+        self.assertIn(PropertyId.IECO, device._updated_properties)
+
+        # Heat only
+        device = AC(0, 0, 0)
+        device._capabilities.set(AC.Capability.IECO_COOL, False)
+        device._capabilities.set(AC.Capability.IECO_HEAT, True)
+        device._update_supported_properties()
+        self.assertIn(PropertyId.IECO, device._supported_properties)
+
+        device.ieco = True
+        self.assertIn(PropertyId.IECO, device._updated_properties)
+
+        # Both
+        device = AC(0, 0, 0)
+        device._capabilities.set(AC.Capability.IECO_COOL, True)
+        device._capabilities.set(AC.Capability.IECO_HEAT, True)
+        device._update_supported_properties()
+        self.assertIn(PropertyId.IECO, device._supported_properties)
+
+        device.ieco = True
+        self.assertIn(PropertyId.IECO, device._updated_properties)
+
+        # Neither
+        device = AC(0, 0, 0)
+        device._capabilities.set(AC.Capability.IECO_COOL, False)
+        device._capabilities.set(AC.Capability.IECO_HEAT, False)
+        device._update_supported_properties()
+        self.assertNotIn(PropertyId.IECO, device._supported_properties)
+
     async def test_apply_properties_beep(self) -> None:
         """Test that apply() always sends the beep property"""
 
