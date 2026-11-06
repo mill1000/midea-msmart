@@ -880,9 +880,12 @@ class CapabilitiesResponse(Response):
         return 1
 
     @property
-    def turbo(self) -> bool:
-        return (self._capabilities.get("turbo_heat", False)
-                or self._capabilities.get("turbo_cool", False))
+    def turbo_cool(self) -> bool:
+        return self._capabilities.get("turbo_cool", False)
+
+    @property
+    def turbo_heat(self) -> bool:
+        return self._capabilities.get("turbo_heat", False)
 
     @property
     def freeze_protection(self) -> bool:
