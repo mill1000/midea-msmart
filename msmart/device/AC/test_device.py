@@ -1436,7 +1436,8 @@ class TestCapabilityOverrides(unittest.TestCase):
         # Alter default capabilities
         device._capabilities.set(AC.Capability.CUSTOM_FAN_SPEED, False)
         device._capabilities.set(AC.Capability.ECO, False)
-        device._capabilities.set(AC.Capability.TURBO, True)
+        device._capabilities.set(AC.Capability.TURBO_COOL, True)
+        device._capabilities.set(AC.Capability.TURBO_HEAT, True)
         device._capabilities.set(AC.Capability.SELF_CLEAN, True)
 
         # Assert the capabilities match
