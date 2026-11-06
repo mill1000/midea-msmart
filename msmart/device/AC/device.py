@@ -158,6 +158,7 @@ class AirConditioner(Device):
         )
 
         # Aliases "deprecated" enums to keep overrides working
+        IECO = IECO_COOL | IECO_HEAT
         TURBO = TURBO_COOL | TURBO_HEAT
 
     # Create a dict to map attributes to property values
@@ -1094,6 +1095,11 @@ class AirConditioner(Device):
     @property
     def supports_ieco_heat(self) -> bool:
         return self._capabilities.has(AirConditioner.Capability.IECO_HEAT)
+
+    @property
+    def supports_ieco(self) -> bool:
+        return (self._capabilities.has(AirConditioner.Capability.IECO_COOL)
+                or self._capabilities.has(AirConditioner.Capability.IECO_HEAT))
 
     @property
     def ieco(self) -> Optional[bool]:
