@@ -15,8 +15,8 @@ from .command import (CapabilitiesResponse, Command, GetCapabilitiesCommand,
                       Group4Response, Group5Response, Group7Response,
                       Group11Response, InvalidResponseException,
                       PropertiesResponse, PropertyId, Response,
-                      SetPropertiesCommand, SetStateCommand, StateResponse,
-                      ToggleDisplayCommand)
+                      SetFollowMeTemperatureCommand, SetPropertiesCommand,
+                      SetStateCommand, StateResponse, ToggleDisplayCommand)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -738,6 +738,17 @@ class AirConditioner(Device):
 
         # Force a refresh to get the updated display state
         await self.refresh()
+
+    async def set_follow_me_temperature(self, temperature: float) -> None:
+        """Report an external "Follow Me" temperature to the device."""
+
+        if not self._follow_me:
+            _LOGGER.warning(
+                "Device %s does not have follow me enabled.", self.id)
+
+        cmd = SetFollowMeTemperatureCommand(temperature)
+        for response in await self._send_commands_get_responses(cmd):
+            self._update_state(response)
 
     async def start_self_clean(self) -> None:
         """Start a self cleaning if the device supports it."""
