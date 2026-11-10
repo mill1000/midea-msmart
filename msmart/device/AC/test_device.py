@@ -58,7 +58,7 @@ class TestDeviceEnums(unittest.TestCase):
     def test_device_enums(self) -> None:
         """Test AuxHeatMode enum conversion from value/name."""
 
-        ENUM_CLASSES = [AC.AuxHeatMode, AC.BreezeMode,
+        ENUM_CLASSES = [AC.AuxHeatMode, AC.BreezeAwayDirection, AC.BreezeMode,
                         AC.FanSpeed, AC.OperationalMode,
                         AC.RateSelect, AC.SwingAngle, AC.SwingMode]
 
@@ -735,6 +735,44 @@ class TestSetState(unittest.IsolatedAsyncioTestCase):
         # Assert correct property is being updated
         self.assertIn(PropertyId.BREEZE_AWAY, device._updated_properties)
         self.assertNotIn(PropertyId.BREEZE_CONTROL, device._updated_properties)
+
+    def test_properties_breeze_away_direction(self) -> None:
+        """Test setting breeze away direction property without breeze control."""
+
+        # Create dummy device with breeze away direction
+        device = AC(0, 0, 0)
+        device._capabilities.set(AC.Capability.BREEZE_AWAY_DIRECTION)
+        device._capabilities.set(AC.Capability.BREEZE_AWAY)
+
+        # Set breeze away direction
+        device.breeze_away_direction = AC.BreezeAwayDirection.DOWN
+
+        self.assertEqual(
+            device.breeze_away_direction, AC.BreezeAwayDirection.DOWN)
+
+        self.assertIn(
+            PropertyId.BREEZE_AWAY_DIRECTION, device._updated_properties)
+        self.assertIn(PropertyId.BREEZE_AWAY, device._updated_properties)
+        self.assertNotIn(PropertyId.BREEZE_CONTROL, device._updated_properties)
+
+    def test_properties_breeze_away_direction_breeze_control(self) -> None:
+        """Test setting breeze away direction on a breeze control device."""
+
+        # Create dummy device with breeze control
+        device = AC(0, 0, 0)
+        device._capabilities.set(AC.Capability.BREEZE_AWAY_DIRECTION)
+        device._capabilities.set(AC.Capability.BREEZE_CONTROL)
+
+        # Set breeze away direction
+        device.breeze_away_direction = AC.BreezeAwayDirection.DOWN
+
+        self.assertEqual(
+            device.breeze_away_direction, AC.BreezeAwayDirection.DOWN)
+
+        self.assertIn(
+            PropertyId.BREEZE_AWAY_DIRECTION, device._updated_properties)
+        self.assertIn(PropertyId.BREEZE_CONTROL, device._updated_properties)
+        self.assertNotIn(PropertyId.BREEZE_AWAY, device._updated_properties)
 
     def test_properties_flash(self) -> None:
         """Test setting flash cool/heat property."""

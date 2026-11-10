@@ -42,7 +42,7 @@ class CapabilityId(IntEnum):
     FSU_SMART_COOL = 0x0049  # Floor-standing Unit, "Prevent Super Cool"
     FRESH_AIR = 0x004B
     PARENT_CONTROL = 0x0051  # ??
-    PREVENT_STRAIGHT_WIND_SELECT = 0x0058  # ??
+    BREEZE_AWAY_DIRECTION = 0x0058  # AKA "Prevent Straight Wind Select"
     CASCADE = 0x0059  # AKA "Wind Around"
     FSU_STERILIZE = 0x005A  # Floor-standing Unit
     FSU_AMBIENT_LIGHT = 0x005A  # Floor-standing Unit
@@ -104,6 +104,7 @@ class PropertyId(IntEnum):
     BREEZE_CONTROL = 0x0043  # AKA "FA No Wind Sense"
     RATE_SELECT = 0x0048
     FRESH_AIR = 0x004B
+    BREEZE_AWAY_DIRECTION = 0x0058  # AKA "Prevent Straight Wind Select"
     CASCADE = 0x0059  # AKA "Wind Around"
     FLASH = 0x0067  # AKA "Jet Cool"
     OUT_SILENT = 0x00CD  # Portasplit outdoor silent mode
@@ -116,6 +117,7 @@ class PropertyId(IntEnum):
         """Check if a property ID is supported/tested."""
         return self in [
             PropertyId.BREEZE_AWAY,
+            PropertyId.BREEZE_AWAY_DIRECTION,
             PropertyId.BREEZE_CONTROL,
             PropertyId.BREEZELESS,
             PropertyId.BUZZER,
@@ -567,6 +569,7 @@ class CapabilitiesResponse(Response):
             CapabilityId.AUX_FAN_SPEED_CONTROL: reader("aux_fan_speed", get_value(1)),
             CapabilityId.AUX_HEAT_FAN_SPEED_CONTROL: reader("aux_heat_fan_speed", get_value(1)),
             CapabilityId.BREEZE_AWAY: reader("breeze_away", get_value(1)),
+            CapabilityId.BREEZE_AWAY_DIRECTION: reader("breeze_away_direction", any_of([1, 2, 3])),
             CapabilityId.BREEZE_CONTROL: reader("breeze_control", get_value(1)),
             CapabilityId.BREEZELESS: reader("breezeless", get_value(1)),
             CapabilityId.SOUND:  reader("sound", get_value(1)),
@@ -778,6 +781,10 @@ class CapabilitiesResponse(Response):
     @property
     def breeze_away(self) -> bool:
         return self._capabilities.get("breeze_away", False)
+
+    @property
+    def breeze_away_direction(self) -> bool:
+        return self._capabilities.get("breeze_away_direction", False)
 
     @property
     def breeze_control(self) -> bool:
