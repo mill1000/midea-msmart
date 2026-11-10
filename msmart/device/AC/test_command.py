@@ -251,7 +251,8 @@ class TestCapabilitiesResponse(_TestResponseBase):
     EXPECTED_ATTRS = [
         "anion",
         "fan_silent", "fan_low", "fan_medium", "fan_high", "fan_auto", "fan_custom",
-        "breeze_away", "breeze_control", "breezeless", "cascade", "fresh_air",
+        "breeze_away", "breeze_away_direction", "breeze_control",
+        "breezeless", "cascade", "fresh_air",
         "swing_horizontal_angle", "swing_vertical_angle",
         "swing_horizontal", "swing_vertical", "swing_both",
         "dry_mode", "cool_mode", "heat_mode", "auto_mode",
@@ -329,6 +330,16 @@ class TestCapabilitiesResponse(_TestResponseBase):
         self.assertEqual(resp._capabilities["turbo_heat"], False)
         self.assertEqual(resp._capabilities["turbo_cool"], False)
 
+        # Test BREEZE_AWAY_DIRECTION capability
+        self.assertEqual(_build_capability_response(
+            CapabilityId.BREEZE_AWAY_DIRECTION, 0)._capabilities["breeze_away_direction"], False)
+        self.assertEqual(_build_capability_response(
+            CapabilityId.BREEZE_AWAY_DIRECTION, 1)._capabilities["breeze_away_direction"], True)
+        self.assertEqual(_build_capability_response(
+            CapabilityId.BREEZE_AWAY_DIRECTION, 2)._capabilities["breeze_away_direction"], True)
+        self.assertEqual(_build_capability_response(
+            CapabilityId.BREEZE_AWAY_DIRECTION, 3)._capabilities["breeze_away_direction"], True)
+
     def test_capabilities(self) -> None:
         """Test that we decode capabilities responses as expected."""
         # https://github.com/mill1000/midea-ac-py/issues/13#issuecomment-1657485359
@@ -357,7 +368,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "anion": False, "fan_silent": False,
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
-            "fan_custom": False, "breeze_away": False,
+            "fan_custom": False, "breeze_away": False, "breeze_away_direction": False,
             "breeze_control": False, "breezeless": False, "cascade": False, "fresh_air": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": True, "swing_vertical": True,
@@ -419,7 +430,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "anion": False, "fan_silent": True,
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
-            "fan_custom": True, "breeze_away": False,
+            "fan_custom": True, "breeze_away": False, "breeze_away_direction": False,
             "breeze_control": False, "breezeless": False, "cascade": False, "fresh_air": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": True, "swing_vertical": True,
@@ -470,7 +481,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "anion": False, "fan_silent": False,
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
-            "fan_custom": False, "breeze_away": False,
+            "fan_custom": False, "breeze_away": False, "breeze_away_direction": False,
             "breeze_control": False, "breezeless": False, "cascade": False, "fresh_air": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": False, "swing_vertical": False,
@@ -523,7 +534,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "anion": False, "fan_silent": True,
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
-            "fan_custom": True, "breeze_away": False,
+            "fan_custom": True, "breeze_away": False, "breeze_away_direction": False,
             "breeze_control": False, "breezeless": False, "cascade": False, "fresh_air": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": False, "swing_vertical": True,
@@ -636,7 +647,7 @@ class TestCapabilitiesResponse(_TestResponseBase):
             "anion": True, "fan_silent": True,
             "fan_low": True, "fan_medium": True,
             "fan_high": True, "fan_auto": True,
-            "fan_custom": True, "breeze_away": False,
+            "fan_custom": True, "breeze_away": False, "breeze_away_direction": False,
             "breeze_control": True, "breezeless": False, "cascade": False, "fresh_air": False,
             "swing_horizontal_angle": False, "swing_vertical_angle": False,
             "swing_horizontal": True, "swing_vertical": True,
@@ -732,6 +743,21 @@ class TestCapabilitiesResponse(_TestResponseBase):
         self.assertIn("cascade", resp._capabilities)
         self.assertEqual(resp.cascade, True)
 
+    def test_capabilities_breeze_away_direction(self) -> None:
+        """Test that we decode capabilities that include breeze away direction support."""
+        self.maxDiff = None
+
+        # https://github.com/mill1000/midea-ac-py/issues/359#issuecomment-3028509967
+        # Payload advertises BREEZE_AWAY_DIRECTION and CASCADE
+        TEST_CAPABILITIES_RESPONSE = bytes.fromhex(
+            "aa3bac00000000000303b50a1e02010113020101220201001902010039000101580001024200010159000101090001010a000101000000000000cfbf")
+
+        resp = self._test_build_response(TEST_CAPABILITIES_RESPONSE)
+        resp = cast(CapabilitiesResponse, resp)
+
+        self.assertIn("breeze_away_direction", resp._capabilities)
+        self.assertEqual(resp.breeze_away_direction, True)
+
     def test_capabilities_out_silent(self) -> None:
         """Test that we decode the OUT_SILENT capability correctly from a real PortaSplit payload."""
         # Real payload from a PortaSplit device containing ID 0x00CD with value 0x03
@@ -819,6 +845,10 @@ class TestSetPropertiesCommand(unittest.TestCase):
             (PropertyId.BREEZE_CONTROL, 0x04): bytes([0x04]),
             (PropertyId.BREEZE_CONTROL, 0x00): bytes([0x00]),
 
+            # Breeze away direction: Passthru
+            (PropertyId.BREEZE_AWAY_DIRECTION, 0x02): bytes([0x02]),
+            (PropertyId.BREEZE_AWAY_DIRECTION, 0x03): bytes([0x03]),
+
             # Buzzer/Sound: 0x01 - On, 0x00 - Off
             (PropertyId.BUZZER, True): bytes([0x01]),
             (PropertyId.BUZZER, False): bytes([0x00]),
@@ -894,6 +924,10 @@ class TestPropertiesResponse(_TestResponseBase):
             # Breeze control: Passthru
             (PropertyId.BREEZE_CONTROL, bytes([0x04])): 0x04,
             (PropertyId.BREEZE_CONTROL, bytes([0x00])): 0x00,
+
+            # Breeze away direction: Passthru
+            (PropertyId.BREEZE_AWAY_DIRECTION, bytes([0x02])): 0x02,
+            (PropertyId.BREEZE_AWAY_DIRECTION, bytes([0x03])): 0x03,
 
             # Sound: 0x01 - On, 0x00 - Off
             (PropertyId.SOUND, bytes([0x01])): True,

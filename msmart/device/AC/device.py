@@ -85,10 +85,11 @@ class AirConditioner(Device):
         DEFAULT = OFF
 
     class BreezeAwayDirection(MideaIntEnum):
+        OFF = 0
         UP = 2
         DOWN = 3
 
-        DEFAULT = UP
+        DEFAULT = OFF
 
     class BreezeMode(MideaIntEnum):
         OFF = 1
@@ -232,7 +233,7 @@ class AirConditioner(Device):
         self._fresh_air_fan_speed = AirConditioner.FreshAirFanSpeed.OFF
         self._rate_select = AirConditioner.RateSelect.OFF
         self._breeze_mode = AirConditioner.BreezeMode.OFF
-        self._breeze_away_direction = AirConditioner.BreezeAwayDirection.UP
+        self._breeze_away_direction = AirConditioner.BreezeAwayDirection.OFF
         self._aux_mode = AirConditioner.AuxHeatMode.OFF
 
         # Sensors
@@ -578,9 +579,6 @@ class AirConditioner(Device):
         self._capabilities.set(
             AirConditioner.Capability.SWING_HORIZONTAL_ANGLE, res.swing_horizontal_angle)
 
-        self._capabilities.set(
-            AirConditioner.Capability.BREEZE_AWAY_DIRECTION, res.breeze_away_direction)
-
         self._capabilities.set(AirConditioner.Capability.CASCADE, res.cascade)
 
         self._capabilities.set(AirConditioner.Capability.FLASH, res.flash)
@@ -617,6 +615,9 @@ class AirConditioner(Device):
                 AirConditioner.Capability.BREEZE_AWAY, res.breeze_away)
             self._capabilities.set(
                 AirConditioner.Capability.BREEZELESS, res.breezeless)
+
+        self._capabilities.set(
+            AirConditioner.Capability.BREEZE_AWAY_DIRECTION, res.breeze_away_direction)
 
         self._capabilities.set(
             AirConditioner.Capability.IECO_COOL, res.ieco_cool)
@@ -1009,11 +1010,13 @@ class AirConditioner(Device):
     @breeze_away_direction.setter
     def breeze_away_direction(self, direction: BreezeAwayDirection) -> None:
         self._breeze_away_direction = direction
+
         self._updated_properties.add(PropertyId.BREEZE_AWAY_DIRECTION)
 
-        # The direction is only accepted while breeze away is enabled, so carry
-        # the current breeze away state in the same frame.
-        self._updated_properties.add(PropertyId.BREEZE_AWAY)
+        # Breeze away direction is apparently only  accepted when accompanying a breeze away/mode command
+        self._updated_properties.add(
+            PropertyId.BREEZE_CONTROL if self._capabilities.has(AirConditioner.Capability.BREEZE_CONTROL)
+            else PropertyId.BREEZE_AWAY)
 
     @property
     def supports_breeze_mild(self) -> bool:
