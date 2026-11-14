@@ -1549,5 +1549,62 @@ class TestCapabilityOverrides(unittest.TestCase):
             device.supported_operation_modes, EXPECTED_OP_MODES)
 
 
+class TestSetFollowMeTemperature(unittest.IsolatedAsyncioTestCase):
+    """Test reporting a follow me temperature."""
+
+    # V3 state response with follow me disabled
+    TEST_RESPONSE = bytes.fromhex(
+        "aa23ac00000000000303c00145660000003c0010045c6b20000000000000000000020d79")
+
+    async def test_follow_me_enabled_by_device(self) -> None:
+        """Test no warning is logged when the device enables follow me."""
+
+        resp = Response.construct(self.TEST_RESPONSE)
+        self.assertEqual(type(resp), StateResponse)
+        resp.follow_me = True
+
+        # Create a dummy device with follow me disabled
+        device = AC(0, 0, 0)
+        self.assertFalse(device.follow_me)
+
+        with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[resp]) as patched_method:
+            with self.assertNoLogs("msmart", logging.WARNING):
+                await device.set_follow_me_temperature(21.0)
+
+            patched_method.assert_awaited_once()
+
+        # Assert state was updated from the response
+        self.assertTrue(device.follow_me)
+
+    async def test_follow_me_not_enabled_by_device(self) -> None:
+        """Test a warning is logged when the device does not enable follow me."""
+
+        resp = Response.construct(self.TEST_RESPONSE)
+        self.assertEqual(type(resp), StateResponse)
+        self.assertFalse(resp.follow_me)
+
+        # Create a dummy device
+        device = AC(0, 0, 0)
+
+        with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[resp]):
+            with self.assertLogs("msmart", logging.WARNING) as log:
+                await device.set_follow_me_temperature(21.0)
+
+            self.assertRegex(
+                log.output[0], "did not accept the follow me temperature")
+
+        self.assertFalse(device.follow_me)
+
+    async def test_no_response(self) -> None:
+        """Test no warning is logged when the device does not respond."""
+
+        # Create a dummy device
+        device = AC(0, 0, 0)
+
+        with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[]):
+            with self.assertNoLogs("msmart", logging.WARNING):
+                await device.set_follow_me_temperature(21.0)
+
+
 if __name__ == "__main__":
     unittest.main()
