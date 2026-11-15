@@ -746,7 +746,10 @@ class AirConditioner(Device):
         the report enable follow me themselves when they accept the value.
         """
 
-        cmd = SetFollowMeTemperatureCommand(temperature)
+        # Send command and ignore response
+        cmd = SetFollowMeTemperatureCommand()
+        cmd.beep_on = self._sound
+        cmd.temperature = temperature
 
         state_received = False
         for response in await self._send_commands_get_responses(cmd):

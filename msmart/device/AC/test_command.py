@@ -1082,7 +1082,9 @@ class TestSetFollowMeTemperatureCommand(unittest.TestCase):
 
     def test_payload_layout(self) -> None:
         """Test that the follow me temperature frame has the expected layout."""
-        command = SetFollowMeTemperatureCommand(23.0)
+        command = SetFollowMeTemperatureCommand()
+        command.temperature = 23.0
+        command.beep_on = False
         frame = command.tobytes()
 
         # Frame header and type
@@ -1092,23 +1094,23 @@ class TestSetFollowMeTemperatureCommand(unittest.TestCase):
 
         # Strip header, message id, CRC and checksum
         payload = frame[10:-3]
-        self.assertEqual(len(payload), 13)
+        self.assertEqual(len(payload), 11)
 
         # Fixed prefix
-        self.assertEqual(payload[0:5], bytes([0x41, 0x21, 0x00, 0xFF, 0x01]))
+        self.assertEqual(payload[0:5], bytes([0x41, 0x23, 0x00, 0xFF, 0x01]))
 
         # 23 C -> 23 * 2 + 50 = 96
         self.assertEqual(payload[5], 96)
 
         # Remainder is zero padding
-        self.assertEqual(payload[6:], bytes(7))
+        self.assertEqual(payload[6:], bytes(5))
 
         # Whole frame validates
         Frame.validate(frame, DeviceType.AIR_CONDITIONER)
 
     def test_temperature_encoding(self) -> None:
         """Test temperature encoding, rounding and clamping."""
-        encode = SetFollowMeTemperatureCommand.encode_temperature
+        encode = SetFollowMeTemperatureCommand()._encode_temperature
 
         # Standard Midea encoding T * 2 + 50
         self.assertEqual(encode(0), 50)
@@ -1119,18 +1121,8 @@ class TestSetFollowMeTemperatureCommand(unittest.TestCase):
         # Rounds to nearest 0.5 C
         self.assertEqual(encode(23.2), encode(23.0))
         self.assertEqual(encode(23.3), encode(23.5))
-        self.assertEqual(encode(23.74), encode(23.5))
-        self.assertEqual(encode(23.76), encode(24.0))
-
-        # Clamps to the supported range
-        self.assertEqual(encode(-5), encode(0))
-        self.assertEqual(encode(45), encode(37))
-
-        # Rejects non-finite values
-        with self.assertRaises(ValueError):
-            encode(float("nan"))
-        with self.assertRaises(ValueError):
-            encode(float("inf"))
+        self.assertEqual(encode(23.7), encode(23.5))
+        self.assertEqual(encode(23.8), encode(24.0))
 
 
 class TestGetGroupDataCommand(unittest.TestCase):

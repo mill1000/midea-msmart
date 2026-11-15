@@ -253,43 +253,42 @@ class GetStateCommand(Command):
 class SetFollowMeTemperatureCommand(Command):
     """Command to report an external "Follow Me" temperature to the device."""
 
-    # Temperature range of the IR "Follow Me" frame
-    MIN_TEMPERATURE = 0.0
-    MAX_TEMPERATURE = 37.0
-
-    def __init__(self, temperature: float) -> None:
+    def __init__(self) -> None:
         super().__init__(frame_type=FrameType.QUERY)
 
-        self.temperature = temperature
+        self.beep_on = True
+        self.temperature: Optional[float] = None
 
-    @classmethod
-    def encode_temperature(cls, temperature: float) -> int:
+    def _encode_temperature(self, temperature: Optional[float]) -> int:
         """Encode a temperature to the device format (T * 2 + 50)."""
-        if not math.isfinite(temperature):
-            raise ValueError(
-                f"Follow me temperature must be finite, got {temperature!r}.")
+        if temperature is None:
+            return 0xFF
 
-        # Clamp to the supported range and round to the nearest 0.5 C
-        temperature = min(max(temperature, cls.MIN_TEMPERATURE),
-                          cls.MAX_TEMPERATURE)
+        # Round to nearest 0.5 degree
         temperature = round(temperature * 2) / 2
 
         return int(temperature * 2 + 50) & 0xFF
 
     def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
-        # Frame layout from UART captures in mill1000/midea-ac-py#277
+        beep = 0x40 if self.beep_on else 0
+
         return super().tobytes(bytes([
             # Get state
             0x41,
-            # Unknown
-            0x21, 0x00, 0xFF,
-            # Follow Me temperature report
+            # Flags
+            self.CONTROL_SOURCE | beep | 0x21,
+            # Fixed
+            0x00, 0xFF,
+            # Follow me temperature
             0x01,
             # Temperature
-            self.encode_temperature(self.temperature),
-            # Unknown
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00,
+            self._encode_temperature(self.temperature),
+            # Unused
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
         ]))
 
 
