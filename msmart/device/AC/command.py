@@ -252,6 +252,48 @@ class GetStateCommand(Command):
         ]))
 
 
+class SetFollowMeTemperatureCommand(Command):
+    """Command to report an external "Follow Me" temperature to the device."""
+
+    def __init__(self) -> None:
+        super().__init__(frame_type=FrameType.QUERY)
+
+        self.beep_on = True
+        self.temperature: Optional[float] = None
+
+    def _encode_temperature(self, temperature: Optional[float]) -> int:
+        """Encode a temperature to the device format (T * 2 + 50)."""
+        if temperature is None:
+            return 0xFF
+
+        # Round to nearest 0.5 degree
+        temperature = round(temperature * 2) / 2
+
+        return int(temperature * 2 + 50) & 0xFF
+
+    def tobytes(self) -> bytes:  # pyright: ignore[reportIncompatibleMethodOverride] # nopep8
+        beep = 0x40 if self.beep_on else 0
+
+        return super().tobytes(bytes([
+            # Get state
+            0x41,
+            # Flags
+            self.CONTROL_SOURCE | beep | 0x21,
+            # Fixed
+            0x00, 0xFF,
+            # Follow me temperature
+            0x01,
+            # Temperature
+            self._encode_temperature(self.temperature),
+            # Unused
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+        ]))
+
+
 class GetGroupDataCommand(Command):
     """Command to query group data from device."""
 

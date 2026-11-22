@@ -1,6 +1,6 @@
 import logging
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from .command import (CapabilitiesResponse, GetGroupDataCommand,
                       GetPropertiesCommand, GetStateCommand, Group1Response,
@@ -1264,6 +1264,95 @@ class TestSendCommandGetResponse(unittest.IsolatedAsyncioTestCase):
 
             # Assert patch method was awaited
             patched_method.assert_awaited()
+
+
+class TestSetFollowMeTemperature(unittest.IsolatedAsyncioTestCase):
+    """Test sending an external follow me temperature."""
+
+    async def test_follow_me_enabled(self) -> None:
+        """Test when the device accepts the command and reports follow me is enabled."""
+        TEST_RESPONSE = bytes.fromhex(
+            "aa23ac00000000000303c00145660000003c0010045c6b20000000000000000000020d79")
+
+        # Create a dummy device with follow me disabled
+        device = AC(0, 0, 0)
+        self.assertFalse(device.follow_me)
+
+        # Create state response and force follow me on
+        resp = Response.construct(TEST_RESPONSE)
+        self.assertEqual(type(resp), StateResponse)
+        resp.follow_me = True
+
+        with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[resp]) as patched_method:
+            await device.set_follow_me_temperature(21.0)
+
+            patched_method.assert_awaited_once()
+
+        # Assert state was updated from the response
+        self.assertTrue(device.follow_me)
+
+    async def test_follow_me_not_enabled(self) -> None:
+        """Test a warning is logged when the device does not enable follow me."""
+        TEST_RESPONSE = bytes.fromhex(
+            "aa23ac00000000000303c00145660000003c0010045c6b20000000000000000000020d79")
+
+        # Create a dummy device
+        device = AC(0, 0, 0)
+
+        # Create state response and force follow me off
+        resp = Response.construct(TEST_RESPONSE)
+        self.assertEqual(type(resp), StateResponse)
+        resp.follow_me = False
+
+        with (
+            self.assertLogs("msmart", logging.WARNING) as log,
+            patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses",
+                  return_value=[resp]),
+        ):
+            await device.set_follow_me_temperature(21.0)
+
+            self.assertRegex(
+                "\n".join(log.output), "follow me is not enabled.")
+
+        self.assertFalse(device.follow_me)
+
+    async def test_no_response(self) -> None:
+        """Test a warning is logged when the device does not respond."""
+
+        # Create a dummy device
+        device = AC(0, 0, 0)
+
+        with (
+            self.assertLogs("msmart", logging.WARNING) as log,
+            patch(
+                "msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[])
+        ):
+            await device.set_follow_me_temperature(21.0)
+
+            # Expect failure
+            self.assertRegex(
+                "\n".join(log.output), "did not respond to follow me temperature command.")
+
+    async def test_wrong_response(self) -> None:
+        """Test a warning is logged when the device responds with an unexpected response."""
+
+        # Create a dummy device
+        device = AC(0, 0, 0)
+
+        # Create fake response with the wrong class
+        resp = MagicMock(spec=PropertiesResponse)
+        resp.follow_me = False
+
+        with (
+            self.assertLogs("msmart", logging.WARNING) as log,
+            patch(
+                "msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[])
+        ):
+            await device.set_follow_me_temperature(21.0)
+
+            # Expect failure
+            self.assertRegex(
+                "\n".join(log.output), "did not respond to follow me temperature command.")
 
 
 class TestDeprecation(unittest.TestCase):
