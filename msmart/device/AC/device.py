@@ -758,7 +758,7 @@ class AirConditioner(Device):
         # Force a refresh to get the updated display state
         await self.refresh()
 
-    async def set_follow_me_temperature(self, temperature: float) -> None:
+    async def send_follow_me_temperature(self, temperature: float) -> None:
         """Report an external "Follow Me" temperature to the device."""
 
         # Send command and ignore response

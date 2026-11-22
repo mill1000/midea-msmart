@@ -1284,7 +1284,7 @@ class TestSetFollowMeTemperature(unittest.IsolatedAsyncioTestCase):
         resp.follow_me = True
 
         with patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[resp]) as patched_method:
-            await device.set_follow_me_temperature(21.0)
+            await device.send_follow_me_temperature(21.0)
 
             patched_method.assert_awaited_once()
 
@@ -1309,7 +1309,7 @@ class TestSetFollowMeTemperature(unittest.IsolatedAsyncioTestCase):
             patch("msmart.device.AC.device.AirConditioner._send_commands_get_responses",
                   return_value=[resp]),
         ):
-            await device.set_follow_me_temperature(21.0)
+            await device.send_follow_me_temperature(21.0)
 
             self.assertRegex(
                 "\n".join(log.output), "follow me is not enabled.")
@@ -1327,7 +1327,7 @@ class TestSetFollowMeTemperature(unittest.IsolatedAsyncioTestCase):
             patch(
                 "msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[])
         ):
-            await device.set_follow_me_temperature(21.0)
+            await device.send_follow_me_temperature(21.0)
 
             # Expect failure
             self.assertRegex(
@@ -1348,7 +1348,7 @@ class TestSetFollowMeTemperature(unittest.IsolatedAsyncioTestCase):
             patch(
                 "msmart.device.AC.device.AirConditioner._send_commands_get_responses", return_value=[])
         ):
-            await device.set_follow_me_temperature(21.0)
+            await device.send_follow_me_temperature(21.0)
 
             # Expect failure
             self.assertRegex(
