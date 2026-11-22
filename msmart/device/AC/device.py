@@ -740,26 +740,22 @@ class AirConditioner(Device):
         await self.refresh()
 
     async def set_follow_me_temperature(self, temperature: float) -> None:
-        """Report an external "Follow Me" temperature to the device.
-
-        Follow me does not need to be enabled beforehand. Devices that support
-        the report enable follow me themselves when they accept the value.
-        """
+        """Report an external "Follow Me" temperature to the device."""
 
         # Send command and ignore response
         cmd = SetFollowMeTemperatureCommand()
         cmd.beep_on = self._sound
         cmd.temperature = temperature
 
-        state_received = False
-        for response in await self._send_commands_get_responses(cmd):
+        response = await self._send_command_get_response_with_class(cmd, StateResponse)
+        if response:
             self._update_state(response)
-            state_received |= isinstance(response, StateResponse)
-
-        # A device that accepted the report has follow me enabled in its response
-        if state_received and not self._follow_me:
-            _LOGGER.warning(
-                "Device %s did not accept the follow me temperature.", self.id)
+            if not self._follow_me:
+                _LOGGER.warning(
+                    "Device %s follow me is not enabled.", self.id)
+        else:
+            _LOGGER.error(
+                "Device %s did not respond to follow me temperature command.", self.id)
 
     async def start_self_clean(self) -> None:
         """Start a self cleaning if the device supports it."""
