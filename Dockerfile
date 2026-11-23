@@ -1,5 +1,5 @@
 # Build step
-FROM python:3.14-alpine AS build
+FROM python:3.15-alpine AS build
 RUN apk add --update git
 RUN pip install build
 WORKDIR /msmart-build
