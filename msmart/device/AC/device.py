@@ -30,6 +30,7 @@ class AirConditioner(Device):
         MEDIUM = 60
         LOW = 40
         SILENT = 20
+        MIN = 1
 
         DEFAULT = AUTO
 
@@ -531,8 +532,9 @@ class AirConditioner(Device):
         if res.fan_auto:
             fan_speeds.append(AirConditioner.FanSpeed.AUTO)
         if res.fan_custom:
-            # Include additional MAX speed if custom speeds are supported
+            # Include additional MAX and MIN speed if custom speeds are supported
             fan_speeds.append(AirConditioner.FanSpeed.MAX)
+            fan_speeds.append(AirConditioner.FanSpeed.MIN)
 
         self._supported_fan_speeds = fan_speeds
         self._capabilities.set(
