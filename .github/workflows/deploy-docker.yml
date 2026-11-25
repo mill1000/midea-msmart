@@ -1,4 +1,4 @@
-name: Publish Docker Images
+name: Build & Publish Docker Images
 permissions:
   contents: read
 
@@ -50,6 +50,7 @@ jobs:
       - uses: docker/setup-buildx-action@v4
 
       - uses: docker/login-action@v4
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -59,6 +60,6 @@ jobs:
         with:
           context: .
           platforms: ${{ env.PLATFORMS }}
-          push: true
+          push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
