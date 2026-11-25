@@ -477,6 +477,7 @@ class TestCapabilities(unittest.TestCase):
                                                             AC.FanSpeed.MEDIUM,
                                                             AC.FanSpeed.HIGH,
                                                             AC.FanSpeed.MAX,  # Supports custom
+                                                            AC.FanSpeed.MIN,  # Supports custom
                                                             AC.FanSpeed.AUTO,
                                                             ])
 
