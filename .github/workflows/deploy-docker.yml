@@ -1,4 +1,4 @@
-name: Publish Docker Images
+name: Build & Publish Docker Images
 permissions:
   contents: read
 
