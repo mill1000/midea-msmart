@@ -24,9 +24,8 @@ jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
 
-    # Pull requests from forks get a read-only GITHUB_TOKEN so images can only be built
     permissions:
-      packages: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'write' || 'read' }}
+      packages: write
 
     steps:
       - uses: actions/checkout@v6
