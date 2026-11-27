@@ -137,6 +137,9 @@ class HeatPump(Device):
         self._thermal_power = None
         self._voltage = None
 
+        # Cleared after the first unanswered unit parameters query
+        self._supports_unit_parameters = True
+
     def _update_state(self, res: Union[QueryBasicResponse, QueryUnitParametersResponse, ReportPower4Response]) -> None:
         """Update local device state from device responses."""
 
@@ -211,15 +214,15 @@ class HeatPump(Device):
             self._outdoor_temperature = res.outdoor_air_temperature
             self._voltage = res.voltage
 
-    async def _send_command_parse_responses(self, command) -> None:
-        """Send a command and parse any responses."""
+    async def _send_command_parse_responses(self, command) -> bool:
+        """Send a command and parse any responses. Return True if the device replied."""
 
         responses = await super()._send_command(command)
 
         # No response from device
-        if responses is None:
+        if not responses:
             self._online = False
-            return
+            return False
 
         # Device is online if we received any response
         self._online = True
@@ -242,17 +245,24 @@ class HeatPump(Device):
                 _LOGGER.debug("Ignored unknown response from %s:%d: %s",
                               self.ip, self.port, response.payload.hex())
 
+        return True
+
     async def refresh(self) -> None:
         """Refresh the local copy of the device state."""
 
         # Query basic state (always supported)
-        await self._send_command_parse_responses(QueryBasicCommand())
+        if not await self._send_command_parse_responses(QueryBasicCommand()):
+            return
 
-        # Query unit parameters for outdoor temperature; not supported on all relay paths
-        try:
-            await self._send_command_parse_responses(QueryUnitParametersCommand())
-        except Exception:
-            _LOGGER.debug("Unit parameters query not available for %s:%d.", self.ip, self.port)
+        # Unit parameters (outdoor/tank temperature) are not answered on every
+        # path, e.g. never through the cloud relay. A miss doesn't mean the
+        # device is offline; stop asking so each refresh doesn't wait for the timeout.
+        if self._supports_unit_parameters:
+            if not await self._send_command_parse_responses(QueryUnitParametersCommand()):
+                self._online = True
+                self._supports_unit_parameters = False
+                _LOGGER.info("No reply to unit parameters query from %s:%d, not asking again.",
+                             self.ip, self.port)
 
     async def apply(self) -> None:
         """Apply the local state to the device."""
